@@ -1,0 +1,42 @@
+TODO
+====
+- program for recording key strokes
+- library for accessing the database
+- function to read key from fd/FILE with translation (and UTF-8 decoding?)
+
+Grammar of ASCII files
+======================
+data:
+	keyvalue
+|
+	identifier '{'
+		keyvalue+
+	'}'
+;
+
+keyvalue:
+	identifier '=' [ identifier | string ]
+;
+
+Binary files
+============
+binary files are simply binary representations of above structure with size
+prefixes and without comments etc. Strings are saved as <length><bytes>
+
+
+keymaps can easily be composed by inclusion and overriding.
+
+Special keywords:
+%best -> denotes which keymap
+%start -> denotes either terminfo entry or escape seq to enable this keymap
+%leave -> denotes either terminfo entry or escape seq to disable this keymap
+%include -> include other keymap (with start enabled!)
+
+multiple start and leave keywords are allowed
+keys can be followed by #[cms]+ to indicate modifier states
+
+Key names definitions follow PC style keyboard:
+home -> start of line
+end -> end of line
+insert -> insert key
+etc.
