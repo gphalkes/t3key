@@ -8,7 +8,7 @@ ifdef COVERAGE
 endif
 ifeq ($(VERSION),debug)
 	CFLAGS:=-Wall -W -ggdb -DDEBUG -Wswitch-default \
-		-Wshadow -Wcast-align -Wbad-function-cast \
+		-Wcast-align -Wbad-function-cast \
 		-Wcast-qual -Wwrite-strings -Wstrict-prototypes \
 		$(COVERAGEFLAGS)
 else

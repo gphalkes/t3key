@@ -7,14 +7,18 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <curses.h>
+#include <term.h>
 
 #define MAX_SEQUENCE 50
 #define ESC 27
+#define KEY_TIMEOUT 10
 
 typedef struct {
 	const char *name;
 	const char *identifier;
 } Map;
+
+/*FIXME: automatically extract the shared map!! Or make a script to do it for us. */
 
 static Map keynames[] = {
 	{ "Insert", "insert" },
@@ -59,10 +63,12 @@ typedef struct Sequence {
 	char seq[MAX_SEQUENCE * 4 + 1];
 	Map *modifiers;
 	Map *keynames;
+	bool duplicate;
 } Sequence;
 
 static struct termios saved;
 static fd_set inset;
+static bool xterm_restore;
 
 
 /** Alert the user of a fatal error and quit.
@@ -79,13 +85,21 @@ void fatal(const char *fmt, ...) {
 }
 
 static void restore_terminal(void) {
+	char *rmkx = tigetstr("rmkx");
+	if (rmkx != NULL && rmkx != (void *) -1)
+		printf("%s", rmkx);
+	if (xterm_restore)
+		printf("\x1b[?1036r");
 	tcsetattr(STDOUT_FILENO, TCSADRAIN, &saved);
 }
 
 static void init_terminal(void) {
+	char *env;
 	struct termios new_params;
 	if (!isatty(STDOUT_FILENO))
 		fatal("Stdout is not a terminal\n");
+
+	setupterm((char *)0, 1, (int *)0);
 
 	if (tcgetattr(STDOUT_FILENO, &saved) < 0)
 		fatal("Could not retrieve terminal settings: %m\n");
@@ -102,6 +116,12 @@ static void init_terminal(void) {
 	atexit(restore_terminal);
 	FD_ZERO(&inset);
 	FD_SET(STDIN_FILENO, &inset);
+	env = getenv("TERM");
+	if (strncmp("xterm", env, 5) == 0) {
+		printf("\x1b[?1036s\x1b[?1036h");
+		xterm_restore = true;
+	}
+
 }
 
 static int safe_read_char(void) {
@@ -156,14 +176,14 @@ Sequence *get_sequence(void) {
 
 			seq[idx++] = ESC;
 
-			while ((c = get_keychar(100)) != -1 && idx < MAX_SEQUENCE)
+			while ((c = get_keychar(KEY_TIMEOUT)) != -1 && idx < MAX_SEQUENCE)
 				seq[idx++] = c;
 
 			if (idx == MAX_SEQUENCE) {
-				printf("sequence too long");
+				printf(" sequence too long");
 				return NULL;
-			} else if (idx < 3) {
-				printf("sequence too short");
+			} else if (idx < 2) {
+				printf(" sequence too short");
 				return NULL;
 			}
 
@@ -182,12 +202,13 @@ Sequence *get_sequence(void) {
 				}
 			}
 			retval->seq[dest] = 0;
+			retval->duplicate = FALSE;
 			return retval;
 		} else if (c == 3) {
 			printf("\n");
 			exit(EXIT_SUCCESS);
 		} else if (c >= 0) {
-			while (get_keychar(100) >= 0) {}
+			while (get_keychar(KEY_TIMEOUT) >= 0) {}
 			printf(" (no escape sequence)");
 			return NULL;
 		}
@@ -196,49 +217,126 @@ Sequence *get_sequence(void) {
 }
 
 int main(int argc, char *argv[]) {
+	FILE *output;
 	size_t i, j;
 	Sequence *head = NULL;
+	char *smkx = NULL, *rmkx = NULL;
 	const char *term = getenv("TERM");
+
+	(void) argc;
+	(void) argv;
 
 	if (term == NULL)
 		fatal("No terminal type has been set in the TERM environment variable\n");
 
 	init_terminal();
 
+	if ((output = fopen(term, "w")) == NULL)
+		fatal("Can't open output file '%s': %m\n", term);
+
 	printf("libckey key learning program\n");
 	printf("Learning keys for terminal %s. Please press the requested key or enter\n", term);
+	printf("WARNING: Be carefull when pressing combinations as they may be bound to actions you don't want to execute!\n");
 //FIXME don't ask for obvious problem keys like shift pgup/pgdn and ctrl-alt delete
-//FIXME once for keypad TX, once without
-	for (i = 0; i < SIZEOF(modifiers); i++) {
-		for (j = 0; j < SIZEOF(keynames); j++) {
-			Sequence *new_seq, *current;
-			printf("%s%s", modifiers[i].name, keynames[j].name);
-			fflush(stdout);
-			new_seq = get_sequence();
-			if (new_seq == NULL) {
-				printf("\n");
-				continue;
-			}
-			printf(" %s ", new_seq->seq);
-			current = head;
-			while (current) {
-				if (strcmp(current->seq, new_seq->seq) == 0) {
-					printf("(duplicate for %s%s)\n", current->modifiers->name, current->keynames->name);
-					free(new_seq);
-					new_seq = NULL;
-					current = NULL;
-				} else {
-					current = current->next;
+	rmkx = tigetstr("rmkx");
+	if (rmkx != NULL && rmkx != (void *) -1)
+		printf("%s", rmkx);
+
+	while (1) {
+		Sequence *current, *last, *before_insert;
+		int c;
+		for (i = 0; i < SIZEOF(modifiers); i++) {
+			before_insert = head;
+			for (j = 0; j < SIZEOF(keynames); j++) {
+				Sequence *new_seq;
+				printf("%s%s", modifiers[i].name, keynames[j].name);
+				fflush(stdout);
+				new_seq = get_sequence();
+				if (new_seq == NULL) {
+					printf("\n");
+					continue;
 				}
-			}
-			if (new_seq != NULL) {
+				printf(" %s ", new_seq->seq);
+				current = head;
+				while (current != NULL) {
+					if (strcmp(current->seq, new_seq->seq) == 0 && !current->duplicate) {
+						printf("(duplicate for %s%s)", current->modifiers->name, current->keynames->name);
+						new_seq->duplicate = TRUE;
+						break;
+					} else {
+						current = current->next;
+					}
+				}
 				new_seq->modifiers = modifiers + i;
 				new_seq->keynames = keynames + j;
 				new_seq->next = head;
 				head = new_seq;
 				printf("\n");
 			}
+
+			do {
+				printf("Are you satisfied with the above keys? ");
+				fflush(stdout);
+				c = safe_read_char();
+			} while (c != 'y' && c != 'Y' && c != 'n' && c != 'N');
+			printf("\n");
+			if (c == 'n' || c == 'N') {
+				while (head != before_insert) {
+					current = head;
+					head = current->next;
+					free(current);
+				}
+				i--;
+			}
+		}
+
+		fprintf(output, "%s {\n", smkx == NULL ? "nokx" : "kx");
+		if (smkx != NULL)
+			fprintf(output, "start = smkx\n");
+		else if (rmkx != NULL)
+			fprintf(output, "start = rmkx\n");
+
+		for (i = 0; i < SIZEOF(modifiers); i++) {
+			for (j = 0; j < SIZEOF(keynames); j++) {
+				for (current = head; current != NULL; current = current->next) {
+					if (current->modifiers == modifiers + i && current->keynames == keynames + j)
+						break;
+				}
+				if (current == NULL) {
+					fprintf(output, "# %s%s (no sequence)\n", keynames[j].identifier, modifiers[i].identifier);
+				} else {
+					if (current->duplicate) {
+						last = current;
+						// Find first key for which this is a duplicate
+						while (last != NULL) {
+							if (strcmp(current->seq, last->seq) == 0 && !last->duplicate)
+								break;
+							last = last->next;
+						}
+						fprintf(output, "%s%s = %s%s\n", keynames[j].identifier, modifiers[i].identifier,
+							last->keynames->identifier, last->modifiers->identifier);
+					} else {
+						fprintf(output, "%s%s = \"%s\"\n", keynames[j].identifier, modifiers[i].identifier, current->seq);
+					}
+				}
+			}
+		}
+		for (current = head, last = NULL; current != NULL; last = current, current = current->next)
+			free(last);
+
+		fprintf(output, "}\n");
+		head = NULL;
+
+		if (smkx == NULL) {
+			smkx = tigetstr("smkx");
+			if (smkx == NULL || smkx == (void *) -1)
+				break;
+			printf("%sSwitching to keypad transmit\n", smkx);
+		} else {
+			break;
 		}
 	}
+	fflush(output);
+	fclose(output);
 	return 0;
 }
