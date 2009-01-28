@@ -1,6 +1,9 @@
 TODO
 ====
-- program for recording key strokes
+- switch to X session with only the terminal emulator running to capture as many
+  key sequences as possible
+- what do we do with duplicates? It's not always possible to say which is the
+  "original" and which is the actual duplicate
 - library for accessing the database
 - function to read key from fd/FILE with translation (and UTF-8 decoding?)
 
@@ -28,7 +31,7 @@ keymaps can easily be composed by inclusion and overriding.
 
 Special keywords:
 %best -> denotes which keymap
-%start -> denotes either terminfo entry or escape seq to enable this keymap
+%enter -> denotes either terminfo entry or escape seq to enable this keymap
 %leave -> denotes either terminfo entry or escape seq to disable this keymap
 %include -> include other keymap (with start enabled!)
 

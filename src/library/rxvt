@@ -1,7 +1,7 @@
-best = nokx
+%best = nokx
 
 nokx {
-start = rmkx
+%enter = rmkx
 insert = "\e[2~"
 home = "\e[7~"
 page_up = "\e[5~"
@@ -172,7 +172,8 @@ kp_insert#cms = kp_insert#m
 kp_delete#cms = kp_delete#m
 }
 kx {
-start = smkx
+%enter = smkx
+%leave = rmkx
 insert = "\e[2~"
 home = "\e[7~"
 page_up = "\e[5~"

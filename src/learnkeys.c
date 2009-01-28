@@ -18,8 +18,6 @@ typedef struct {
 	const char *identifier;
 } Map;
 
-/*FIXME: automatically extract the shared map!! Or make a script to do it for us. */
-
 static Map keynames[] = {
 	{ "Insert", "insert" },
 	{ "Home", "home" },
@@ -292,9 +290,9 @@ int main(int argc, char *argv[]) {
 
 		fprintf(output, "%s {\n", smkx == NULL ? "nokx" : "kx");
 		if (smkx != NULL)
-			fprintf(output, "start = smkx\n");
+			fprintf(output, "%%enter = smkx\n%%leave = rmkx\n");
 		else if (rmkx != NULL)
-			fprintf(output, "start = rmkx\n");
+			fprintf(output, "%%enter = rmkx\n");
 
 		for (i = 0; i < SIZEOF(modifiers); i++) {
 			for (j = 0; j < SIZEOF(keynames); j++) {

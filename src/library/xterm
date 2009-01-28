@@ -1,5 +1,5 @@
 nokx {
-start = rmkx
+%enter = rmkx
 insert = "\e[2~"
 home = "\e[H"
 page_up = "\e[5~"
@@ -170,7 +170,8 @@ right#cms = "\e[1;8C"
 # kp_delete#cms (no sequence)
 }
 kx {
-start = smkx
+%enter = smkx
+%leave = rmkx
 insert = "\e[2~"
 home = "\eOH"
 page_up = "\e[5~"
