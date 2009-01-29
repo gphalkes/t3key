@@ -13,6 +13,11 @@
 #define ESC 27
 #define KEY_TIMEOUT 10
 
+//FIXME: do we want more F keys?
+//FIXME: use ctrl-r for redo
+//FIXME: use ctrl-d for done (especially when more F keys are added)
+//FIXME: ask for more control sequences to switch modes. For example for xterm we can split smkx into two seqs
+
 typedef struct {
 	const char *name;
 	const char *identifier;
@@ -40,8 +45,19 @@ static Map keynames[] = {
 	{ "Keypad Page Down", "kp_page_down" },
 	{ "Keypad Insert", "kp_insert" },
 	{ "Keypad Delete", "kp_delete" },
+	{ "F1", "f1" },
+	{ "F2", "f2" },
+	{ "F3", "f3" },
+	{ "F4", "f4" },
+	{ "F5", "f5" },
+	{ "F6", "f6" },
+	{ "F7", "f7" },
+	{ "F8", "f8" },
+	{ "F9", "f9" },
+	{ "F10", "f10" },
+	{ "F11", "f11" },
+	{ "F12", "f12" }
 };
-
 
 static Map modifiers[] = {
 	{ "", "" },
@@ -235,7 +251,7 @@ int main(int argc, char *argv[]) {
 	printf("libckey key learning program\n");
 	printf("Learning keys for terminal %s. Please press the requested key or enter\n", term);
 	printf("WARNING: Be carefull when pressing combinations as they may be bound to actions you don't want to execute!\n");
-//FIXME don't ask for obvious problem keys like shift pgup/pgdn and ctrl-alt delete
+
 	rmkx = tigetstr("rmkx");
 	if (rmkx != NULL && rmkx != (void *) -1)
 		printf("%s", rmkx);
