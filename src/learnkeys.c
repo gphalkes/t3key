@@ -13,7 +13,8 @@
 #define ESC 27
 #define KEY_TIMEOUT 10
 
-//FIXME: use ctrl-d for done
+#define TESTING
+
 /* FIXME: ask for more control sequences to switch modes. For example for xterm
    we can split smkx into two seqs. This can be done by creating a table with these
    structures and then looping over that instead of the current kludge. */
@@ -25,13 +26,16 @@ typedef struct {
 } Map;
 
 static Map keynames[] = {
+#ifndef TESTING
 	{ "Insert", "insert" },
 	{ "Home", "home" },
 	{ "Page Up", "page_up" },
 	{ "Delete", "delete" },
 	{ "End", "end" },
 	{ "Page Down", "page_down" },
+#endif
 	{ "Up", "up" },
+#ifndef TESTING
 	{ "Left", "left" },
 	{ "Down", "down" },
 	{ "Right", "right" },
@@ -46,12 +50,14 @@ static Map keynames[] = {
 	{ "Keypad Page Down", "kp_page_down" },
 	{ "Keypad Insert", "kp_insert" },
 	{ "Keypad Delete", "kp_delete" },
+#endif
 };
 
 static Map *functionkeys;
 
 static Map modifiers[] = {
 	{ "", "" },
+#ifndef TESTING
 	{ "Control ", "#c" },
 	{ "Meta ", "#m" },
 	{ "Shift ", "#s" },
@@ -59,7 +65,17 @@ static Map modifiers[] = {
 	{ "Control+Shift ", "#cs" },
 	{ "Meta+Shift ", "#ms" },
 	{ "Control+Meta+Shift ", "#cms" },
+#endif
 };
+
+typedef struct Mode {
+	struct Mode *next;
+	char *esc_seq_enter;
+	char *esc_seq_enter_name;
+	char *esc_seq_leave;
+	char *esc_seq_leave_name;
+	char *name;
+} Mode;
 
 #define SIZEOF(_x) ((sizeof(_x)/sizeof(_x[0])))
 
@@ -104,7 +120,7 @@ static void init_terminal(void) {
 	if (!isatty(STDOUT_FILENO))
 		fatal("Stdout is not a terminal\n");
 
-	setupterm((char *)0, 1, (int *)0);
+	//~ setupterm((char *)0, 1, (int *)0);
 
 	if (tcgetattr(STDOUT_FILENO, &saved) < 0)
 		fatal("Could not retrieve terminal settings: %m\n");
@@ -289,17 +305,91 @@ static void printmap(Map *keys, int max, int mod) {
 	}
 }
 
+static char *get_print_seq(const char *seq) {
+	static char buffer[1024];
+	char *dest = buffer;
+
+	while (*seq && dest - buffer < 1018) {
+		if (*seq == '"') {
+			*dest++ = '\\';
+			*dest++ = '"';
+		} else if (isprint(*seq)) {
+			*dest++ = *seq++;
+		} else if (*seq == 27) {
+			*dest++ = '\\';
+			*dest++ = 'e';
+		} else {
+			sprintf(dest, "\\%03o", *seq);
+			dest += 4;
+		}
+	}
+	*dest = 0;
+	return buffer;
+}
+
+static char *parse_escapes(const char *seq) {
+	char buffer[1024];
+	int dest = 0;
+
+	while (*seq && dest < 1023) {
+		if (*seq == '\\') {
+			seq++;
+			switch (*seq) {
+				case 'E':
+				case 'e':
+					buffer[dest++] = 27;
+					seq++;
+					break;
+				case '"':
+					buffer[dest++] = '"';
+					seq++;
+					break;
+				case '\\':
+					buffer[dest++] = '\\';
+					seq++;
+					break;
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+					buffer[dest] = *seq++ - '0';
+					if (isdigit(*seq))
+						buffer[dest] = buffer[dest] * 8 + *seq++ - '0';
+					if (isdigit(*seq))
+						buffer[dest] = buffer[dest] * 8 + *seq++ - '0';
+					dest++;
+					break;
+				default:
+					buffer[dest++] = *seq++;
+					break;
+			}
+		} else {
+			buffer[dest++] = *seq++;
+		}
+	}
+	buffer[dest] = 0;
+	return strdup(buffer);
+}
+
+
+
 int main(int argc, char *argv[]) {
 	size_t i;
 	int maxfkeys = -1;
 	char *smkx = NULL, *rmkx = NULL;
 	const char *term = getenv("TERM");
+	Mode *mode_head = NULL, **mode_next;
 
 	(void) argc;
 	(void) argv;
 
 	if (term == NULL)
 		fatal("No terminal type has been set in the TERM environment variable\n");
+	setupterm((char *)0, 1, (int *)0);
 
 	if ((output = fopen(term, "w")) == NULL)
 		fatal("Can't open output file '%s': %m\n", term);
@@ -323,15 +413,57 @@ int main(int argc, char *argv[]) {
 	}
 
 
-	init_terminal();
-
 	rmkx = tigetstr("rmkx");
-	if (rmkx != NULL && rmkx != (void *) -1)
-		printf("%s", rmkx);
+	mode_head = calloc(1, sizeof(Mode));
+	mode_head->name = strdup("nokx");
+
+	if (rmkx != NULL && rmkx != (void *) -1) {
+		mode_head->esc_seq_enter = strdup(rmkx);
+		mode_head->esc_seq_enter_name = strdup("rmkx");
+	}
+
+	mode_next = &mode_head->next;
+	smkx = tigetstr("smkx");
+	if (smkx != NULL && smkx != (void *) -1) {
+		(*mode_next) = calloc(1, sizeof(Mode));
+		(*mode_next)->name = strdup("kx");
+		(*mode_next)->esc_seq_enter = strdup(smkx);
+		(*mode_next)->esc_seq_enter_name = strdup("smkx");
+		(*mode_next)->esc_seq_leave = strdup(rmkx);
+		(*mode_next)->esc_seq_leave_name = strdup("rmkx");
+		mode_next = &(*mode_next)->next;
+	}
 
 	while (1) {
+		char buffer[1024];
+		printf("Name for extra mode (- to continue): ");
+		scanf("%1023s", buffer);
+
+		if (strcmp(buffer, "-") == 0)
+			break;
+		(*mode_next) = calloc(1, sizeof(Mode));
+		(*mode_next)->name = strdup(buffer);
+		do {
+			printf("Escape sequence to enter mode %s: ", (*mode_next)->name);
+			scanf("%1023s", buffer);
+		} while (buffer[0] == 0);
+		(*mode_next)->esc_seq_enter = parse_escapes(buffer);
+		do {
+			printf("Escape sequence to leave mode %s: ", (*mode_next)->name);
+			scanf("%1023s", buffer);
+		} while (buffer[0] == 0);
+		(*mode_next)->esc_seq_leave = parse_escapes(buffer);
+		mode_next = &(*mode_next)->next;
+	}
+
+	init_terminal();
+
+	while (mode_head != NULL) {
 		Sequence *current, *last, *before_insert;
 		int c;
+
+		printf("Starting mode %s%s\n", mode_head->name, mode_head->esc_seq_enter ? mode_head->esc_seq_enter : "");
+
 		for (i = 0; i < SIZEOF(modifiers); i++) {
 			before_insert = head;
 			if (getkeys(keynames, SIZEOF(keynames), i) < 0) {
@@ -361,11 +493,19 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		fprintf(output, "%s {\n", smkx == NULL ? "nokx" : "kx");
-		if (smkx != NULL)
-			fprintf(output, "%%enter = smkx\n%%leave = rmkx\n");
-		else if (rmkx != NULL)
-			fprintf(output, "%%enter = rmkx\n");
+		fprintf(output, "%s {\n", mode_head->name);
+		if (mode_head->esc_seq_enter) {
+			if (mode_head->esc_seq_enter_name)
+				fprintf(output, "%%enter = %s\n", mode_head->esc_seq_enter_name);
+			else
+				fprintf(output, "%%enter = \"%s\"\n", get_print_seq(mode_head->esc_seq_enter));
+		}
+		if (mode_head->esc_seq_leave) {
+			if (mode_head->esc_seq_leave_name)
+				fprintf(output, "%%leave = %s\n", mode_head->esc_seq_leave_name);
+			else
+				fprintf(output, "%%leave = \"%s\"\n", get_print_seq(mode_head->esc_seq_leave));
+		}
 
 		for (i = 0; i < SIZEOF(modifiers); i++) {
 			printmap(keynames, SIZEOF(keynames), i);
@@ -377,14 +517,9 @@ int main(int argc, char *argv[]) {
 		fprintf(output, "}\n");
 		head = NULL;
 
-		if (smkx == NULL) {
-			smkx = tigetstr("smkx");
-			if (smkx == NULL || smkx == (void *) -1)
-				break;
-			printf("%sSwitching to keypad transmit\n", smkx);
-		} else {
-			break;
-		}
+		if (mode_head->esc_seq_leave != NULL)
+			printf("%s", mode_head->esc_seq_leave);
+		mode_head = mode_head->next;
 	}
 	fflush(output);
 	fclose(output);
