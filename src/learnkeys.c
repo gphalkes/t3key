@@ -58,13 +58,13 @@ static Map *functionkeys;
 static Map modifiers[] = {
 	{ "", "" },
 #ifndef TESTING
-	{ "Control ", "#c" },
-	{ "Meta ", "#m" },
-	{ "Shift ", "#s" },
-	{ "Control+Meta ", "#cm" },
-	{ "Control+Shift ", "#cs" },
-	{ "Meta+Shift ", "#ms" },
-	{ "Control+Meta+Shift ", "#cms" },
+	{ "Control ", "@c" },
+	{ "Meta ", "@m" },
+	{ "Shift ", "@s" },
+	{ "Control+Meta ", "@cm" },
+	{ "Control+Shift ", "@cs" },
+	{ "Meta+Shift ", "@ms" },
+	{ "Control+Meta+Shift ", "@cms" },
 #endif
 };
 
