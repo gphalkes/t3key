@@ -13,12 +13,13 @@
 #define ESC 27
 #define KEY_TIMEOUT 10
 
-#define TESTING
+//#define TESTING
 
 /* FIXME: ask for more control sequences to switch modes. For example for xterm
    we can split smkx into two seqs. This can be done by creating a table with these
    structures and then looping over that instead of the current kludge. */
 //FIXME: test modifier-letter as well
+//FIXME: test modifier-tab
 
 typedef struct {
 	const char *name;
