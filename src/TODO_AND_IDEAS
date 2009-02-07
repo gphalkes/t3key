@@ -1,11 +1,22 @@
 TODO
 ====
+- make compiler
 - switch to X session with only the terminal emulator running to capture as many
   key sequences as possible
 - what do we do with duplicates? It's not always possible to say which is the
-  "original" and which is the actual duplicate
+  "original" and which is the actual duplicate. This is partly a job for the
+  database entry make to only include the ones that are sensible. In principle
+  we should only have one key symbol return a particular sequence, because
+  otherwise the program using libckey can't figure out what to do and results
+  may depend on the comparison order.
 - library for accessing the database
 - function to read key from fd/FILE with translation (and UTF-8 decoding?)
+
+- make documentation:
+	- curses dependency for fallback and control sequences (terminfo only!)
+	- list of key names
+	- special key names %enter %leave
+
 
 Grammar of ASCII files
 ======================
@@ -36,10 +47,21 @@ Special keywords:
 %include -> include other keymap (with start enabled!)
 
 multiple start and leave keywords are allowed
-keys can be followed by #[cms]+ to indicate modifier states
+keys can be followed by @[cms]+ to indicate modifier states
 
 Key names definitions follow PC style keyboard:
 home -> start of line
 end -> end of line
 insert -> insert key
 etc.
+
+
+One problem arises: there are sometimes different versions of the same terminal
+or different terminals that all pretend to be the same (xterm anyone?). These
+different version are usually indistinguishable from a programs point of view.
+This makes it tricky to define a correct key database. One option is to allow
+multiple definitions of the same key. A small problem is that in that case the
+API needs to somehow be able to return the different strings for a particular
+key rather than just a single one. Different options are returning an array
+or a list of strings, or add a parameter to the get_sequence interface that
+says which of the possible keys to get (0, 1, ...).

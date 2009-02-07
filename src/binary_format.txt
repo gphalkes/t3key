@@ -1,0 +1,35 @@
+libckey Binary Format
+=====================
+
+Preliminaries
+-------------
+All values are network byte order.
+
+Strings are encoded as a two byte integer indicating the length of the string,
+followed by that number of bytes representing the string.
+
+File header
+-----------
+
+Each file starts with a 4 byte identifier. These bytes are the letters C, K, E,
+and Y (43h, 4Bh, 45h and 59h).
+
+After the identifier, the version number is included. The version is a 4 byte
+quantity.
+
+Data block (v0)
+---------------
+
+The data block consists of consequtive data nodes. Each node consists of a two
+bytes inidicating the node type, followed by node specific data. If the file
+contains a "Best map" node, it should precede all "Map start" nodes. Each file
+must contain a "Best map" node. Below is a list of all the known nodes and
+their formats:
+
+Name         | Code | Data
+----------------------------------------------------------------------------
+Best map     | 0    | A string with the name of the best map
+Map start    | 1    | A string with the name of the map that follows
+Key value    | 2    | Two strings, one for the key, one for the value
+Key terminfo | 3    | Two strings, one for the key, one for the terminfo key
+End of file  | FFFF | None
