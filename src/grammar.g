@@ -1,5 +1,12 @@
-%token IDENTIFIER, KEY_MOD, ENTER, LEAVE, INCLUDE, BEST;
+%options "generate-lexer-wrapper";
 
+{
+void LLmessage(int class) {
+}
+}
+
+%token IDENTIFIER, KEY_MOD, ENTER, LEAVE, INCLUDE, BEST, STRING;
+%start parse, description;
 
 description :
 	[

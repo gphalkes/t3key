@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2008 G.P. Halkes
+# Copyright (C) 2007-2009 G.P. Halkes
 
 #===========================================================================
 VERSION?=debug
@@ -16,24 +16,56 @@ else
 endif
 CFLAGS+=-I.
 
-LDFLAGS+=-lcurses
+LDLIBS+=-lcurses
 
-CFILES:= learnkeys.c
+CFILES.learnkeys:= learnkeys.c
+CFILES.libckey:= ckey.c
+CFLAGS.ckey:= -fPIC
+CFILES.ckeyc:= ckeyc.c
+GFILES.ckeyc:= grammar.g
+LFILES.ckeyc:= lex.l
+CFLAGS.lex:= -Wno-shadow -Wno-switch-default -Wno-unused
+
+CFILES:= $(CFILES.learnkeys) $(CFILES.libckey) $(CFILES.ckeyc)
+SOURCES:= $(CFILES) $(GFILES) $(LFILES)
 #===========================================================================
 .PHONY: all clean
 
-all: learnkeys
+all: learnkeys libckey.so ckeyc
 
-OBJECTS:= $(patsubst %.c, .objects/%.o, $(CFILES))
-DEPENDENCIES:= $(patsubst %, .deps/%, $(CFILES))
+OBJECTS:=$(CFILES:.c=.o) $(LFILES:.l=.o) $(GFILES:.g=.o)
+OBJECTS.learnkeys:= $(patsubst %.c, .objects/%.o, $(CFILES.learnkeys))
+OBJECTS.libckey:= $(patsubst %.c, .objects/%.o, $(CFILES.libckey))
+OBJECTS.ckeyc:= $(patsubst %.c, .objects/%.o, $(CFILES.ckeyc)) $(patsubst %.l, .objects/%.o, $(LFILES.ckeyc)) $(patsubst %.g, .objects/%.o, $(GFILES.ckeyc))
+DEPENDENCIES:= $(patsubst %, .deps/%, $(SOURCES))
 
-learnkeys: $(OBJECTS)
+learnkeys: $(OBJECTS.learnkeys)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+libckey.so: $(OBJECTS.libckey)
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared -o $@ $^ $(LDLIBS)
+
+ckeyc: $(OBJECTS.ckeyc)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 .objects/%.o: %.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) -c $< -o $@
+
+.objects/%.o: .objects/%.c
+	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
+	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	$(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) -c $< -o $@
+
+.objects/lex.o: grammar.h
+.objects/ckeyc.o: grammar.h
+
+%.c %.h: %.g
+	LLnextgen $<
+
+%.c: %.l
+	flex -o $@ $<
 
 clean:
 	rm -rf learnkeys .deps .objects >/dev/null 2>&1

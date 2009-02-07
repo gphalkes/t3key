@@ -15,9 +15,6 @@
 
 //#define TESTING
 
-/* FIXME: ask for more control sequences to switch modes. For example for xterm
-   we can split smkx into two seqs. This can be done by creating a table with these
-   structures and then looping over that instead of the current kludge. */
 //FIXME: test modifier-letter as well
 //FIXME: test modifier-tab
 
@@ -51,6 +48,7 @@ static Map keynames[] = {
 	{ "Keypad Page Down", "kp_page_down" },
 	{ "Keypad Insert", "kp_insert" },
 	{ "Keypad Delete", "kp_delete" },
+	{ "Tab", "tab" }
 #endif
 };
 
@@ -376,8 +374,6 @@ static char *parse_escapes(const char *seq) {
 	return strdup(buffer);
 }
 
-
-
 int main(int argc, char *argv[]) {
 	size_t i;
 	int maxfkeys = -1;
@@ -406,9 +402,9 @@ int main(int argc, char *argv[]) {
 		functionkeys = malloc(maxfkeys * sizeof(Map));
 		for (i = 0; (int) i < maxfkeys; i++) {
 			char buffer[1024];
-			snprintf(buffer, 1024, "F%d", i + 1);
+			snprintf(buffer, 1024, "F%u", (unsigned) i + 1);
 			functionkeys[i].name = strdup(buffer);
-			snprintf(buffer, 1024, "f%d", i + 1);
+			snprintf(buffer, 1024, "f%u", (unsigned) i + 1);
 			functionkeys[i].identifier = strdup(buffer);
 		}
 	}

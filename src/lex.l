@@ -1,4 +1,9 @@
+%{
+#include "grammar.h"
+int line_number = 1;
+%}
 
+%option noyywrap
 
 %%
 [ \t]

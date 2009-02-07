@@ -1,7 +1,19 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <curses.h>
+#include <errno.h>
+#include <stdint.h>
+#include <arpa/inet.h>
 
+#define CKEY_CONST
 #include "ckey.h"
+
+#ifndef DB_DIRECTORY
+#define DB_DIRECTORY "/usr/local/share/libckey"
+#endif
+
+#define MAX_VERSION 0
 
 enum {
 	NODE_BEST,
@@ -12,8 +24,8 @@ enum {
 };
 
 
-#define RETURN_ERROR(_e) do { if (error != NULL) *error = (_e); return NULL; } while(0);
-#define CLEANUP_RETURN_ERROR(_e) do { fclose(input); ckey_free(list); RETURN_ERROR(_e); } while (0);
+#define RETURN_ERROR(_e) do { if (error != NULL) *error = (_e); return NULL; } while(0)
+#define CLEANUP_RETURN_ERROR(_e) do { fclose(input); ckey_free(list); RETURN_ERROR(_e); } while (0)
 #define ENSURE(_x) do { CKeyError _error = (_x); \
 	if (_error == CKEY_ERR_SUCCESS) \
 		break; \
@@ -21,19 +33,23 @@ enum {
 		*error = _error; \
 	fclose(input); \
 	ckey_free(list); \
-	return NULL; } while (0);
+	return NULL; } while (0)
 #define EOF_OR_ERROR(_file) (feof(_file) ? CKEY_ERR_TRUNCATED : CKEY_ERR_READERROR)
 
 static CKeyError check_magic_and_version(FILE *input);
 static CKeyError skip_string(FILE *input);
 static CKeyError read_string(FILE *input, char **string);
+static CKeyError new_ckey_node(CKeyNode **result);
+static CKeyNode *load_ti_keys(CKeyError *error);
 
-const CKeyNode *ckey_load(const char *term, const char *map_name, CKeyError *error) {
+CKeyNode *ckey_load(const char *term, const char *map_name, CKeyError *error) {
 	char *current_map = NULL, *best_map = NULL;
 	size_t name_length, term_length;
 	CKeyNode *list = NULL, **next_node = &list;
 	int this_map = 0;
 	char *name;
+	FILE *input;
+	uint16_t node;
 
 	if (term == NULL) {
 		term = getenv(term);
@@ -42,18 +58,22 @@ const CKeyNode *ckey_load(const char *term, const char *map_name, CKeyError *err
 	}
 
 	term_length = strlen(term);
-	name_length = strlen(DB_DIRECTORY) + 1 + term_length + 1;
+	name_length = strlen(DB_DIRECTORY) + 3 + term_length + 1;
 	if ((name = malloc(name_length)) == NULL)
 		RETURN_ERROR(CKEY_ERR_OUTOFMEMORY);
 
 	strcpy(name, DB_DIRECTORY);
 	strcat(name, "/");
+	strncat(name, term, 1);
+	strcat(name, "/");
 	strncat(name, term, term_length);
 	name[name_length - 1] = 0;
 
-	//FIXME: fall back to terminfo if file does not exist!
-	if ((input = fopen(name, "rb")) == NULL)
-		RETURN_ERROR(CKEY_ERR_OPENFAIL);
+	if ((input = fopen(name, "rb")) == NULL) {
+		if (errno != ENOENT)
+			RETURN_ERROR(CKEY_ERR_OPENFAIL);
+		return load_ti_keys(error);
+	}
 
 	ENSURE(check_magic_and_version(input));
 	while (fread(&node, 2, 1, input) == 1) {
@@ -105,12 +125,18 @@ const CKeyNode *ckey_load(const char *term, const char *map_name, CKeyError *err
 
 				ENSURE(new_ckey_node(next_node));
 				ENSURE(read_string(input, &(*next_node)->key));
-				ENSURE(read_string(input, &tikey);
+				ENSURE(read_string(input, &tikey));
 
 				tiresult = tigetstr(tikey);
-				//FIXME: only abort when the key is %enter or %leave
-				if (tiresult == (char *)-1 || tiresult == (char *)0)
-					CLEANUP_RETURN_ERROR(CKEY_ERR_TIUNKNOWN);
+				if (tiresult == (char *)-1 || tiresult == (char *)0) {
+					/* only abort when the key is %enter or %leave */
+					if ((*next_node)->key[0] == '%')
+						CLEANUP_RETURN_ERROR(CKEY_ERR_TIUNKNOWN);
+					free((*next_node)->key);
+					free(*next_node);
+					*next_node = NULL;
+					continue;
+				}
 				free(tikey);
 				(*next_node)->string = strdup(tiresult);
 				if ((*next_node)->string == NULL)
@@ -118,25 +144,27 @@ const CKeyNode *ckey_load(const char *term, const char *map_name, CKeyError *err
 
 				next_node = &(*next_node)->next;
 				break;
+			}
  			case NODE_END_OF_FILE:
 				fclose(input);
 				if (list == NULL && error != NULL)
 					*error = CKEY_ERR_NOMAP;
 				return list;
+			default:
+				CLEANUP_RETURN_ERROR(CKEY_ERR_GARBLED);
+		}
 	}
 
-	result = EOF_OR_ERROR(input);
+	if (error != NULL)
+		*error = EOF_OR_ERROR(input);
 	fclose(input);
 	ckey_free(list);
 	return NULL;
 }
 
 
-/** Free a key database.
-    @param list The list of keys to free.
-*/
-void ckey_free(const CKeyNode *list) {
-	const CKeyNode *prev;
+void ckey_free(CKeyNode *list) {
+	CKeyNode *prev;
 	while (list != NULL) {
 		prev = list;
 		list = list->next;
@@ -153,7 +181,7 @@ static CKeyError check_magic_and_version(FILE *input) {
 	if (fread(magic, 1, 4, input) != 4)
 		return EOF_OR_ERROR(input);
 
-	if (memcmp(magic, "CKEY") != 0)
+	if (memcmp(magic, "CKEY", 4) != 0)
 		return CKEY_ERR_GARBLED;
 
 	if (fread(&version, 4, 1, input) != 1)
@@ -199,4 +227,65 @@ static CKeyError new_ckey_node(CKeyNode **result) {
 		return CKEY_ERR_OUTOFMEMORY;
 	memset(*result, 0, sizeof(CKeyNode));
 	return CKEY_ERR_SUCCESS;
+}
+
+static CKeyError make_node_from_ti(CKeyNode **next_node, const char *tikey, const char *key) {
+	char *tiresult;
+	CKeyError error;
+
+	tiresult = tigetstr(tikey);
+	if (tiresult == (char *)0 || tiresult == (char *)-1)
+		return CKEY_ERR_SUCCESS;
+
+	if ((error = new_ckey_node(next_node)) != CKEY_ERR_SUCCESS)
+		return error;
+
+	if (((*next_node)->string = strdup(key)) == NULL) {
+		free(*next_node);
+		*next_node = NULL;
+		return CKEY_ERR_OUTOFMEMORY;
+	}
+
+	if (((*next_node)->string = strdup(tiresult)) == NULL) {
+		free((*next_node)->string);
+		free(*next_node);
+		*next_node = NULL;
+		return CKEY_ERR_OUTOFMEMORY;
+	}
+
+	return CKEY_ERR_SUCCESS;
+}
+
+typedef struct {
+	const char *tikey;
+	const char *key;
+} Mapping;
+
+static const Mapping keymapping[] = {
+	{ "smkx", "%enter" },
+	{ "rmkx", "%leave" },
+	{ "khome", "home" },
+	{ "kend", "end" }
+	//FIXME: add all the keys we know of
+};
+
+static CKeyNode *load_ti_keys(CKeyError *error) {
+	CKeyNode *list = NULL, **next_node = &list;
+	CKeyError _error;
+	size_t i;
+	//FIXME: check return values. Normal macro's don't work because there is no input FILE.
+	//FIXME: use the terminfo database to provide the keys
+
+	for (i = 0; i < sizeof(keymapping)/sizeof(keymapping[0]); i++) {
+		if ((_error = make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key)) != CKEY_ERR_SUCCESS) {
+			ckey_free(list);
+			if (error != NULL)
+				*error = _error;
+			return NULL;
+		}
+		if (*next_node != NULL)
+			next_node = &(*next_node)->next;
+	}
+
+	return list;
 }
