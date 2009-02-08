@@ -14,39 +14,49 @@ ifeq ($(VERSION),debug)
 else
 	CFLAGS:=-Wall -W $(ANSIFLAGS) -O2
 endif
-CFLAGS+=-I.
+CFLAGS+=-I. -I.objects
 
 LDLIBS+=-lcurses
 
 CFILES.learnkeys:= learnkeys.c
-CFILES.libckey:= ckey.c
+CFILES.libckey.so:= ckey.c
 CFLAGS.ckey:= -fPIC
 CFILES.ckeyc:= ckeyc.c
 GFILES.ckeyc:= grammar.g
 LFILES.ckeyc:= lex.l
 CFLAGS.lex:= -Wno-shadow -Wno-switch-default -Wno-unused
 
-CFILES:= $(CFILES.learnkeys) $(CFILES.libckey) $(CFILES.ckeyc)
-SOURCES:= $(CFILES) $(GFILES) $(LFILES)
+DEPS.grammar.g:= lex.l ckey.c
+
+LDFLAGS.libckey.so:= -shared
+
+TARGETS:= learnkeys ckeyc libckey.so
 #===========================================================================
 .PHONY: all clean
 
-all: learnkeys libckey.so ckeyc
+all: $(TARGETS)
+
+CFILES:= $(foreach PART, $(TARGETS), $(CFILES.$(PART)))
+GFILES:= $(foreach PART, $(TARGETS), $(GFILES.$(PART)))
+LFILES:= $(foreach PART, $(TARGETS), $(LFILES.$(PART)))
+SOURCES:= $(CFILES) $(GFILES) $(LFILES)
+
+# force use of our pattern rule for lex files
+$(foreach FILE, $(LFILES), $(eval $(patsubst %.l, .objects/%.o, $(FILE)): $(patsubst %.l, .objects/%.c,$(FILE))))
 
 OBJECTS:=$(CFILES:.c=.o) $(LFILES:.l=.o) $(GFILES:.g=.o)
-OBJECTS.learnkeys:= $(patsubst %.c, .objects/%.o, $(CFILES.learnkeys))
-OBJECTS.libckey:= $(patsubst %.c, .objects/%.o, $(CFILES.libckey))
-OBJECTS.ckeyc:= $(patsubst %.c, .objects/%.o, $(CFILES.ckeyc)) $(patsubst %.l, .objects/%.o, $(LFILES.ckeyc)) $(patsubst %.g, .objects/%.o, $(GFILES.ckeyc))
+$(foreach PART, $(TARGETS), $(eval OBJECTS.$(PART):= \
+	$$(patsubst %.c, .objects/%.o, $$(CFILES.$(PART))) \
+	$$(patsubst %.g, .objects/%.o, $$(GFILES.$(PART))) \
+	$$(patsubst %.l, .objects/%.o, $$(LFILES.$(PART)))))
 DEPENDENCIES:= $(patsubst %, .deps/%, $(SOURCES))
 
-learnkeys: $(OBJECTS.learnkeys)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-
-libckey.so: $(OBJECTS.libckey)
-	$(CC) $(CFLAGS) $(LDFLAGS) -shared -o $@ $^ $(LDLIBS)
-
-ckeyc: $(OBJECTS.ckeyc)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+$(foreach PART, $(TARGETS), $(eval $(PART): $$(OBJECTS.$(PART)) ; \
+	$$(CC) $$(CFLAGS) $$(CFLAGS.$(PART)) $$(LDFLAGS) $$(LDFLAGS.$(PART)) \
+		-o $$@ $$^ $$(LDLIBS) $$(LDLIBS.$(PART))))
+# Add dependency rules for grammar files. Header files generated from grammar
+# files are needed by the lexical analyser and other files
+$(foreach FILE, $(GFILES), $(if $(DEPS.$(FILE)), $(eval $(patsubst %.c, %.o, $(patsubst %.l, %.c, $(patsubst %, .objects/%, $(DEPS.$(FILE))))): $(patsubst %.g, .objects/%.h, $(FILE)))))
 
 .objects/%.o: %.c
 	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
@@ -58,28 +68,17 @@ ckeyc: $(OBJECTS.ckeyc)
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(CC) -MMD -MP -MF .deps/$< $(CFLAGS) $(CFLAGS.$*) -c $< -o $@
 
-.objects/lex.o: grammar.h
-.objects/ckeyc.o: grammar.h
+.objects/%.c .objects/%.h: %.g
+	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
+	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
+	LLnextgen --base-name=.objects/$* $<
 
-%.c %.h: %.g
-	LLnextgen $<
-
-%.c: %.l
+.objects/%.c: %.l
+	@[ -d .deps/`dirname '$<'` ] || mkdir -p .deps/`dirname '$<'`
+	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	flex -o $@ $<
 
 clean:
-	rm -rf learnkeys .deps .objects >/dev/null 2>&1
+	rm -rf $(TARGETS) .deps .objects >/dev/null 2>&1
 
 -include $(DEPENDENCIES)
-
-#===========================================================================
-.PHONY: linecount xgettext
-
-linecount:
-	@echo "WARNING: this doesn't count the header files, only .c files!"
-	@echo "Linecounts as reported by wc -l"
-	@wc -l $(CFILES)
-	@if [ `which c_count 2>/dev/null` ] ; then echo "Linecounts as reported by the SLOCCount utilities" ; c_count $(CFILES) ; fi
-
-xgettext: all
-	xgettext -k_ -kN_ --add-comments=TRANSLATORS -o ../po/messages.pot `cat $$(find .deps -type f) | sed -r 's/^.+://;s/\\\\//g'`
