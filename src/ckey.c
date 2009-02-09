@@ -25,14 +25,14 @@ enum {
 
 
 #define RETURN_ERROR(_e) do { if (error != NULL) *error = (_e); return NULL; } while(0)
-#define CLEANUP_RETURN_ERROR(_e) do { fclose(input); ckey_free(list); RETURN_ERROR(_e); } while (0)
+#define CLEANUP_RETURN_ERROR(_e) do { fclose(input); ckey_free_map(list); RETURN_ERROR(_e); } while (0)
 #define ENSURE(_x) do { CKeyError _error = (_x); \
 	if (_error == CKEY_ERR_SUCCESS) \
 		break; \
 	if (error != NULL) \
 		*error = _error; \
 	fclose(input); \
-	ckey_free(list); \
+	ckey_free_map(list); \
 	return NULL; } while (0)
 #define EOF_OR_ERROR(_file) (feof(_file) ? CKEY_ERR_TRUNCATED : CKEY_ERR_READERROR)
 
@@ -42,7 +42,7 @@ static CKeyError read_string(FILE *input, char **string);
 static CKeyError new_ckey_node(CKeyNode **result);
 static CKeyNode *load_ti_keys(CKeyError *error);
 
-CKeyNode *ckey_load(const char *term, const char *map_name, CKeyError *error) {
+CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error) {
 	char *current_map = NULL, *best_map = NULL;
 	size_t name_length, term_length;
 	CKeyNode *list = NULL, **next_node = &list;
@@ -158,12 +158,12 @@ CKeyNode *ckey_load(const char *term, const char *map_name, CKeyError *error) {
 	if (error != NULL)
 		*error = EOF_OR_ERROR(input);
 	fclose(input);
-	ckey_free(list);
+	ckey_free_map(list);
 	return NULL;
 }
 
 
-void ckey_free(CKeyNode *list) {
+void ckey_free_map(CKeyNode *list) {
 	CKeyNode *prev;
 	while (list != NULL) {
 		prev = list;
@@ -278,7 +278,7 @@ static CKeyNode *load_ti_keys(CKeyError *error) {
 
 	for (i = 0; i < sizeof(keymapping)/sizeof(keymapping[0]); i++) {
 		if ((_error = make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key)) != CKEY_ERR_SUCCESS) {
-			ckey_free(list);
+			ckey_free_map(list);
 			if (error != NULL)
 				*error = _error;
 			return NULL;
@@ -289,3 +289,18 @@ static CKeyNode *load_ti_keys(CKeyError *error) {
 
 	return list;
 }
+
+
+/* FIXME: implement ckey_get_map_names */
+
+void ckey_free_names(CKeyStringListNode *list) {
+	CKeyStringListNode *prev;
+	while (list != NULL) {
+		prev = list;
+		list = list->next;
+		free(prev->string);
+		free(prev);
+	}
+}
+
+/* FIXME: implement ckey_get_best_map_name */

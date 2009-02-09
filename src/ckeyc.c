@@ -5,6 +5,7 @@
 #include <errno.h>
 
 #include "optionMacros.h"
+#include "grammar.h"
 
 /** Alert the user of a fatal error and quit.
     @param fmt The format string for the message. See fprintf(3) for details.
@@ -31,7 +32,7 @@ static PARSE_FUNCTION(parse_options)
 	NO_OPTION
 		if (input != NULL)
 			fatal("Multiple input files specified\n");
-		input = optArg;
+		input = optcurrent;
 	END_OPTIONS
 END_FUNCTION
 
@@ -43,6 +44,7 @@ int main(int argc, char *argv[]) {
 		yyin = stdin;
 	else if ((yyin = fopen(input, "r")) == NULL)
 		fatal("Could not open input %s: %s\n", input, strerror(errno));
+	parse();
 
 	return EXIT_SUCCESS;
 }

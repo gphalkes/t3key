@@ -16,6 +16,7 @@ TODO
 	- curses dependency for fallback and control sequences (terminfo only!)
 	- list of key names
 	- special key names %enter %leave
+	- name format for maps only included in others
 
 
 Grammar of ASCII files
