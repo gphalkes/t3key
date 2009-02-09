@@ -95,7 +95,7 @@ static bool xterm_restore;
     @param fmt The format string for the message. See fprintf(3) for details.
     @param ... The arguments for printing.
 */
-void fatal(const char *fmt, ...) {
+static void fatal(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
@@ -122,7 +122,7 @@ static void init_terminal(void) {
 	//~ setupterm((char *)0, 1, (int *)0);
 
 	if (tcgetattr(STDOUT_FILENO, &saved) < 0)
-		fatal("Could not retrieve terminal settings: %m\n");
+		fatal("Could not retrieve terminal settings: %s\n", strerror(errno));
 
 	new_params = saved;
 	new_params.c_iflag &= ~(IXON | IXOFF);
@@ -131,7 +131,7 @@ static void init_terminal(void) {
 	new_params.c_cc[VMIN] = 1;
 
 	if (tcsetattr(STDOUT_FILENO, TCSADRAIN, &new_params) < 0)
-		fatal("Could not change terminal settings: %m\n");
+		fatal("Could not change terminal settings: %s\n", strerror(errno));
 
 	atexit(restore_terminal);
 	FD_ZERO(&inset);
@@ -184,7 +184,7 @@ static int get_keychar(int msec) {
 	}
 }
 
-Sequence *get_sequence(void) {
+static Sequence *get_sequence(void) {
 	Sequence *retval;
 	char seq[MAX_SEQUENCE];
 	int c, idx = 0;
@@ -389,7 +389,7 @@ int main(int argc, char *argv[]) {
 	setupterm((char *)0, 1, (int *)0);
 
 	if ((output = fopen(term, "w")) == NULL)
-		fatal("Can't open output file '%s': %m\n", term);
+		fatal("Can't open output file '%s': %s\n", term, strerror(errno));
 
 	printf("libckey key learning program\n");
 	printf("Learning keys for terminal %s. Please press the requested key or enter\n", term);
