@@ -1,0 +1,22 @@
+Introduction
+============
+
+The ckey project was born from the desire to use all key combinations provided
+by terminals and terminal emulators in console applications. The terminfo
+database only provides a very limited set of key sequences, and even fewer key
+sequences for modifier/key combinations. Most applications wishing to use
+specific combinations as shortcuts have resorted to maintaining a private set
+of mappings for the key-combinations used within the application. This
+situation is obviously far from optimal.
+
+
+Goals
+=====
+
+The ckey project aims to build a database of key combinations with their
+respective key sequences for all terminals. By providing an easy to use API to
+access the database, all console applications should be able to benefit from
+this effort. Furthermore, the database does not depend on any other terminal
+information library (such as terminfo or termcap), and as such is usable in all
+console application projects.
+

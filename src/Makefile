@@ -26,7 +26,7 @@ GFILES.ckeyc:= grammar.g
 LFILES.ckeyc:= lex.l
 CFLAGS.lex:= -Wno-shadow -Wno-switch-default -Wno-unused
 
-DEPS.grammar.g:= lex.l ckey.c
+DEPS.grammar.g:= lex.l ckeyc.c
 
 LDFLAGS.libckey.so:= -shared
 

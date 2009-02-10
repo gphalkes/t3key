@@ -5,7 +5,7 @@ TODO
   key sequences as possible
 - what do we do with duplicates? It's not always possible to say which is the
   "original" and which is the actual duplicate. This is partly a job for the
-  database entry make to only include the ones that are sensible. In principle
+  database creator to only include the ones that are sensible. In principle
   we should only have one key symbol return a particular sequence, because
   otherwise the program using libckey can't figure out what to do and results
   may depend on the comparison order.
@@ -18,6 +18,10 @@ TODO
 	- special key names %enter %leave
 	- name format for maps only included in others
 
+- make the database independant of the terminfo library. This means removing it
+  from the binary format as well as removing library support for looking up
+  strings from the terminfo database and removing grammar constructs for the
+  ascii format.
 
 Grammar of ASCII files
 ======================
