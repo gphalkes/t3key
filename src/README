@@ -19,4 +19,3 @@ access the database, all console applications should be able to benefit from
 this effort. Furthermore, the database does not depend on any other terminal
 information library (such as terminfo or termcap), and as such is usable in all
 console application projects.
-

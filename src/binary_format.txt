@@ -21,10 +21,10 @@ Data block (v0)
 ---------------
 
 The data block consists of consequtive data nodes. Each node consists of a two
-bytes inidicating the node type, followed by node specific data. If the file
-contains a "Best map" node, it should precede all "Map start" nodes. Each file
-must contain a "Best map" node. Below is a list of all the known nodes and
-their formats (code in hex):
+bytes inidicating the node type, followed by node specific data. Each file
+must contain a "Best map" node. The "Best map" node should precede all "Map
+start" nodes. Below is a list of all the known nodes and their formats (code
+in hex):
 
 Name         | Code | Data
 ----------------------------------------------------------------------------

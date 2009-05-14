@@ -1,4 +1,4 @@
-%options "generate-lexer-wrapper generate-symbol-table";
+%options "generate-lexer-wrapper generate-symbol-table lowercase-symbols";
 
 {
 
@@ -18,53 +18,106 @@ void LLmessage(int class) {
 	}
 }
 
+CKeyMap **current_map = &maps;
+CKeyNode **current_node;
 }
 
-%token IDENTIFIER, KEY_MOD, ENTER, LEAVE, INCLUDE, BEST, STRING;
+%token STRING;
+%label IDENTIFIER, "key";
+%label KEY_MOD, "key";
+%label ENTER, "%enter";
+%label LEAVE, "%leave";
+%label INCLUDE, "%include";
+%label BEST, "%best";
+%label MISSING_KEY, "key";
 %start parse, description;
 
 description :
 	[
 		map
 	|
-		BEST IDENTIFIER
+		BEST '='? IDENTIFIER
+		{
+			best = safe_strdup(yytext);
+		}
 	]+
 ;
 
-map :
-	IDENTIFIER '{'
+map
+{
+	char *key;
+}
+:
+	IDENTIFIER
+	{
+		*current_map = new_map(yytext);
+		current_node = &(*current_map)->mapping;
+	}
+	'{'
 	[
 		key
 	|
-		INCLUDE IDENTIFIER
+		INCLUDE '='? IDENTIFIER
+		{
+			*current_node = new_node("%include", yytext, NULL);
+			current_node = &(*current_node)->next;
+		}
 	|
 		[
 			ENTER
 		|
 			LEAVE
 		]
+		{
+			key = safe_strdup(yytext);
+		}
 		'='
 		[
 			IDENTIFIER
+			{
+				*current_node = new_node(key, NULL, yytext);
+			}
 		|
 			STRING
+			{
+				*current_node = new_node(key, yytext, NULL);
+			}
 		]
+		{
+			current_node = &(*current_node)->next;
+		}
 	]+
 	'}'
+	{
+		current_map = &(*current_map)->next;
+	}
 ;
 
-key :
+key
+{
+	char *name;
+}
+:
 	[
 		IDENTIFIER
 	|
 		KEY_MOD
+	|
+		%default MISSING_KEY
 	]
+	{
+		name = safe_strdup(yytext);
+	}
 	'='
 	[
 		STRING
-	|
+/*	|
 		IDENTIFIER
 	|
-		KEY_MOD
+		KEY_MOD */
 	]
+	{
+		*current_node = new_node(name, yytext, NULL);
+		current_node = &(*current_node)->next;
+	}
 ;

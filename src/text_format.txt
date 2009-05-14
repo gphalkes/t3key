@@ -1,0 +1,82 @@
+libckey Text Format
+===================
+
+Preliminaries
+-------------
+
+Strings are stored as text delimted by double quotes, and with backslash
+escaping. Keys start with either a letter (upper- or lowercase) or an
+underscore. Second and later key characters can be a letter, a number or an
+underscore. Modifiers are appended to keys by adding an at sign (@) followed
+by one or more of the letters c, m and s (in that order, for control, meta
+and shift respectively).
+
+Any characters after a hash (#) character that is not part of a string up to
+the end of the line are considered comments and are ignored.
+
+Maps
+----
+
+A map is defined by a key followed by an open brace, a set of key-value pair
+and finaly a closing brace. The key-value pairs in the map are specified as
+key = value. The permissable keys consist of the special keys %include, %enter
+and %leave, and the names for the different keys on the keyboard (as specified
+in a later section).
+
+The %include special key can be used to include the key-value pairs of the
+named map into the current map. The value for %include should be the name of a
+key, without quotes. %enter and %leave keys will be ignored in the included
+map. Maps whose name begins with and underscore will be omitted from the
+output and can be used to define shared mappings without making directly
+accessible maps.
+
+The %enter key defines the string to send to the terminal to switch the
+terminal to the mode for which this map defines the keys. The %leave key
+defines the string to reset the terminal to its original state. For the %enter
+and %leave keys, the value can be either a (unquoted) terminfo name or a
+string.
+
+Normal keys should have a string as their value. If a non-keypad and a keypad
+key share both function and string, only the non-keypad key should be included.
+
+Best map
+--------
+
+The "best map", as indicated by the %best key, should indicate the map that
+gives access to the most useful set of key mappings. What "most useful" means
+is unfortunately not easy to define. Being able to distinghuish between as
+many combinations of keys and modifiers is of course desirable, but not always
+the only consideration.
+
+The value associated with the %best key is the unquoted name of a map defined
+in the file. The %best key is mandatory.
+
+Valid key names
+---------------
+
+The following is a list of valid names for keyboard keys, followed by a short
+description of the key.
+
+insert: Insert
+home: Home
+page_up: Page Up
+delete: Delete
+end: End
+page_down: Page Down
+up: Up
+left: Left
+down: Down
+right: Right
+kp_home: Keypad Home
+kp_up: Keypad Up
+kp_page_up: Keypad Page Up
+kp_left: Keypad Left
+kp_center: Keypad Center
+kp_right: Keypad Right
+kp_end: Keypad End
+kp_down: Keypad Down
+kp_page_down: Keypad Page Down
+kp_insert: Keypad Insert
+kp_delete: Keypad Delete
+tab: Tab
+f<num>: Function key <num>

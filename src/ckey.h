@@ -80,4 +80,5 @@ void ckey_free_names(CKEY_CONST CKeyStringListNode *list);
     terminal name. The name is allocated using @a malloc.
 */
 char *ckey_get_best_map_name(const char *term);
+
 #endif

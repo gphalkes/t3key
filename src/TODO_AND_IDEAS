@@ -26,6 +26,10 @@ TODO
   strings from the terminfo database and removing grammar constructs for the
   ascii format.
 
+
+FIXME: add documentation on how to use, with remark not to make a distinction
+between keypad and non-keypad keys because they may give the same keycode
+
 Grammar of ASCII files
 ======================
 data:
