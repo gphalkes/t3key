@@ -67,7 +67,8 @@ static PARSE_FUNCTION(parse_options)
 			fatal("Multiple input files specified\n");
 		input = optcurrent;
 	END_OPTIONS
-	if (input == NULL && output_filename == NULL) {
+
+		if (input == NULL && output_filename == NULL) {
 		fatal("Need output option when reading input from standard input\n");
 	} else if (output_filename == NULL) {
 		output_filename = malloc(strlen(input) + 6);
@@ -309,6 +310,7 @@ static void write_maps(void) {
 	fwrite(magic, 1, 4, output);
 	fwrite(version, 1, 4, output);
 
+	/* First key should be %best key */
 	out_short = htons(0);
 	fwrite(&out_short, 1, 2, output);
 

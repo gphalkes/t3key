@@ -58,10 +58,10 @@ The following is a list of valid names for keyboard keys, followed by a short
 description of the key.
 
 insert: Insert
-home: Home
-page_up: Page Up
 delete: Delete
+home: Home
 end: End
+page_up: Page Up
 page_down: Page Down
 up: Up
 left: Left
@@ -79,4 +79,5 @@ kp_page_down: Keypad Page Down
 kp_insert: Keypad Insert
 kp_delete: Keypad Delete
 tab: Tab
+backspace: Backspace
 f<num>: Function key <num>

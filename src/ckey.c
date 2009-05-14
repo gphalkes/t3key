@@ -304,3 +304,11 @@ void ckey_free_names(CKeyStringListNode *list) {
 }
 
 /* FIXME: implement ckey_get_best_map_name */
+
+CKeyNode *ckey_get_named_node(CKEY_CONST CKeyNode *map, const char *name) {
+	for (; map != NULL; map = map->next) {
+		if (strcmp(map->key, name) == 0)
+			return map;
+	}
+	return NULL;
+}

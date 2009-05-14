@@ -81,4 +81,11 @@ void ckey_free_names(CKEY_CONST CKeyStringListNode *list);
 */
 char *ckey_get_best_map_name(const char *term);
 
+/** Get a named node from a map.
+	@param map The map to search.
+	@param name The name of the node to search for.
+	@return The @a CKeyNode with the given name, or NULL if no such node exists.
+*/
+CKEY_CONST CKeyNode *ckey_get_named_node(CKEY_CONST CKeyNode *map, const char *name);
+
 #endif
