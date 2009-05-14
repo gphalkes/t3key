@@ -301,7 +301,7 @@ static void write_nodes(CKeyNode *nodes, bool all_keys) {
 static void write_maps(void) {
 	CKeyMap *map_ptr;
 	const char magic[] = "CKEY";
-	const char version[] = { 0, 0, 0, 1 };
+	const char version[] = { 0, 0, 0, 0 };
 	uint16_t out_short;
 
 	if ((output = fopen(output_filename, "wb")) == NULL)

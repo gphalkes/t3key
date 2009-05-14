@@ -20,17 +20,20 @@ LDLIBS+=-lcurses
 
 CFILES.learnkeys:= learnkeys.c
 CFILES.libckey.so:= ckey.c
-CFLAGS.ckey:= -fPIC
+CFLAGS.ckey:= -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
 CFILES.ckeyc:= ckeyc.c
 GFILES.ckeyc:= grammar.g
 LFILES.ckeyc:= lex.l
 CFLAGS.lex:= -Wno-shadow -Wno-switch-default -Wno-unused
+CFILES.test:= test.c
+LDFLAGS.test:= -L. -lckey
+
 
 DEPS.grammar.g:= lex.l ckeyc.c
 
 LDFLAGS.libckey.so:= -shared
 
-TARGETS:= learnkeys ckeyc libckey.so
+TARGETS:= learnkeys ckeyc libckey.so test
 #===========================================================================
 .PHONY: all clean
 

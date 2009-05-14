@@ -20,7 +20,7 @@ enum {
 	NODE_MAP_START,
 	NODE_KEY_VALUE,
 	NODE_KEY_TERMINFO,
-	NODE_END_OF_FILE
+	NODE_END_OF_FILE = 65535
 };
 
 
@@ -52,7 +52,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 	uint16_t node;
 
 	if (term == NULL) {
-		term = getenv(term);
+		term = getenv("TERM");
 		if (term == NULL)
 			RETURN_ERROR(CKEY_ERR_NOTERM);
 	}
@@ -82,15 +82,19 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 				if (current_map != NULL)
 					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
 
-				if (map_name == NULL)
-					ENSURE(skip_string(input));
-				else
-					ENSURE(read_string(input, &best_map));
+				ENSURE(read_string(input, &best_map));
 				break;
 			case NODE_MAP_START:
 				if (best_map == NULL)
 					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
 
+				if (this_map) {
+					fclose(input);
+					return list;
+				}
+
+				if (current_map != NULL)
+					free(current_map);
 				ENSURE(read_string(input, &current_map));
 
 				this_map = (map_name != NULL && strcmp(current_map, map_name) == 0) ||
@@ -218,7 +222,7 @@ static CKeyError read_string(FILE *input, char **string) {
 	if (fread(*string, 1, length, input) != length)
 		return CKEY_ERR_READERROR;
 
-	*string[length] = 0;
+	(*string)[length] = 0;
 	return CKEY_ERR_SUCCESS;
 }
 
