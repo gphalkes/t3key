@@ -244,7 +244,7 @@ static CKeyError make_node_from_ti(CKeyNode **next_node, const char *tikey, cons
 	if ((error = new_ckey_node(next_node)) != CKEY_ERR_SUCCESS)
 		return error;
 
-	if (((*next_node)->string = strdup(key)) == NULL) {
+	if (((*next_node)->key = strdup(key)) == NULL) {
 		free(*next_node);
 		*next_node = NULL;
 		return CKEY_ERR_OUTOFMEMORY;
@@ -268,8 +268,16 @@ typedef struct {
 static const Mapping keymapping[] = {
 	{ "smkx", "%enter" },
 	{ "rmkx", "%leave" },
-	{ "khome", "home" },
-	{ "kend", "end" }
+	{ "khome", "kp_home" }, //FIXME: shouldn't this be home and ka1 be kp_home??
+	{ "kend", "kp_end" },
+	{ "kcud1", "kp_down" },
+	{ "kcuu1", "kp_up" },
+	{ "kcub1", "kp_left" },
+	{ "kcuf1", "kp_right" },
+	{ "kpp", "kp_page_up" },
+	{ "knp", "kp_page_down" },
+	{ "kdch1", "kp_delete" },
+	{ "kich1", "kp_insert" }
 	//FIXME: add all the keys we know of
 };
 
