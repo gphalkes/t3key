@@ -305,7 +305,7 @@ static void write_maps(void) {
 	uint16_t out_short;
 
 	if ((output = fopen(output_filename, "wb")) == NULL)
-		fatal("Can't open output file: %s\n", strerror(errno));
+		fatal("Can't open output file %s: %s\n", output_filename, strerror(errno));
 
 	fwrite(magic, 1, 4, output);
 	fwrite(version, 1, 4, output);

@@ -7,13 +7,13 @@
 void LLmessage(int class) {
 	switch (class) {
 		case LL_MISSINGEOF:
-			fatal("%d: Expected %s, found %s. Skipping.\n", line_number, LLgetSymbol(EOFILE), LLgetSymbol(LLsymb));
+			fatal("%d: Expected %s, found %s.\n", line_number, LLgetSymbol(EOFILE), LLgetSymbol(LLsymb));
 			break;
 		case LL_DELETE:
-			fatal("%d: Skipping unexpected %s.\n", line_number, LLgetSymbol(LLsymb));
+			fatal("%d: Unexpected %s.\n", line_number, LLgetSymbol(LLsymb));
 			break;
 		default:
-			fatal("%d: Expected %s, found %s. Inserting.\n", line_number, LLgetSymbol(class), LLgetSymbol(LLsymb));
+			fatal("%d: Expected %s, found %s.\n", line_number, LLgetSymbol(class), LLgetSymbol(LLsymb));
 			break;
 	}
 }

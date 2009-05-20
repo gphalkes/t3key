@@ -1,0 +1,13 @@
+#!/bin/bash
+
+for i in `ls -d database/*` ; do
+	if [ ! -f "$i" ] ; then
+		continue
+	elif [ "${i%%.*}" != "$i" ] ; then
+		continue
+	fi
+	base="${i##*/}"
+	mkdir -p "database/${base:0:1}" > /dev/null
+	echo "== Compiling $base =="
+	./ckeyc -o "database/${base:0:1}/$base" "$i"
+done
