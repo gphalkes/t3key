@@ -1,0 +1,9 @@
+syntax: glob
+
+src/.objects
+src/.deps
+src/learnkeys
+src/ckeyc
+src/test
+src/libckey.so
+src/database/?/*
