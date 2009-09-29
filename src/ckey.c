@@ -286,7 +286,6 @@ static CKeyNode *load_ti_keys(CKeyError *error) {
 	CKeyError _error;
 	size_t i;
 	//FIXME: check return values. Normal macro's don't work because there is no input FILE.
-	//FIXME: use the terminfo database to provide the keys
 
 	for (i = 0; i < sizeof(keymapping)/sizeof(keymapping[0]); i++) {
 		if ((_error = make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key)) != CKEY_ERR_SUCCESS) {

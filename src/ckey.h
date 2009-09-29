@@ -1,6 +1,11 @@
 #ifndef CKEY_H
 #define CKEY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* To allow modification of the structures within the ckey library, it defines
    the macro CKEY_CONST as emtpy. However, for external use the structures
    should be regarded as constant. This will prevent inadvertent modification
@@ -87,5 +92,9 @@ char *ckey_get_best_map_name(const char *term);
 	@return The @a CKeyNode with the given name, or NULL if no such node exists.
 */
 CKEY_CONST CKeyNode *ckey_get_named_node(CKEY_CONST CKeyNode *map, const char *name);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif

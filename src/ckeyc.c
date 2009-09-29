@@ -331,8 +331,8 @@ static void write_maps(void) {
 	fwrite(&out_short, 1, 2, output);
 
 	if (ferror(output)) {
-		fprintf(stderr, "Error writing output:%s\n", strerror(errno));
-		//FIXME: call remove for output file if it exists
+		fprintf(stderr, "Error writing output: %s\n", strerror(errno));
+		remove(output_filename);
 		exit(EXIT_FAILURE);
 	}
 	fclose(output);
