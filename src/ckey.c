@@ -277,7 +277,8 @@ static const Mapping keymapping[] = {
 	{ "kpp", "kp_page_up" },
 	{ "knp", "kp_page_down" },
 	{ "kdch1", "kp_delete" },
-	{ "kich1", "kp_insert" }
+	{ "kich1", "kp_insert" },
+	{ "kbs", "backspace" }
 	//FIXME: add all the keys we know of
 };
 
