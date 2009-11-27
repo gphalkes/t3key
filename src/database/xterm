@@ -171,6 +171,8 @@ right@cms = "\e[1;8C"
 # kp_insert@cms (no sequence)
 # kp_delete@cms (no sequence)
 backspace = "\177"
+tab = "\11"
+tab@s = "\e[Z"
 }
 kx {
 %enter = smkx
@@ -344,4 +346,6 @@ right@cms = "\e[1;8C"
 #~ kp_insert@cms = kp_insert@s
 #~ kp_delete@cms = kp_delete@s
 backspace = "\177"
+tab = "\11"
+tab@s = "\e[Z"
 }
