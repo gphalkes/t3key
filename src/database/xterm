@@ -65,7 +65,7 @@ kp_center@m = "\e[1;3E"
 #~ kp_page_down@m = page_down@m
 #~ kp_insert@m = insert@m
 #~ kp_delete@m = delete@m
-# insert@s (no sequence)
+insert@s = "\e[2;2~"
 home@s = "\e[1;2H"
 # page_up@s (no sequence)
 delete@s = "\e[3;2~"
@@ -240,7 +240,7 @@ right@m = "\e[1;3C"
 #~ kp_page_down@m = page_down
 #~ kp_insert@m = insert
 #~ kp_delete@m = delete
-# insert@s (no sequence)
+insert@s = "\e[2;2~"
 home@s = "\e[1;2H"
 # page_up@s (no sequence)
 delete@s = "\e[3;2~"

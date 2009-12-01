@@ -7,7 +7,10 @@ for i in `ls -d database/*` ; do
 		continue
 	fi
 	base="${i##*/}"
-	mkdir -p "database/${base:0:1}" > /dev/null
+
+	[ "database/${base:0:1}/$base" -ot "$i" ] || continue
+
+	[ -d "database/${base:0:1}" ] || mkdir -p "database/${base:0:1}" > /dev/null
 	echo "== Compiling $base =="
 	./ckeyc -o "database/${base:0:1}/$base" "$i"
 done

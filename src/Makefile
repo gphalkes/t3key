@@ -37,7 +37,7 @@ TARGETS:= learnkeys ckeyc libckey.so test
 #===========================================================================
 .PHONY: all clean
 
-all: $(TARGETS)
+all: $(TARGETS) updatedb
 
 CFILES:= $(foreach PART, $(TARGETS), $(CFILES.$(PART)))
 GFILES:= $(foreach PART, $(TARGETS), $(GFILES.$(PART)))
@@ -85,3 +85,8 @@ clean:
 	rm -rf $(TARGETS) .deps .objects >/dev/null 2>&1
 
 -include $(DEPENDENCIES)
+
+updatedb:
+	@./updatedb
+
+.PHONY: updatedb
