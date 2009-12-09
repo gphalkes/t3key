@@ -173,6 +173,8 @@ right@cms = "\e[1;8C"
 backspace = "\177"
 tab = "\11"
 tab@s = "\e[Z"
+f8 = "\e[19~"
+f8@s = "\e[19;2~"
 }
 kx {
 %enter = smkx
@@ -348,4 +350,6 @@ right@cms = "\e[1;8C"
 backspace = "\177"
 tab = "\11"
 tab@s = "\e[Z"
+f8 = "\e[19~"
+f8@s = "\e[19;2~"
 }
