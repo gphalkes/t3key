@@ -24,8 +24,9 @@ enum {
 };
 
 
-#define RETURN_ERROR(_e) do { if (error != NULL) *error = (_e); return NULL; } while(0)
-#define CLEANUP_RETURN_ERROR(_e) do { fclose(input); ckey_free_map(list); RETURN_ERROR(_e); } while (0)
+#define RETURN_ERROR(_e) do { if (error != NULL) *error = (_e); return NULL; } while (0)
+#define CLEANUP() do { free(best_map); free(current_map); fclose(input); } while (0)
+#define CLEANUP_RETURN_ERROR(_e) do { CLEANUP(); ckey_free_map(list); RETURN_ERROR(_e); } while (0)
 #define ENSURE(_x) do { CKeyError _error = (_x); \
 	if (_error == CKEY_ERR_SUCCESS) \
 		break; \
@@ -70,16 +71,21 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 	name[name_length - 1] = 0;
 
 	if ((input = fopen(name, "rb")) == NULL) {
+		free(name);
 		if (errno != ENOENT)
 			RETURN_ERROR(CKEY_ERR_OPENFAIL);
 		return load_ti_keys(error);
 	}
+	free(name);
 
 	ENSURE(check_magic_and_version(input));
 	while (fread(&node, 2, 1, input) == 1) {
 		switch (ntohs(node)) {
 			case NODE_BEST:
 				if (current_map != NULL)
+					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
+
+				if (best_map != NULL)
 					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
 
 				ENSURE(read_string(input, &best_map));
@@ -89,7 +95,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
 
 				if (this_map) {
-					fclose(input);
+					CLEANUP();
 					return list;
 				}
 
@@ -133,6 +139,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 
 				tiresult = tigetstr(tikey);
 				if (tiresult == (char *)-1 || tiresult == (char *)0) {
+					free(tikey);
 					/* only abort when the key is %enter or %leave */
 					if ((*next_node)->key[0] == '%')
 						CLEANUP_RETURN_ERROR(CKEY_ERR_TIUNKNOWN);
@@ -150,9 +157,10 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 				break;
 			}
  			case NODE_END_OF_FILE:
-				fclose(input);
 				if (list == NULL && error != NULL)
 					*error = CKEY_ERR_NOMAP;
+
+				CLEANUP();
 				return list;
 			default:
 				CLEANUP_RETURN_ERROR(CKEY_ERR_GARBLED);
@@ -161,7 +169,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 
 	if (error != NULL)
 		*error = EOF_OR_ERROR(input);
-	fclose(input);
+	CLEANUP();
 	ckey_free_map(list);
 	return NULL;
 }
