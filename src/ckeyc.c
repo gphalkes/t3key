@@ -208,7 +208,7 @@ static size_t parse_escapes(char *string) {
 	return writePosition;
 }
 
-CKeyNode *new_node(const char *key, const char *string, const char *terminfo_name) {
+CKeyNode *new_node(const char *key, const char *string, const char *ident) {
 	CKeyNode *result = calloc(1, sizeof(CKeyNode));
 
 	if (result == NULL)
@@ -221,8 +221,8 @@ CKeyNode *new_node(const char *key, const char *string, const char *terminfo_nam
 		parse_escapes(result->string);
 	}
 
-	if (terminfo_name != NULL)
-		result->terminfo_name = safe_strdup(terminfo_name);
+	if (ident != NULL)
+		result->ident = safe_strdup(ident);
 	return result;
 }
 
@@ -254,7 +254,7 @@ static void check_nodes(CKeyMap *map) {
 			error("%d: node %s:%s already defined on line %d\n", node_ptr->line_number, map->name, node_ptr->key, other_node->line_number);
 
 		if (strcmp("%include", node_ptr->key) == 0)
-			if (lookup_map(node_ptr->string) == NULL)
+			if (lookup_map(node_ptr->ident) == NULL)
 				error("%d: %%include map %s not found\n", node_ptr->line_number, node_ptr->string);
 	}
 }
@@ -279,14 +279,14 @@ static void write_nodes(CKeyNode *nodes, bool all_keys) {
 
 	for (node_ptr = nodes; node_ptr != NULL; node_ptr = node_ptr->next) {
 		if (strcmp("%include", node_ptr->key) == 0)
-			write_nodes(lookup_map(node_ptr->string)->mapping, false);
+			write_nodes(lookup_map(node_ptr->ident)->mapping, false);
 		else if (node_ptr->key[0] != '%' || all_keys) {
 			if (node_ptr->string != NULL) {
 				out_short = htons(NODE_KEY_VALUE);
 				string = node_ptr->string;
 			} else {
 				out_short = htons(NODE_KEY_TERMINFO);
-				string = node_ptr->terminfo_name;
+				string = node_ptr->ident;
 			}
 			fwrite(&out_short, 1, 2, output);
 			out_short = htons(strlen(node_ptr->key));
@@ -321,6 +321,9 @@ static void write_maps(void) {
 
 
 	for (map_ptr = maps; map_ptr != NULL; map_ptr = map_ptr->next) {
+		if (map_ptr->name[0] == '_')
+			continue;
+
 		out_short = htons(NODE_MAP_START);
 		fwrite(&out_short, 1, 2, output);
 		out_short = htons(strlen(map_ptr->name));

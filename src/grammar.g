@@ -59,7 +59,7 @@ map
 	|
 		INCLUDE '='? IDENTIFIER
 		{
-			*current_node = new_node("%include", yytext, NULL);
+			*current_node = new_node("%include", NULL, yytext);
 			current_node = &(*current_node)->next;
 		}
 	|

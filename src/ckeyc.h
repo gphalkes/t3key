@@ -13,7 +13,7 @@ typedef struct CKeyNode CKeyNode;
 struct CKeyNode {
 	const char *key;
 	char *string;
-	char *terminfo_name;
+	char *ident;
 	int line_number;
 	CKeyNode *next;
 };
@@ -30,6 +30,6 @@ extern CKeyMap *maps;
 extern char *best;
 
 CKeyMap *new_map(const char *name);
-CKeyNode *new_node(const char *key, const char *string, const char *terminfo_name);
+CKeyNode *new_node(const char *key, const char *string, const char *ident);
 
 #endif
