@@ -325,3 +325,7 @@ CKeyNode *ckey_get_named_node(CKEY_CONST CKeyNode *map, const char *name) {
 	}
 	return NULL;
 }
+
+int ckey_get_api_version(void) {
+	return CKEY_API_VERSION;
+}

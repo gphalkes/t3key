@@ -5,6 +5,15 @@
 extern "C" {
 #endif
 
+/* API version implemented by this version of the library. The major version
+   changes when incompatible changes are made. The minor version will increase
+   when compatible extensions of the API are added.
+*/
+#define CKEY_API_MAJOR_VERSION 0
+#define CKEY_API_MINOR_VERSION 0
+#define CKEY_API_VERSION (CKEY_API_MAJOR_VERSION << 16 | CKEY_API_MINOR_VERSION)
+#define CKEY_API_MAJOR_VERSION_FROM_FULL(_x) ((_x) >> 16)
+#define CKEY_API_MINOR_VERSION_FROM_FULL(_x) ((_x) & 0xFFFF)
 
 /* To allow modification of the structures within the ckey library, it defines
    the macro CKEY_CONST as emtpy. However, for external use the structures
@@ -92,6 +101,15 @@ char *ckey_get_best_map_name(const char *term);
 	@return The @a CKeyNode with the given name, or NULL if no such node exists.
 */
 CKEY_CONST CKeyNode *ckey_get_named_node(CKEY_CONST CKeyNode *map, const char *name);
+
+/** Get API version
+	@return The API version as defined by CKEY_API_VERSION.
+
+	This routine exists such that when using dlopen, programs can still verify
+	that the library implements the expected API version. For testing at compile
+	time, the CKEY_API_VERSION macro should be tested.
+*/
+int ckey_get_api_version(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

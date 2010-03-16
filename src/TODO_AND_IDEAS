@@ -1,9 +1,7 @@
 TODO
 ====
-- API versioning
 - database version retrieval through API?
 
-- finish compiler
 - omit keys with standard mappings such as \t for tab
 - switch to X session with only the terminal emulator running to capture as many
   key sequences as possible
