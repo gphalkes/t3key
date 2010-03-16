@@ -15,14 +15,7 @@
 
 #define MAX_VERSION 0
 
-enum {
-	NODE_BEST,
-	NODE_MAP_START,
-	NODE_KEY_VALUE,
-	NODE_KEY_TERMINFO,
-	NODE_END_OF_FILE = 65535
-};
-
+#include "shareddefs.h"
 
 #define RETURN_ERROR(_e) do { if (error != NULL) *error = (_e); return NULL; } while (0)
 #define CLEANUP() do { free(best_map); free(current_map); fclose(input); } while (0)

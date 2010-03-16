@@ -10,6 +10,7 @@
 #include "optionMacros.h"
 #include "grammar.h"
 #include "ckeyc.h"
+#include "shareddefs.h"
 
 typedef enum { false, true } bool;
 static FILE *output;
@@ -281,10 +282,10 @@ static void write_nodes(CKeyNode *nodes, bool all_keys) {
 			write_nodes(lookup_map(node_ptr->string)->mapping, false);
 		else if (node_ptr->key[0] != '%' || all_keys) {
 			if (node_ptr->string != NULL) {
-				out_short = htons(2);
+				out_short = htons(NODE_KEY_VALUE);
 				string = node_ptr->string;
 			} else {
-				out_short = htons(3);
+				out_short = htons(NODE_KEY_TERMINFO);
 				string = node_ptr->terminfo_name;
 			}
 			fwrite(&out_short, 1, 2, output);
@@ -311,7 +312,7 @@ static void write_maps(void) {
 	fwrite(version, 1, 4, output);
 
 	/* First key should be %best key */
-	out_short = htons(0);
+	out_short = htons(NODE_BEST);
 	fwrite(&out_short, 1, 2, output);
 
 	out_short = htons(strlen(best));
@@ -320,14 +321,14 @@ static void write_maps(void) {
 
 
 	for (map_ptr = maps; map_ptr != NULL; map_ptr = map_ptr->next) {
-		out_short = htons(1);
+		out_short = htons(NODE_MAP_START);
 		fwrite(&out_short, 1, 2, output);
 		out_short = htons(strlen(map_ptr->name));
 		fwrite(&out_short, 1, 2, output);
 		fwrite(map_ptr->name, 1, strlen(map_ptr->name), output);
 		write_nodes(map_ptr->mapping, true);
 	}
-	out_short = htons(0xFFFF);
+	out_short = htons(NODE_END_OF_FILE);
 	fwrite(&out_short, 1, 2, output);
 
 	if (ferror(output)) {
