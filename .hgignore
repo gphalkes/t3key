@@ -7,3 +7,5 @@ src/ckeyc
 src/test
 src/libckey.so
 src/database/?/*
+
+.backupfilter.hg
