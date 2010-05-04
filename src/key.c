@@ -14,7 +14,7 @@
 #endif
 
 #define T3_KEY_CONST
-#include "ckey.h"
+#include "key.h"
 
 #ifndef DB_DIRECTORY
 #define DB_DIRECTORY "/usr/local/share/libckey"

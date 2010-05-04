@@ -18,22 +18,22 @@ CFLAGS+=-I. -I.objects
 
 LDLIBS+=-lcurses
 
-CFILES.learnkeys:= learnkeys.c
-CFILES.libckey.so:= ckey.c
-CFLAGS.ckey:= -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
-CFILES.ckeyc:= ckeyc.c
-GFILES.ckeyc:= grammar.g
-LFILES.ckeyc:= lex.l
+CFILES.t3learnkeys:= t3learnkeys.c
+CFILES.libt3key.so:= key.c
+CFLAGS.key:= -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
+CFILES.t3keyc:= t3keyc.c
+GFILES.t3keyc:= grammar.g
+LFILES.t3keyc:= lex.l
 CFLAGS.lex:= -Wno-shadow -Wno-switch-default -Wno-unused
 CFILES.test:= test.c
-LDFLAGS.test:= -L. -lckey
+LDFLAGS.test:= -L. -lt3key
 
 
-DEPS.grammar.g:= lex.l ckeyc.c
+DEPS.grammar.g:= lex.l t3keyc.c
 
-LDFLAGS.libckey.so:= -shared
+LDFLAGS.libt3key.so:= -shared
 
-TARGETS:= learnkeys ckeyc libckey.so test
+TARGETS:= t3learnkeys t3keyc libt3key.so test
 #===========================================================================
 .PHONY: all clean
 

@@ -9,7 +9,7 @@
 
 #include "optionMacros.h"
 #include "grammar.h"
-#include "ckeyc.h"
+#include "t3keyc.h"
 #include "shareddefs.h"
 
 typedef enum { false, true } bool;

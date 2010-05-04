@@ -1,5 +1,5 @@
-#ifndef CKEYC_H
-#define CKEYC_H
+#ifndef T3KEYC_H
+#define T3KEYC_H
 
 #include <stdio.h>
 

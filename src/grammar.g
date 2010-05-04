@@ -2,7 +2,7 @@
 
 {
 
-#include "ckeyc.h"
+#include "t3keyc.h"
 
 void LLmessage(int class) {
 	switch (class) {

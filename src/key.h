@@ -4,6 +4,9 @@
 /** @defgroup t3key_other Functions, constants and enums. */
 /** @addtogroup t3key_other */
 /** @{ */
+
+#include "key_api.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -70,12 +73,12 @@ struct t3_key_string_list_t {
     has been initialised by calling one of @a setupterm, @a initscr, @a newterm
     or @a setterm.
 */
-T3_KEY_CONST t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *error);
+T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *error);
 
 /** Free a key map.
     @param list The list of keys to free.
 */
-void t3_key_free_map(T3_KEY_CONST t3_key_node_t *list);
+T3_KEY_API void t3_key_free_map(T3_KEY_CONST t3_key_node_t *list);
 
 /** Get map names from database.
     @param term The terminal name to use to find the key database.
@@ -84,12 +87,12 @@ void t3_key_free_map(T3_KEY_CONST t3_key_node_t *list);
     If @a term is @a NULL, the environment variable TERM is used to retrieve the
     terminal name.
 */
-T3_KEY_CONST t3_key_string_list_t *t3_key_get_map_names(const char *term);
+T3_KEY_API T3_KEY_CONST t3_key_string_list_t *t3_key_get_map_names(const char *term);
 
 /** Free a map names list.
     @param list The list of map names to free.
 */
-void t3_key_free_names(T3_KEY_CONST t3_key_string_list_t *list);
+T3_KEY_API void t3_key_free_names(T3_KEY_CONST t3_key_string_list_t *list);
 
 /** Get name of best map from database.
     @param term The terminal name to use to find the key database.
@@ -98,14 +101,14 @@ void t3_key_free_names(T3_KEY_CONST t3_key_string_list_t *list);
     If @a term is @a NULL, the environment variable TERM is used to retrieve the
     terminal name. The name is allocated using @a malloc.
 */
-char *t3_key_get_best_map_name(const char *term);
+T3_KEY_API char *t3_key_get_best_map_name(const char *term);
 
 /** Get a named node from a map.
 	@param map The map to search.
 	@param name The name of the node to search for.
 	@return The @a t3_key_node_t with the given name, or NULL if no such node exists.
 */
-T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name);
+T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name);
 
 /** Get the value of ::T3_KEY_VERSION corresponding to the actual used library.
     @ingroup t3window_other
@@ -116,13 +119,13 @@ T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *ma
     information, future library additions may prompt library users to want to operate
     differently depending on the available features.
 */
-int t3_key_get_version(void);
+T3_KEY_API int t3_key_get_version(void);
 
 /** Get a string description for an error code.
     @param error The error code returned by a function in libt3key.
     @return An internationalized string description for the error code.
 */
-const char *t3_key_strerror(int error);
+T3_KEY_API const char *t3_key_strerror(int error);
 
 #ifdef __cplusplus
 } /* extern "C" */

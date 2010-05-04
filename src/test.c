@@ -5,7 +5,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "ckey.h"
+#include "key.h"
 
 void write_escaped_string(FILE *out, const char *string, size_t length) {
 	size_t i;
