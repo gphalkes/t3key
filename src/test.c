@@ -7,8 +7,6 @@
 
 #include "ckey.h"
 
-#define TERM_STRING "rxvt"
-
 void write_escaped_string(FILE *out, const char *string, size_t length) {
 	size_t i;
 
@@ -27,9 +25,21 @@ void write_escaped_string(FILE *out, const char *string, size_t length) {
 }
 
 int main(int argc, char *argv[]) {
-	const CKeyNode *node;
-	setupterm(TERM_STRING, 1, NULL);
-	printf("%p\n", node = ckey_load_map(TERM_STRING, NULL, NULL));
+	const t3_key_node_t *node;
+	const char *term = NULL;
+	int error;
+
+	if (argc > 2 || (argc == 2 && strcmp(argv[1], "-h") == 0)) {
+		printf("Usage: test [<terminal name>]\n");
+		exit(EXIT_SUCCESS);
+	}
+
+	if (argc == 2)
+		term = argv[1];
+
+	setupterm(term, 1, NULL);
+	node = t3_key_load_map(term, NULL, &error);
+	printf("%s: %s\n", term, t3_key_strerror(error));
 
 	while (node) {
 		printf("%s = ", node->key);

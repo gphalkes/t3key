@@ -6,7 +6,14 @@
 #include <stdint.h>
 #include <arpa/inet.h>
 
-#define CKEY_CONST
+#ifdef USE_GETTEXT
+#include <libintl.h>
+#define _(x) dgettext("LIBT3", (x))
+#else
+#define _(x) (x)
+#endif
+
+#define T3_KEY_CONST
 #include "ckey.h"
 
 #ifndef DB_DIRECTORY
@@ -19,27 +26,27 @@
 
 #define RETURN_ERROR(_e) do { if (error != NULL) *error = (_e); return NULL; } while (0)
 #define CLEANUP() do { free(best_map); free(current_map); fclose(input); } while (0)
-#define CLEANUP_RETURN_ERROR(_e) do { CLEANUP(); ckey_free_map(list); RETURN_ERROR(_e); } while (0)
-#define ENSURE(_x) do { CKeyError _error = (_x); \
-	if (_error == CKEY_ERR_SUCCESS) \
+#define CLEANUP_RETURN_ERROR(_e) do { CLEANUP(); t3_key_free_map(list); RETURN_ERROR(_e); } while (0)
+#define ENSURE(_x) do { int _error = (_x); \
+	if (_error == T3_ERR_SUCCESS) \
 		break; \
 	if (error != NULL) \
 		*error = _error; \
 	fclose(input); \
-	ckey_free_map(list); \
+	t3_key_free_map(list); \
 	return NULL; } while (0)
-#define EOF_OR_ERROR(_file) (feof(_file) ? CKEY_ERR_TRUNCATED : CKEY_ERR_READERROR)
+#define EOF_OR_ERROR(_file) (feof(_file) ? T3_ERR_TRUNCATED_DB : T3_ERR_READ_ERROR)
 
-static CKeyError check_magic_and_version(FILE *input);
-static CKeyError skip_string(FILE *input);
-static CKeyError read_string(FILE *input, char **string);
-static CKeyError new_ckey_node(CKeyNode **result);
-static CKeyNode *load_ti_keys(CKeyError *error);
+static int check_magic_and_version(FILE *input);
+static int skip_string(FILE *input);
+static int read_string(FILE *input, char **string);
+static int new_t3_key_node(t3_key_node_t **result);
+static t3_key_node_t *load_ti_keys(int *error);
 
-CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error) {
+t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *error) {
 	char *current_map = NULL, *best_map = NULL;
 	size_t name_length, term_length;
-	CKeyNode *list = NULL, **next_node = &list;
+	t3_key_node_t *list = NULL, **next_node = &list;
 	int this_map = 0;
 	char *name;
 	FILE *input;
@@ -48,13 +55,13 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 	if (term == NULL) {
 		term = getenv("TERM");
 		if (term == NULL)
-			RETURN_ERROR(CKEY_ERR_NOTERM);
+			RETURN_ERROR(T3_ERR_NO_TERM);
 	}
 
 	term_length = strlen(term);
 	name_length = strlen(DB_DIRECTORY) + 3 + term_length + 1;
 	if ((name = malloc(name_length)) == NULL)
-		RETURN_ERROR(CKEY_ERR_OUTOFMEMORY);
+		RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 
 	strcpy(name, DB_DIRECTORY);
 	strcat(name, "/");
@@ -66,7 +73,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 	if ((input = fopen(name, "rb")) == NULL) {
 		free(name);
 		if (errno != ENOENT)
-			RETURN_ERROR(CKEY_ERR_OPENFAIL);
+			RETURN_ERROR(T3_ERR_ERRNO);
 		return load_ti_keys(error);
 	}
 	free(name);
@@ -76,16 +83,16 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 		switch (ntohs(node)) {
 			case NODE_BEST:
 				if (current_map != NULL)
-					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
+					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
 
 				if (best_map != NULL)
-					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
+					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
 
 				ENSURE(read_string(input, &best_map));
 				break;
 			case NODE_MAP_START:
 				if (best_map == NULL)
-					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
+					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
 
 				if (this_map) {
 					CLEANUP();
@@ -101,7 +108,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 				break;
 			case NODE_KEY_VALUE:
 				if (current_map == NULL)
-					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
+					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
 
 				if (!this_map) {
 					ENSURE(skip_string(input));
@@ -109,7 +116,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 					break;
 				}
 
-				ENSURE(new_ckey_node(next_node));
+				ENSURE(new_t3_key_node(next_node));
 				ENSURE(read_string(input, &(*next_node)->key));
 				ENSURE(read_string(input, &(*next_node)->string));
 				next_node = &(*next_node)->next;
@@ -118,7 +125,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 				char *tikey, *tiresult;
 
 				if (current_map == NULL)
-					CLEANUP_RETURN_ERROR(CKEY_ERR_INVALIDFORMAT);
+					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
 
 				if (!this_map) {
 					ENSURE(skip_string(input));
@@ -126,7 +133,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 					break;
 				}
 
-				ENSURE(new_ckey_node(next_node));
+				ENSURE(new_t3_key_node(next_node));
 				ENSURE(read_string(input, &(*next_node)->key));
 				ENSURE(read_string(input, &tikey));
 
@@ -135,7 +142,7 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 					free(tikey);
 					/* only abort when the key is %enter or %leave */
 					if ((*next_node)->key[0] == '%')
-						CLEANUP_RETURN_ERROR(CKEY_ERR_TIUNKNOWN);
+						CLEANUP_RETURN_ERROR(T3_ERR_TERMINFO_UNKNOWN);
 					free((*next_node)->key);
 					free(*next_node);
 					*next_node = NULL;
@@ -144,32 +151,32 @@ CKeyNode *ckey_load_map(const char *term, const char *map_name, CKeyError *error
 				free(tikey);
 				(*next_node)->string = strdup(tiresult);
 				if ((*next_node)->string == NULL)
-					CLEANUP_RETURN_ERROR(CKEY_ERR_OUTOFMEMORY);
+					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 
 				next_node = &(*next_node)->next;
 				break;
 			}
  			case NODE_END_OF_FILE:
 				if (list == NULL && error != NULL)
-					*error = CKEY_ERR_NOMAP;
+					*error = T3_ERR_NOMAP;
 
 				CLEANUP();
 				return list;
 			default:
-				CLEANUP_RETURN_ERROR(CKEY_ERR_GARBLED);
+				CLEANUP_RETURN_ERROR(T3_ERR_GARBLED_DB);
 		}
 	}
 
 	if (error != NULL)
 		*error = EOF_OR_ERROR(input);
 	CLEANUP();
-	ckey_free_map(list);
+	t3_key_free_map(list);
 	return NULL;
 }
 
 
-void ckey_free_map(CKeyNode *list) {
-	CKeyNode *prev;
+void t3_key_free_map(t3_key_node_t *list) {
+	t3_key_node_t *prev;
 	while (list != NULL) {
 		prev = list;
 		list = list->next;
@@ -179,7 +186,7 @@ void ckey_free_map(CKeyNode *list) {
 	}
 }
 
-static CKeyError check_magic_and_version(FILE *input) {
+static int check_magic_and_version(FILE *input) {
 	char magic[4];
 	uint32_t version;
 
@@ -187,29 +194,29 @@ static CKeyError check_magic_and_version(FILE *input) {
 		return EOF_OR_ERROR(input);
 
 	if (memcmp(magic, "CKEY", 4) != 0)
-		return CKEY_ERR_GARBLED;
+		return T3_ERR_GARBLED_DB;
 
 	if (fread(&version, 4, 1, input) != 1)
 		return EOF_OR_ERROR(input);
 
 	if (ntohl(version) > MAX_VERSION)
-		return CKEY_ERR_WRONGVERSION;
+		return T3_ERR_WRONG_VERSION;
 
-	return CKEY_ERR_SUCCESS;
+	return T3_ERR_SUCCESS;
 }
 
-static CKeyError skip_string(FILE *input) {
+static int skip_string(FILE *input) {
 	uint16_t length;
 
 	if (fread(&length, 2, 1, input) != 1)
 		return EOF_OR_ERROR(input);
 
 	if (fseek(input, ntohs(length), SEEK_CUR) != 0)
-		return CKEY_ERR_READERROR;
-	return CKEY_ERR_SUCCESS;
+		return T3_ERR_READ_ERROR;
+	return T3_ERR_SUCCESS;
 }
 
-static CKeyError read_string(FILE *input, char **string) {
+static int read_string(FILE *input, char **string) {
 	uint16_t length;
 
 	if (fread(&length, 2, 1, input) != 1)
@@ -218,47 +225,47 @@ static CKeyError read_string(FILE *input, char **string) {
 	length = ntohs(length);
 
 	if ((*string = malloc(length + 1)) == NULL)
-		return CKEY_ERR_OUTOFMEMORY;
+		return T3_ERR_OUT_OF_MEMORY;
 
 	if (fread(*string, 1, length, input) != length)
-		return CKEY_ERR_READERROR;
+		return T3_ERR_READ_ERROR;
 
 	(*string)[length] = 0;
-	return CKEY_ERR_SUCCESS;
+	return T3_ERR_SUCCESS;
 }
 
-static CKeyError new_ckey_node(CKeyNode **result) {
-	if ((*result = malloc(sizeof(CKeyNode))) == NULL)
-		return CKEY_ERR_OUTOFMEMORY;
-	memset(*result, 0, sizeof(CKeyNode));
-	return CKEY_ERR_SUCCESS;
+static int new_t3_key_node(t3_key_node_t **result) {
+	if ((*result = malloc(sizeof(t3_key_node_t))) == NULL)
+		return T3_ERR_OUT_OF_MEMORY;
+	memset(*result, 0, sizeof(t3_key_node_t));
+	return T3_ERR_SUCCESS;
 }
 
-static CKeyError make_node_from_ti(CKeyNode **next_node, const char *tikey, const char *key) {
+static int make_node_from_ti(t3_key_node_t **next_node, const char *tikey, const char *key) {
 	char *tiresult;
-	CKeyError error;
+	int error;
 
 	tiresult = tigetstr(tikey);
 	if (tiresult == (char *)0 || tiresult == (char *)-1)
-		return CKEY_ERR_SUCCESS;
+		return T3_ERR_SUCCESS;
 
-	if ((error = new_ckey_node(next_node)) != CKEY_ERR_SUCCESS)
+	if ((error = new_t3_key_node(next_node)) != T3_ERR_SUCCESS)
 		return error;
 
 	if (((*next_node)->key = strdup(key)) == NULL) {
 		free(*next_node);
 		*next_node = NULL;
-		return CKEY_ERR_OUTOFMEMORY;
+		return T3_ERR_OUT_OF_MEMORY;
 	}
 
 	if (((*next_node)->string = strdup(tiresult)) == NULL) {
 		free((*next_node)->string);
 		free(*next_node);
 		*next_node = NULL;
-		return CKEY_ERR_OUTOFMEMORY;
+		return T3_ERR_OUT_OF_MEMORY;
 	}
 
-	return CKEY_ERR_SUCCESS;
+	return T3_ERR_SUCCESS;
 }
 
 typedef struct {
@@ -283,15 +290,15 @@ static const Mapping keymapping[] = {
 	//FIXME: add all the keys we know of
 };
 
-static CKeyNode *load_ti_keys(CKeyError *error) {
-	CKeyNode *list = NULL, **next_node = &list;
-	CKeyError _error;
+static t3_key_node_t *load_ti_keys(int *error) {
+	t3_key_node_t *list = NULL, **next_node = &list;
+	int _error;
 	size_t i;
 	//FIXME: check return values. Normal macro's don't work because there is no input FILE.
 
 	for (i = 0; i < sizeof(keymapping)/sizeof(keymapping[0]); i++) {
-		if ((_error = make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key)) != CKEY_ERR_SUCCESS) {
-			ckey_free_map(list);
+		if ((_error = make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key)) != T3_ERR_SUCCESS) {
+			t3_key_free_map(list);
 			if (error != NULL)
 				*error = _error;
 			return NULL;
@@ -304,10 +311,10 @@ static CKeyNode *load_ti_keys(CKeyError *error) {
 }
 
 
-/* FIXME: implement ckey_get_map_names */
+/* FIXME: implement t3_key_get_map_names */
 
-void ckey_free_names(CKeyStringListNode *list) {
-	CKeyStringListNode *prev;
+void t3_key_free_names(t3_key_string_list_t *list) {
+	t3_key_string_list_t *prev;
 	while (list != NULL) {
 		prev = list;
 		list = list->next;
@@ -316,9 +323,9 @@ void ckey_free_names(CKeyStringListNode *list) {
 	}
 }
 
-/* FIXME: implement ckey_get_best_map_name */
+/* FIXME: implement t3_key_get_best_map_name */
 
-CKeyNode *ckey_get_named_node(CKEY_CONST CKeyNode *map, const char *name) {
+t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name) {
 	for (; map != NULL; map = map->next) {
 		if (strcmp(map->key, name) == 0)
 			return map;
@@ -326,6 +333,40 @@ CKeyNode *ckey_get_named_node(CKEY_CONST CKeyNode *map, const char *name) {
 	return NULL;
 }
 
-int ckey_get_api_version(void) {
-	return CKEY_API_VERSION;
+int t3_key_get_version(void) {
+	return T3_KEY_API_VERSION;
+}
+
+const char *t3_key_strerror(int error) {
+	switch (error) {
+		case T3_ERR_SUCCESS:
+			return _("Success");
+		case T3_ERR_ERRNO:
+			return strerror(errno);
+		case T3_ERR_EOF:
+			return _("End of file");
+		default: /* FALLTHROUGH */
+		case T3_ERR_UNKNOWN:
+			return _("Unknown error");
+		case T3_ERR_BAD_ARG:
+			return _("Bad argument passed to function");
+		case T3_ERR_OUT_OF_MEMORY:
+			return _("Out of memory");
+		case T3_ERR_NO_TERM:
+			return _("No terminal specified");
+		case T3_ERR_INVALID_FORMAT:
+			return _("Invalid key database file format");
+		case T3_ERR_TERMINFO_UNKNOWN:
+			return _("Required terminfo key not found in terminfo database");
+		case T3_ERR_NOMAP:
+			return _("Key database contains no maps");
+		case T3_ERR_TRUNCATED_DB:
+			return _("Key database is truncated");
+		case T3_ERR_READ_ERROR:
+			return _("Error reading key database");
+		case T3_ERR_GARBLED_DB:
+			return _("Key database is garbled");
+		case T3_ERR_WRONG_VERSION:
+			return _("Key database is of an unsupported version");
+	}
 }
