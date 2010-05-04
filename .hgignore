@@ -6,10 +6,10 @@ doc/DoxygenLayout.xml
 
 src/.objects
 src/.deps
-src/learnkeys
-src/ckeyc
+src/t3learnkeys
+src/t3keyc
 src/test
-src/libckey.so
+src/libt3key.so
 src/database/?/*
 
 .backupfilter.hg
