@@ -11,8 +11,8 @@ TODO
   we should only have one key symbol return a particular sequence, because
   otherwise the program using libckey can't figure out what to do and results
   may depend on the comparison order.
-- library for accessing the database
 - function to read key from fd/FILE with translation (and UTF-8 decoding?)
+
 
 - make documentation:
 	- curses dependency for fallback and control sequences (terminfo only!)
@@ -28,51 +28,3 @@ TODO
 
 FIXME: add documentation on how to use, with remark not to make a distinction
 between keypad and non-keypad keys because they may give the same keycode
-
-Grammar of ASCII files
-======================
-data:
-	keyvalue
-|
-	identifier '{'
-		keyvalue+
-	'}'
-;
-
-keyvalue:
-	identifier '=' [ identifier | string ]
-;
-
-Binary files
-============
-binary files are simply binary representations of above structure with size
-prefixes and without comments etc. Strings are saved as <length><bytes>
-
-
-keymaps can easily be composed by inclusion and overriding.
-
-Special keywords:
-%best -> denotes which keymap
-%enter -> denotes either terminfo entry or escape seq to enable this keymap
-%leave -> denotes either terminfo entry or escape seq to disable this keymap
-%include -> include other keymap (with start enabled!)
-
-multiple start and leave keywords are allowed
-keys can be followed by @[cms]+ to indicate modifier states
-
-Key names definitions follow PC style keyboard:
-home -> start of line
-end -> end of line
-insert -> insert key
-etc.
-
-
-One problem arises: there are sometimes different versions of the same terminal
-or different terminals that all pretend to be the same (xterm anyone?). These
-different version are usually indistinguishable from a programs point of view.
-This makes it tricky to define a correct key database. One option is to allow
-multiple definitions of the same key. A small problem is that in that case the
-API needs to somehow be able to return the different strings for a particular
-key rather than just a single one. Different options are returning an array
-or a list of strings, or add a parameter to the get_sequence interface that
-says which of the possible keys to get (0, 1, ...).
