@@ -15,6 +15,7 @@ else
 	CFLAGS:=-Wall -W $(ANSIFLAGS) -O2
 endif
 CFLAGS+=-I. -I.objects
+LCFLAGS+=-DT3_KEY_BUILD_DSO
 
 LDLIBS+=-lcurses
 
