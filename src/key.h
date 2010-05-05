@@ -36,6 +36,8 @@ extern "C" {
 #endif
 
 typedef struct t3_key_node_t t3_key_node_t;
+
+/** A structure which is part of a singly linked list and contains a single key definition. */
 struct t3_key_node_t {
 	T3_KEY_CONST char *key;
 	T3_KEY_CONST char *string;
@@ -43,6 +45,8 @@ struct t3_key_node_t {
 };
 
 typedef struct t3_key_string_list_t t3_key_string_list_t;
+
+/** A structure which is part of a singly linked list and contains a single string. */
 struct t3_key_string_list_t {
 	T3_KEY_CONST char *string;
 	T3_KEY_CONST t3_key_string_list_t *next;
@@ -63,15 +67,15 @@ struct t3_key_string_list_t {
     @param term The terminal name to use to find the key database.
     @param map_name Name of the map to load for the terminal.
     @param error Location to store the error code.
-    @return NULL on failure, a list of @a t3_key_node_t structures on success.
+    @return NULL on failure, a list of ::t3_key_node_t structures on success.
 
-    If @a term is @a NULL, the environment variable TERM is used to retrieve the
-    terminal name. The @a map_name parameter indicates which map to load. If
-    @a map_name is @a NULL, the map indicated by %best in the database is used.
+    If @p term is @c NULL, the environment variable @c TERM is used to retrieve the
+    terminal name. The @p map_name parameter indicates which map to load. If
+    @p map_name is @c NULL, the map indicated by %best in the database is used.
 
     Before calling this function, you must ensure that the terminfo database
-    has been initialised by calling one of @a setupterm, @a initscr, @a newterm
-    or @a setterm.
+    has been initialised by calling one of @c setupterm, @c initscr, @c newterm,
+    @c setterm, or the @c t3_term_init function.
 */
 T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *error);
 
@@ -82,9 +86,9 @@ T3_KEY_API void t3_key_free_map(T3_KEY_CONST t3_key_node_t *list);
 
 /** Get map names from database.
     @param term The terminal name to use to find the key database.
-    @return NULL on failure, a list of @a t3_key_string_list_t structures on success.
+    @return NULL on failure, a list of ::t3_key_string_list_t structures on success.
 
-    If @a term is @a NULL, the environment variable TERM is used to retrieve the
+    If @p term is @c NULL, the environment variable TERM is used to retrieve the
     terminal name.
 */
 T3_KEY_API T3_KEY_CONST t3_key_string_list_t *t3_key_get_map_names(const char *term);
@@ -98,15 +102,15 @@ T3_KEY_API void t3_key_free_names(T3_KEY_CONST t3_key_string_list_t *list);
     @param term The terminal name to use to find the key database.
     @return NULL on failure, the name of the best map on success.
 
-    If @a term is @a NULL, the environment variable TERM is used to retrieve the
-    terminal name. The name is allocated using @a malloc.
+    If @p term is @c NULL, the environment variable TERM is used to retrieve the
+    terminal name. The name is allocated using @c malloc.
 */
 T3_KEY_API char *t3_key_get_best_map_name(const char *term);
 
 /** Get a named node from a map.
 	@param map The map to search.
 	@param name The name of the node to search for.
-	@return The @a t3_key_node_t with the given name, or NULL if no such node exists.
+	@return The ::t3_key_node_t with the given name, or @c NULL if no such node exists.
 */
 T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name);
 
