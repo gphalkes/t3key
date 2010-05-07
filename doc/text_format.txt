@@ -1,5 +1,5 @@
-libckey Text Format
-===================
+libt3key Text Format
+====================
 
 Preliminaries
 -------------
@@ -49,7 +49,18 @@ many combinations of keys and modifiers is of course desirable, but not always
 the only consideration.
 
 The value associated with the %best key is the unquoted name of a map defined
-in the file. The %best key is mandatory.
+in the file. The %best key should be defined outside any map and is mandatory.
+
+Also Known As
+-------------
+
+Many maps are shared by different terminals. By including a %aka key, these
+shared maps can be included under different names. The practical implementation
+is that a (symbolic) link will be created from the original name to the name
+specified in the %aka key.
+
+The value associated with an %aka key should be a string containing an
+additional name under which this map should be known.
 
 Valid key names
 ---------------

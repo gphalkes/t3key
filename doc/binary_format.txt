@@ -1,5 +1,5 @@
-libckey Binary Format
-=====================
+libt3key Binary Format
+=====================+
 
 Preliminaries
 -------------
