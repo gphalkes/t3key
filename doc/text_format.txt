@@ -7,7 +7,7 @@ Preliminaries
 Strings are stored as text delimted by double quotes, and with backslash
 escaping. Keys start with either a letter (upper- or lowercase) or an
 underscore. Second and later key characters can be a letter, a number or an
-underscore. Modifiers are appended to keys by adding an at sign (@) followed
+underscore. Modifiers are appended to keys by adding an at sign (+) followed
 by one or more of the letters c, m and s (in that order, for control, meta
 and shift respectively).
 
