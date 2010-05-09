@@ -1,5 +1,6 @@
 TODO
 ====
+- implement %aka keys
 - location of database directory should be configurable through environment
   and the user's home directory should also be searched
 - database version retrieval through API?

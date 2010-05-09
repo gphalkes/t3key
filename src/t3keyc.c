@@ -59,6 +59,7 @@ static PARSE_FUNCTION(parse_options)
 		OPTION('o', "output", REQUIRED_ARG)
 			output_filename = optArg;
 		END_OPTION
+		#warning FIXME: output should be defined as a directory for the %aka keys to work
 		DOUBLE_DASH
 			NO_MORE_OPTIONS;
 		END_OPTION
@@ -69,7 +70,7 @@ static PARSE_FUNCTION(parse_options)
 		input = optcurrent;
 	END_OPTIONS
 
-		if (input == NULL && output_filename == NULL) {
+	if (input == NULL && output_filename == NULL) {
 		fatal("Need output option when reading input from standard input\n");
 	} else if (output_filename == NULL) {
 		output_filename = malloc(strlen(input) + 6);
