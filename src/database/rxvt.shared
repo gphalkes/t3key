@@ -12,87 +12,87 @@ right = "\e[C"
 kp_center = "\eOu"
 kp_insert = "\eOp"
 kp_delete = "\eOn"
-insert@c = "\e[2^"
-home@c = "\e[7^"
-page_up@c = "\e[5^"
-delete@c = "\e[3^"
-end@c = "\e[8^"
-page_down@c = "\e[6^"
-up@c = "\eOa"
-left@c = "\eOd"
-down@c = "\eOb"
-right@c = "\eOc"
-kp_center@c = kp_center
-kp_insert@c = kp_insert
-kp_delete@c = kp_delete
-insert@m = "\e\e[2~"
-home@m = "\e\e[7~"
-page_up@m = "\e\e[5~"
-delete@m = "\e\e[3~"
-end@m = "\e\e[8~"
-page_down@m = "\e\e[6~"
-up@m = "\e\e[A"
-left@m = "\e\e[D"
-down@m = "\e\e[B"
-right@m = "\e\e[C"
-kp_center@m = "\e\eOu"
-kp_insert@m = "\e\eOp"
-kp_delete@m = "\e\eOn"
-home@s = "\e[7$"
-delete@s = "\e[3$"
-end@s = "\e[8$"
-up@s = "\e[a"
-left@s = "\e[d"
-down@s = "\e[b"
-right@s = "\e[c"
-home@cm = "\e\e[7^"
-page_up@cm = "\e\e[5^"
-end@cm = "\e\e[8^"
-page_down@cm = "\e\e[6^"
-up@cm = "\e\eOa"
-left@cm = "\e\eOd"
-down@cm = "\e\eOb"
-right@cm = "\e\eOc"
-kp_center@cm = kp_center@m
-kp_insert@cm = kp_insert@m
-kp_delete@cm = kp_delete@m
-insert@cs = "\e[2@"
-home@cs = "\e[7@"
-page_up@cs = "\e[5@"
-delete@cs = "\e[3@"
-end@cs = "\e[8@"
-page_down@cs = "\e[6@"
-up@cs = up@s
-left@cs = left@s
-down@cs = down@s
-right@cs = right@s
-insert@ms = "\e\e[2$"
-home@ms = "\e\e[7$"
-page_up@ms = "\e\e[5$"
-delete@ms = "\e\e[3$"
-end@ms = "\e\e[8$"
-page_down@ms = "\e\e[6$"
-up@ms = "\e\e[a"
-left@ms = "\e\e[d"
-down@ms = "\e\e[b"
-right@ms = "\e\e[c"
-insert@cms = "\e\e[2@"
-home@cms = "\e\e[7@"
-page_up@cms = "\e\e[5@"
-end@cms = "\e\e[8@"
-page_down@cms = "\e\e[6@"
-up@cms = up@ms
-left@cms = left@ms
-down@cms = down@ms
-right@cms = right@ms
-kp_home@cms = kp_home@ms
-kp_up@cms = kp_up@ms
-kp_page_up@cms = kp_page_up@ms
-kp_left@cms = kp_left@ms
-kp_right@cms = kp_right@ms
-kp_end@cms = kp_end@ms
-kp_down@cms = kp_down@ms
-kp_page_down@cms = kp_page_down@ms
+insert+c = "\e[2^"
+home+c = "\e[7^"
+page_up+c = "\e[5^"
+delete+c = "\e[3^"
+end+c = "\e[8^"
+page_down+c = "\e[6^"
+up+c = "\eOa"
+left+c = "\eOd"
+down+c = "\eOb"
+right+c = "\eOc"
+kp_center+c = kp_center
+kp_insert+c = kp_insert
+kp_delete+c = kp_delete
+insert+m = "\e\e[2~"
+home+m = "\e\e[7~"
+page_up+m = "\e\e[5~"
+delete+m = "\e\e[3~"
+end+m = "\e\e[8~"
+page_down+m = "\e\e[6~"
+up+m = "\e\e[A"
+left+m = "\e\e[D"
+down+m = "\e\e[B"
+right+m = "\e\e[C"
+kp_center+m = "\e\eOu"
+kp_insert+m = "\e\eOp"
+kp_delete+m = "\e\eOn"
+home+s = "\e[7$"
+delete+s = "\e[3$"
+end+s = "\e[8$"
+up+s = "\e[a"
+left+s = "\e[d"
+down+s = "\e[b"
+right+s = "\e[c"
+home+cm = "\e\e[7^"
+page_up+cm = "\e\e[5^"
+end+cm = "\e\e[8^"
+page_down+cm = "\e\e[6^"
+up+cm = "\e\eOa"
+left+cm = "\e\eOd"
+down+cm = "\e\eOb"
+right+cm = "\e\eOc"
+kp_center+cm = kp_center+m
+kp_insert+cm = kp_insert+m
+kp_delete+cm = kp_delete+m
+insert+cs = "\e[2@"
+home+cs = "\e[7@"
+page_up+cs = "\e[5@"
+delete+cs = "\e[3@"
+end+cs = "\e[8@"
+page_down+cs = "\e[6@"
+up+cs = up+s
+left+cs = left+s
+down+cs = down+s
+right+cs = right+s
+insert+ms = "\e\e[2$"
+home+ms = "\e\e[7$"
+page_up+ms = "\e\e[5$"
+delete+ms = "\e\e[3$"
+end+ms = "\e\e[8$"
+page_down+ms = "\e\e[6$"
+up+ms = "\e\e[a"
+left+ms = "\e\e[d"
+down+ms = "\e\e[b"
+right+ms = "\e\e[c"
+insert+cms = "\e\e[2@"
+home+cms = "\e\e[7@"
+page_up+cms = "\e\e[5@"
+end+cms = "\e\e[8@"
+page_down+cms = "\e\e[6@"
+up+cms = up+ms
+left+cms = left+ms
+down+cms = down+ms
+right+cms = right+ms
+kp_home+cms = kp_home+ms
+kp_up+cms = kp_up+ms
+kp_page_up+cms = kp_page_up+ms
+kp_left+cms = kp_left+ms
+kp_right+cms = kp_right+ms
+kp_end+cms = kp_end+ms
+kp_down+cms = kp_down+ms
+kp_page_down+cms = kp_page_down+ms
 }
 best = nokx
 
@@ -106,72 +106,72 @@ kp_right = right
 kp_end = end
 kp_down = down
 kp_page_down = page_down
-kp_home@c = home@c
-kp_up@c = up@c
-kp_page_up@c = page_up@c
-kp_left@c = left@c
-kp_right@c = right@c
-kp_end@c = end@c
-kp_down@c = down@c
-kp_page_down@c = page_down@c
-kp_home@m = home@m
-kp_up@m = up@m
-kp_page_up@m = page_up@m
-kp_left@m = left@m
-kp_right@m = right@m
-kp_end@m = end@m
-kp_down@m = down@m
-kp_page_down@m = page_down@m
-# insert@s (no sequence)
-# page_up@s (no sequence)
-# page_down@s (no sequence)
-kp_home@s = "\eOw"
-kp_up@s = "\eOx"
-kp_page_up@s = "\eOy"
-kp_left@s = "\eOt"
-kp_center@s = kp_center
-kp_right@s = "\eOv"
-kp_end@s = "\eOq"
-kp_down@s = "\eOr"
-kp_page_down@s = "\eOs"
-kp_insert@s = kp_insert
-kp_delete@s = kp_delete
-# insert@cm (no sequence)
-# delete@cm (no sequence)
-kp_home@cm = home@cm
-kp_up@cm = up@cm
-kp_page_up@cm = page_up@cm
-kp_left@cm = left@cm
-kp_right@cm = right@cm
-kp_end@cm = end@cm
-kp_down@cm = down@cm
-kp_page_down@cm = page_down@cm
-kp_home@cs = kp_home@s
-kp_up@cs = kp_up@s
-kp_page_up@cs = kp_page_up@s
-kp_left@cs = kp_left@s
-kp_center@cs = kp_center
-kp_right@cs = kp_right@s
-kp_end@cs = kp_end@s
-kp_down@cs = kp_down@s
-kp_page_down@cs = kp_page_down@s
-kp_insert@cs = kp_insert
-kp_delete@cs = kp_delete
-kp_home@ms = "\e\eOw"
-kp_up@ms = "\e\eOx"
-kp_page_up@ms = "\e\eOy"
-kp_left@ms = "\e\eOt"
-kp_center@ms = kp_center@m
-kp_right@ms = "\e\eOv"
-kp_end@ms = "\e\eOq"
-kp_down@ms = "\e\eOr"
-kp_page_down@ms = "\e\eOs"
-kp_insert@ms = kp_insert@m
-kp_delete@ms = kp_delete@m
-# delete@cms (no sequence)
-kp_center@cms = kp_center@m
-kp_insert@cms = kp_insert@m
-kp_delete@cms = kp_delete@m
+kp_home+c = home+c
+kp_up+c = up+c
+kp_page_up+c = page_up+c
+kp_left+c = left+c
+kp_right+c = right+c
+kp_end+c = end+c
+kp_down+c = down+c
+kp_page_down+c = page_down+c
+kp_home+m = home+m
+kp_up+m = up+m
+kp_page_up+m = page_up+m
+kp_left+m = left+m
+kp_right+m = right+m
+kp_end+m = end+m
+kp_down+m = down+m
+kp_page_down+m = page_down+m
+# insert+s (no sequence)
+# page_up+s (no sequence)
+# page_down+s (no sequence)
+kp_home+s = "\eOw"
+kp_up+s = "\eOx"
+kp_page_up+s = "\eOy"
+kp_left+s = "\eOt"
+kp_center+s = kp_center
+kp_right+s = "\eOv"
+kp_end+s = "\eOq"
+kp_down+s = "\eOr"
+kp_page_down+s = "\eOs"
+kp_insert+s = kp_insert
+kp_delete+s = kp_delete
+# insert+cm (no sequence)
+# delete+cm (no sequence)
+kp_home+cm = home+cm
+kp_up+cm = up+cm
+kp_page_up+cm = page_up+cm
+kp_left+cm = left+cm
+kp_right+cm = right+cm
+kp_end+cm = end+cm
+kp_down+cm = down+cm
+kp_page_down+cm = page_down+cm
+kp_home+cs = kp_home+s
+kp_up+cs = kp_up+s
+kp_page_up+cs = kp_page_up+s
+kp_left+cs = kp_left+s
+kp_center+cs = kp_center
+kp_right+cs = kp_right+s
+kp_end+cs = kp_end+s
+kp_down+cs = kp_down+s
+kp_page_down+cs = kp_page_down+s
+kp_insert+cs = kp_insert
+kp_delete+cs = kp_delete
+kp_home+ms = "\e\eOw"
+kp_up+ms = "\e\eOx"
+kp_page_up+ms = "\e\eOy"
+kp_left+ms = "\e\eOt"
+kp_center+ms = kp_center+m
+kp_right+ms = "\e\eOv"
+kp_end+ms = "\e\eOq"
+kp_down+ms = "\e\eOr"
+kp_page_down+ms = "\e\eOs"
+kp_insert+ms = kp_insert+m
+kp_delete+ms = kp_delete+m
+# delete+cms (no sequence)
+kp_center+cms = kp_center+m
+kp_insert+cms = kp_insert+m
+kp_delete+cms = kp_delete+m
 }
 kx {
 start = smkx
@@ -183,70 +183,70 @@ kp_right = "\eOv"
 kp_end = "\eOq"
 kp_down = "\eOr"
 kp_page_down = "\eOs"
-kp_home@c = kp_home
-kp_up@c = kp_up
-kp_page_up@c = kp_page_up
-kp_left@c = kp_left
-kp_right@c = kp_right
-kp_end@c = kp_end
-kp_down@c = kp_down
-kp_page_down@c = kp_page_down
-kp_home@m = "\e\eOw"
-kp_up@m = "\e\eOx"
-kp_page_up@m = "\e\eOy"
-kp_left@m = "\e\eOt"
-kp_right@m = "\e\eOv"
-kp_end@m = "\e\eOq"
-kp_down@m = "\e\eOr"
-kp_page_down@m = "\e\eOs"
-# insert@s (no sequence)
-# page_up@s (no sequence)
-# page_down@s (no sequence)
-# kp_home@s (no sequence)
-# kp_up@s (no sequence)
-# kp_page_up@s (no sequence)
-# kp_left@s (no sequence)
-# kp_center@s (no sequence)
-# kp_right@s (no sequence)
-# kp_end@s (no sequence)
-# kp_down@s (no sequence)
-# kp_page_down@s (no sequence)
-# kp_insert@s (no sequence)
-# kp_delete@s (no sequence)
-# insert@cm (no sequence)
-# delete@cm (no sequence)
-kp_home@cm = kp_home@m
-kp_up@cm = kp_up@m
-kp_page_up@cm = kp_page_up@m
-kp_left@cm = kp_left@m
-kp_right@cm = kp_right@m
-kp_end@cm = kp_end@m
-kp_down@cm = kp_down@m
-kp_page_down@cm = kp_page_down@m
-# kp_home@cs (no sequence)
-# kp_up@cs (no sequence)
-# kp_page_up@cs (no sequence)
-# kp_left@cs (no sequence)
-# kp_center@cs (no sequence)
-# kp_right@cs (no sequence)
-# kp_end@cs (no sequence)
-# kp_down@cs (no sequence)
-# kp_page_down@cs (no sequence)
-# kp_insert@cs (no sequence)
-# kp_delete@cs (no sequence)
-kp_home@ms = "\e7"
-kp_up@ms = "\e8"
-kp_page_up@ms = "\e9"
-kp_left@ms = "\e4"
-kp_center@ms = "\e5"
-kp_right@ms = "\e6"
-kp_end@ms = "\e1"
-kp_down@ms = "\e2"
-kp_page_down@ms = "\e3"
-kp_insert@ms = "\e0"
-kp_delete@ms = "\e."
-# delete@cms (no sequence)
-kp_center@cms = kp_center@ms
-kp_insert@cms = kp_insert@ms
-kp_delete@cms = kp_delete@ms
+kp_home+c = kp_home
+kp_up+c = kp_up
+kp_page_up+c = kp_page_up
+kp_left+c = kp_left
+kp_right+c = kp_right
+kp_end+c = kp_end
+kp_down+c = kp_down
+kp_page_down+c = kp_page_down
+kp_home+m = "\e\eOw"
+kp_up+m = "\e\eOx"
+kp_page_up+m = "\e\eOy"
+kp_left+m = "\e\eOt"
+kp_right+m = "\e\eOv"
+kp_end+m = "\e\eOq"
+kp_down+m = "\e\eOr"
+kp_page_down+m = "\e\eOs"
+# insert+s (no sequence)
+# page_up+s (no sequence)
+# page_down+s (no sequence)
+# kp_home+s (no sequence)
+# kp_up+s (no sequence)
+# kp_page_up+s (no sequence)
+# kp_left+s (no sequence)
+# kp_center+s (no sequence)
+# kp_right+s (no sequence)
+# kp_end+s (no sequence)
+# kp_down+s (no sequence)
+# kp_page_down+s (no sequence)
+# kp_insert+s (no sequence)
+# kp_delete+s (no sequence)
+# insert+cm (no sequence)
+# delete+cm (no sequence)
+kp_home+cm = kp_home+m
+kp_up+cm = kp_up+m
+kp_page_up+cm = kp_page_up+m
+kp_left+cm = kp_left+m
+kp_right+cm = kp_right+m
+kp_end+cm = kp_end+m
+kp_down+cm = kp_down+m
+kp_page_down+cm = kp_page_down+m
+# kp_home+cs (no sequence)
+# kp_up+cs (no sequence)
+# kp_page_up+cs (no sequence)
+# kp_left+cs (no sequence)
+# kp_center+cs (no sequence)
+# kp_right+cs (no sequence)
+# kp_end+cs (no sequence)
+# kp_down+cs (no sequence)
+# kp_page_down+cs (no sequence)
+# kp_insert+cs (no sequence)
+# kp_delete+cs (no sequence)
+kp_home+ms = "\e7"
+kp_up+ms = "\e8"
+kp_page_up+ms = "\e9"
+kp_left+ms = "\e4"
+kp_center+ms = "\e5"
+kp_right+ms = "\e6"
+kp_end+ms = "\e1"
+kp_down+ms = "\e2"
+kp_page_down+ms = "\e3"
+kp_insert+ms = "\e0"
+kp_delete+ms = "\e."
+# delete+cms (no sequence)
+kp_center+cms = kp_center+ms
+kp_insert+cms = kp_insert+ms
+kp_delete+cms = kp_delete+ms
 }
