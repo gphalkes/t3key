@@ -80,11 +80,11 @@ static PARSE_FUNCTION(parse_options)
 	}
 END_FUNCTION
 
-CKeyMap *maps;
+t3_key_map_t *maps;
 char *best;
 
-CKeyMap *new_map(const char *name) {
-	CKeyMap *result = calloc(1, sizeof(CKeyMap));
+t3_key_map_t *new_map(const char *name) {
+	t3_key_map_t *result = calloc(1, sizeof(t3_key_map_t));
 
 	if (result == NULL)
 		fatal("Out of memory\n");
@@ -102,78 +102,78 @@ CKeyMap *new_map(const char *name) {
 	characters are written in the original string.
 */
 static size_t parse_escapes(char *string) {
-	size_t maxReadPosition = strlen(string) - 1;
-	size_t readPosition = 1, writePosition = 0;
+	size_t max_read_position = strlen(string) - 1;
+	size_t read_position = 1, write_position = 0;
 	size_t i;
 
-	while(readPosition < maxReadPosition) {
-		if (string[readPosition] == '\\') {
-			readPosition++;
+	while(read_position < max_read_position) {
+		if (string[read_position] == '\\') {
+			read_position++;
 
-			if (readPosition == maxReadPosition) {
+			if (read_position == max_read_position) {
 				fatal("%d: Single backslash at end of string\n", line_number);
 			}
-			switch(string[readPosition++]) {
+			switch(string[read_position++]) {
 				case 'E':
 				case 'e':
-					string[writePosition++] = '\033';
+					string[write_position++] = '\033';
 					break;
 				case 'n':
-					string[writePosition++] = '\n';
+					string[write_position++] = '\n';
 					break;
 				case 'r':
-					string[writePosition++] = '\r';
+					string[write_position++] = '\r';
 					break;
 				case '\'':
-					string[writePosition++] = '\'';
+					string[write_position++] = '\'';
 					break;
 				case '\\':
-					string[writePosition++] = '\\';
+					string[write_position++] = '\\';
 					break;
 				case 't':
-					string[writePosition++] = '\t';
+					string[write_position++] = '\t';
 					break;
 				case 'b':
-					string[writePosition++] = '\b';
+					string[write_position++] = '\b';
 					break;
 				case 'f':
-					string[writePosition++] = '\f';
+					string[write_position++] = '\f';
 					break;
 				case 'a':
-					string[writePosition++] = '\a';
+					string[write_position++] = '\a';
 					break;
 				case 'v':
-					string[writePosition++] = '\v';
+					string[write_position++] = '\v';
 					break;
 				case '?':
-					string[writePosition++] = '\?';
+					string[write_position++] = '\?';
 					break;
 				case '"':
-					string[writePosition++] = '"';
+					string[write_position++] = '"';
 					break;
 				case 'x': {
 					/* Hexadecimal escapes */
 					unsigned int value = 0;
 					/* Read at most two characters, or as many as are valid. */
-					for (i = 0; i < 2 && (readPosition + i) < maxReadPosition && isxdigit(string[readPosition + i]); i++) {
+					for (i = 0; i < 2 && (read_position + i) < max_read_position && isxdigit(string[read_position + i]); i++) {
 						value <<= 4;
-						if (isdigit(string[readPosition + i]))
-							value += (int) (string[readPosition + i] - '0');
+						if (isdigit(string[read_position + i]))
+							value += (int) (string[read_position + i] - '0');
 						else
-							value += (int) (tolower(string[readPosition + i]) - 'a') + 10;
+							value += (int) (tolower(string[read_position + i]) - 'a') + 10;
 						if (value > UCHAR_MAX)
 							/* TRANSLATORS:
 							   The %s argument is a long option name without preceding dashes. */
 							fatal("%d: Invalid hexadecimal escape sequence in string\n", line_number);
 					}
-					readPosition += i;
+					read_position += i;
 
 					if (i == 0)
 						/* TRANSLATORS:
 						   The %s argument is a long option name without preceding dashes. */
 						fatal("%d: Invalid hexadecimal escape sequence in string\n", line_number);
 
-					string[writePosition++] = (char) value;
+					string[write_position++] = (char) value;
 					break;
 				}
 				case '0':
@@ -185,31 +185,31 @@ static size_t parse_escapes(char *string) {
 				case '6':
 				case '7': {
 					/* Octal escapes */
-					int value = (int)(string[readPosition - 1] - '0');
-					size_t maxIdx = string[readPosition - 1] < '4' ? 2 : 1;
-					for (i = 0; i < maxIdx && readPosition + i < maxReadPosition && string[readPosition + i] >= '0' && string[readPosition + i] <= '7'; i++)
-						value = value * 8 + (int)(string[readPosition + i] - '0');
+					int value = (int)(string[read_position - 1] - '0');
+					size_t max_idx = string[read_position - 1] < '4' ? 2 : 1;
+					for (i = 0; i < max_idx && read_position + i < max_read_position && string[read_position + i] >= '0' && string[read_position + i] <= '7'; i++)
+						value = value * 8 + (int)(string[read_position + i] - '0');
 
-					readPosition += i;
+					read_position += i;
 
-					string[writePosition++] = (char) value;
+					string[write_position++] = (char) value;
 					break;
 				}
 				default:
-					string[writePosition++] = string[readPosition];
+					string[write_position++] = string[read_position];
 					break;
 			}
 		} else {
-			string[writePosition++] = string[readPosition++];
+			string[write_position++] = string[read_position++];
 		}
 	}
 	/* Terminate string. */
-	string[writePosition] = 0;
-	return writePosition;
+	string[write_position] = 0;
+	return write_position;
 }
 
-CKeyNode *new_node(const char *key, const char *string, const char *ident) {
-	CKeyNode *result = calloc(1, sizeof(CKeyNode));
+t3_key_node_t *new_node(const char *key, const char *string, const char *ident) {
+	t3_key_node_t *result = calloc(1, sizeof(t3_key_node_t));
 
 	if (result == NULL)
 		fatal("Out of memory\n");
@@ -226,8 +226,8 @@ CKeyNode *new_node(const char *key, const char *string, const char *ident) {
 	return result;
 }
 
-static CKeyNode *lookup_node(CKeyMap *map, const char *key) {
-	CKeyNode *node_ptr;
+static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *key) {
+	t3_key_node_t *node_ptr;
 
 	for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
 		if (strcmp(node_ptr->key, key) == 0)
@@ -236,8 +236,8 @@ static CKeyNode *lookup_node(CKeyMap *map, const char *key) {
 	return NULL;
 }
 
-static CKeyMap *lookup_map(const char *name) {
-	CKeyMap *map_ptr;
+static t3_key_map_t *lookup_map(const char *name) {
+	t3_key_map_t *map_ptr;
 
 	for (map_ptr = maps; map_ptr != NULL; map_ptr = map_ptr->next) {
 		if (strcmp(map_ptr->name, name) == 0)
@@ -246,8 +246,8 @@ static CKeyMap *lookup_map(const char *name) {
 	return NULL;
 }
 
-static void check_nodes(CKeyMap *map) {
-	CKeyNode *node_ptr, *other_node;
+static void check_nodes(t3_key_map_t *map) {
+	t3_key_node_t *node_ptr, *other_node;
 
 	for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
 		if ((other_node = lookup_node(map, node_ptr->key)) != node_ptr)
@@ -260,7 +260,7 @@ static void check_nodes(CKeyMap *map) {
 }
 
 static void check_maps(void) {
-	CKeyMap *map_ptr, *other_map;
+	t3_key_map_t *map_ptr, *other_map;
 
 	for (map_ptr = maps; map_ptr != NULL; map_ptr = map_ptr->next) {
 		if ((other_map = lookup_map(map_ptr->name)) != map_ptr)
@@ -272,8 +272,8 @@ static void check_maps(void) {
 		error("No %%best key was found in the file\n");
 }
 
-static void write_nodes(CKeyNode *nodes, bool all_keys) {
-	CKeyNode *node_ptr;
+static void write_nodes(t3_key_node_t *nodes, bool all_keys) {
+	t3_key_node_t *node_ptr;
 	uint16_t out_short;
 	char *string;
 
@@ -300,7 +300,7 @@ static void write_nodes(CKeyNode *nodes, bool all_keys) {
 }
 
 static void write_maps(void) {
-	CKeyMap *map_ptr;
+	t3_key_map_t *map_ptr;
 	const char magic[] = "CKEY";
 	const char version[] = { 0, 0, 0, 0 };
 	uint16_t out_short;

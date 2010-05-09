@@ -18,8 +18,8 @@ void LLmessage(int class) {
 	}
 }
 
-CKeyMap **current_map = &maps;
-CKeyNode **current_node;
+t3_key_map_t **current_map = &maps;
+t3_key_node_t **current_node;
 }
 
 %token STRING;

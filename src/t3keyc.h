@@ -9,27 +9,27 @@ extern FILE *yyin;
 extern int line_number;
 extern char *yytext;
 
-typedef struct CKeyNode CKeyNode;
-struct CKeyNode {
+typedef struct t3_key_node_t t3_key_node_t;
+struct t3_key_node_t {
 	const char *key;
 	char *string;
 	char *ident;
 	int line_number;
-	CKeyNode *next;
+	t3_key_node_t *next;
 };
 
-typedef struct CKeyMap CKeyMap;
-struct CKeyMap {
+typedef struct t3_key_map_t t3_key_map_t;
+struct t3_key_map_t {
 	char *name;
-	CKeyNode *mapping;
+	t3_key_node_t *mapping;
 	int line_number;
-	CKeyMap *next;
+	t3_key_map_t *next;
 };
 
-extern CKeyMap *maps;
+extern t3_key_map_t *maps;
 extern char *best;
 
-CKeyMap *new_map(const char *name);
-CKeyNode *new_node(const char *key, const char *string, const char *ident);
+t3_key_map_t *new_map(const char *name);
+t3_key_node_t *new_node(const char *key, const char *string, const char *ident);
 
 #endif
