@@ -39,29 +39,38 @@ typedef struct t3_key_node_t t3_key_node_t;
 
 /** A structure which is part of a singly linked list and contains a single key definition. */
 struct t3_key_node_t {
-	T3_KEY_CONST char *key;
-	T3_KEY_CONST char *string;
-	T3_KEY_CONST t3_key_node_t *next;
+	T3_KEY_CONST char *key; /**< The name of the key (with modifiers). */
+	T3_KEY_CONST char *string; /**< The character sequence associated with the key. */
+	T3_KEY_CONST t3_key_node_t *next; /**< Pointer to the next ::t3_key_node_t in the singly-linked list. */
 };
 
 typedef struct t3_key_string_list_t t3_key_string_list_t;
 
 /** A structure which is part of a singly linked list and contains a single string. */
 struct t3_key_string_list_t {
-	T3_KEY_CONST char *string;
-	T3_KEY_CONST t3_key_string_list_t *next;
+	T3_KEY_CONST char *string; /**< A string. */
+	T3_KEY_CONST t3_key_string_list_t *next; /**< Pointer to the next ::t3_key_string_list_t in the singly-linked list. */
 };
 
 #include "key_errors.h"
 
+/** @name Error codes (libt3key specific) */
+/*@{*/
+/** Error code: no terminal given and @c TERM environment variable not set. */
 #define T3_ERR_NO_TERM (-32)
+/** Error code: invalid key-database file format. */
 #define T3_ERR_INVALID_FORMAT (-31)
+/** Error code: Required terminfo key not found in terminfo database. */
 #define T3_ERR_TERMINFO_UNKNOWN (-30)
+/** Error code: Key database contains no maps. */
 #define T3_ERR_NOMAP (-29)
+/** Error code: Key database is truncated. */
 #define T3_ERR_TRUNCATED_DB (-28)
+/** Error code: Error reading key database. */
 #define T3_ERR_READ_ERROR (-27)
-#define T3_ERR_GARBLED_DB (-26)
-#define T3_ERR_WRONG_VERSION (-25)
+/** Error code: Key database is of an unsupported version. */
+#define T3_ERR_WRONG_VERSION (-26)
+/*@}*/
 
 /** Load a key map from database.
     @param term The terminal name to use to find the key database.
@@ -86,12 +95,13 @@ T3_KEY_API void t3_key_free_map(T3_KEY_CONST t3_key_node_t *list);
 
 /** Get map names from database.
     @param term The terminal name to use to find the key database.
+    @param error Location to store the error code.
     @return NULL on failure, a list of ::t3_key_string_list_t structures on success.
 
     If @p term is @c NULL, the environment variable TERM is used to retrieve the
     terminal name.
 */
-T3_KEY_API T3_KEY_CONST t3_key_string_list_t *t3_key_get_map_names(const char *term);
+T3_KEY_API T3_KEY_CONST t3_key_string_list_t *t3_key_get_map_names(const char *term, int *error);
 
 /** Free a map names list.
     @param list The list of map names to free.
@@ -100,12 +110,13 @@ T3_KEY_API void t3_key_free_names(T3_KEY_CONST t3_key_string_list_t *list);
 
 /** Get name of best map from database.
     @param term The terminal name to use to find the key database.
+    @param error Location to store the error code.
     @return NULL on failure, the name of the best map on success.
 
     If @p term is @c NULL, the environment variable TERM is used to retrieve the
     terminal name. The name is allocated using @c malloc.
 */
-T3_KEY_API char *t3_key_get_best_map_name(const char *term);
+T3_KEY_API char *t3_key_get_best_map_name(const char *term, int *error);
 
 /** Get a named node from a map.
 	@param map The map to search.
