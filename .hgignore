@@ -3,7 +3,7 @@ src/key_errors.h
 src/key_api.h
 doc/doxygen.conf
 doc/DoxygenLayout.xml
-
+doc/API
 src/.objects
 src/.deps
 src/.libs
