@@ -6,6 +6,9 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "optionMacros.h"
 #include "grammar.h"
@@ -13,8 +16,15 @@
 #include "shareddefs.h"
 
 typedef enum { false, true } bool;
+
 static FILE *output;
-static char *output_filename;
+static char *output_filename, *database_dir;
+static bool error_seen;
+static const char *input;
+extern FILE *yyin;
+t3_key_map_t *maps;
+char *best;
+t3_key_string_list_t *akas;
 
 /** Alert the user of a fatal error and quit.
     @param fmt The format string for the message. See fprintf(3) for details.
@@ -29,7 +39,6 @@ void fatal(const char *fmt, ...) {
 	exit(EXIT_FAILURE);
 }
 
-static bool error_seen;
 /** Alert the user of an error.
     @param fmt The format string for the message. See fprintf(3) for details.
     @param ... The arguments for printing.
@@ -51,15 +60,20 @@ char *safe_strdup(const char *str) {
 	return result;
 }
 
-static const char *input;
-extern FILE *yyin;
-
 static PARSE_FUNCTION(parse_options)
 	OPTIONS
 		OPTION('o', "output", REQUIRED_ARG)
+			if (output_filename != NULL)
+				fatal("Multiple output options specified\n");
+			if (strchr(optArg, '/') != NULL)
+				fatal("Output name may not contain directory separators\n");
 			output_filename = optArg;
 		END_OPTION
-		#warning FIXME: output should be defined as a directory for the %aka keys to work
+		OPTION('d', "database-dir", REQUIRED_ARG)
+			if (database_dir != NULL)
+				fatal("Multiple database-dir options specified\n");
+			database_dir = optArg;
+		END_OPTION
 		DOUBLE_DASH
 			NO_MORE_OPTIONS;
 		END_OPTION
@@ -70,19 +84,17 @@ static PARSE_FUNCTION(parse_options)
 		input = optcurrent;
 	END_OPTIONS
 
-	if (input == NULL && output_filename == NULL) {
+	if (input == NULL && output_filename == NULL)
 		fatal("Need output option when reading input from standard input\n");
-	} else if (output_filename == NULL) {
-		output_filename = malloc(strlen(input) + 6);
-		if (output_filename == NULL)
-			fatal("Out of memory\n");
-		strcpy(output_filename, input);
-		strcat(output_filename, ".ckey");
+	else if (output_filename == NULL) {
+		output_filename = safe_strdup(input);
+		if (strrchr(output_filename, '/') != NULL)
+			output_filename = strrchr(output_filename, '/') + 1;
 	}
-END_FUNCTION
 
-t3_key_map_t *maps;
-char *best;
+	if (database_dir == NULL)
+		database_dir = safe_strdup(".");
+END_FUNCTION
 
 t3_key_map_t *new_map(const char *name) {
 	t3_key_map_t *result = calloc(1, sizeof(t3_key_map_t));
@@ -102,7 +114,7 @@ t3_key_map_t *new_map(const char *name) {
 	The use of this function processes escape characters. The converted
 	characters are written in the original string.
 */
-static size_t parse_escapes(char *string) {
+size_t parse_escapes(char *string) {
 	size_t max_read_position = strlen(string) - 1;
 	size_t read_position = 1, write_position = 0;
 	size_t i;
@@ -273,6 +285,13 @@ static void check_maps(void) {
 		error("No %%best key was found in the file\n");
 }
 
+static void fwrite_string(const char *string, FILE *output) {
+	uint16_t out_short;
+	out_short = htons(strlen(string));
+	fwrite(&out_short, 1, 2, output);
+	fwrite(string, 1, strlen(string), output);
+}
+
 static void write_nodes(t3_key_node_t *nodes, bool all_keys) {
 	t3_key_node_t *node_ptr;
 	uint16_t out_short;
@@ -290,12 +309,8 @@ static void write_nodes(t3_key_node_t *nodes, bool all_keys) {
 				string = node_ptr->ident;
 			}
 			fwrite(&out_short, 1, 2, output);
-			out_short = htons(strlen(node_ptr->key));
-			fwrite(&out_short, 1, 2, output);
-			fwrite(node_ptr->key, 1, strlen(node_ptr->key), output);
-			out_short = htons(strlen(string));
-			fwrite(&out_short, 1, 2, output);
-			fwrite(string, 1, strlen(string), output);
+			fwrite_string(node_ptr->key, output);
+			fwrite_string(string, output);
 		}
 	}
 }
@@ -305,9 +320,24 @@ static void write_maps(void) {
 	const char magic[] = "CKEY";
 	const char version[] = { 0, 0, 0, 0 };
 	uint16_t out_short;
+	char *outname;
+	t3_key_string_list_t *ptr;
 
-	if ((output = fopen(output_filename, "wb")) == NULL)
-		fatal("Can't open output file %s: %s\n", output_filename, strerror(errno));
+	if ((outname = malloc(strlen(output_filename) + strlen(database_dir) + 3 + 1)) == NULL)
+		fatal("Out of memory\n");
+
+	strcpy(outname, database_dir);
+	if (!(mkdir(outname, 0777) == 0 || errno == EEXIST))
+		fatal("Could not create directory %s: %s\n", outname, strerror(errno));
+	strcat(outname, "/");
+	strncat(outname, output_filename, 1);
+	if (!(mkdir(outname, 0777) == 0 || errno == EEXIST))
+		fatal("Could not create directory %s: %s\n", outname, strerror(errno));
+	strcat(outname, "/");
+	strcat(outname, output_filename);
+
+	if ((output = fopen(outname, "wb")) == NULL)
+		fatal("Can't open output file %s: %s\n", outname, strerror(errno));
 
 	fwrite(magic, 1, 4, output);
 	fwrite(version, 1, 4, output);
@@ -320,27 +350,95 @@ static void write_maps(void) {
 	fwrite(&out_short, 1, 2, output);
 	fwrite(best, 1, strlen(best), output);
 
-
 	for (map_ptr = maps; map_ptr != NULL; map_ptr = map_ptr->next) {
 		if (map_ptr->name[0] == '_')
 			continue;
 
 		out_short = htons(NODE_MAP_START);
 		fwrite(&out_short, 1, 2, output);
-		out_short = htons(strlen(map_ptr->name));
-		fwrite(&out_short, 1, 2, output);
-		fwrite(map_ptr->name, 1, strlen(map_ptr->name), output);
+		fwrite_string(map_ptr->name, output);
 		write_nodes(map_ptr->mapping, true);
 	}
+
+	out_short = htons(NODE_NAME);
+	fwrite(&out_short, 1, 2, output);
+	fwrite_string(output_filename, output);
+
+	out_short = htons(NODE_AKA);
+	ptr = akas;
+	while (ptr != NULL) {
+		fwrite(&out_short, 1, 2, output);
+		fwrite_string(ptr->string, output);
+		ptr = ptr->next;
+	}
+
 	out_short = htons(NODE_END_OF_FILE);
 	fwrite(&out_short, 1, 2, output);
 
 	if (ferror(output)) {
 		fprintf(stderr, "Error writing output: %s\n", strerror(errno));
-		remove(output_filename);
+		remove(outname);
 		exit(EXIT_FAILURE);
 	}
 	fclose(output);
+	free(outname);
+}
+
+static void create_links(void) {
+	size_t outlen;
+	char *outname, *linkname, *linkcontents;
+	t3_key_string_list_t *ptr;
+
+	outlen = strlen(output_filename) + 2 + 3 + 1;
+	if ((outname = malloc(outlen)) == NULL)
+		fatal("Out of memory\n");
+	if ((linkcontents = malloc(outlen + 2)) == NULL)
+		fatal("Out of memory\n");
+
+	strcpy(outname, "..");
+	strcat(outname, "/");
+	strncat(outname, output_filename, 1);
+	strcat(outname, "/");
+	strcat(outname, output_filename);
+
+	ptr = akas;
+	while (ptr != NULL) {
+		if ((linkname = malloc(strlen(ptr->string) + strlen(database_dir) + 3 + 1)) == NULL)
+			fatal("Out of memory\n");
+
+		strcpy(linkname, database_dir);
+		if (!(mkdir(linkname, 0777) == 0 || errno == EEXIST))
+			fatal("Could not create directory %s: %s\n", linkname, strerror(errno));
+		strcat(linkname, "/");
+		strncat(linkname, ptr->string, 1);
+		if (!(mkdir(linkname, 0777) == 0 || errno == EEXIST))
+			fatal("Could not create directory %s: %s\n", linkname, strerror(errno));
+		strcat(linkname, "/");
+		strcat(linkname, ptr->string);
+
+		if (symlink(outname, linkname) != 0) {
+			if (errno == EEXIST) {
+				ssize_t result;
+				if ((result = readlink(linkname, linkcontents, outlen + 1)) == -1) {
+					fprintf(stderr, "Could not create a link with name %s for %s "
+						"because another object is in the way\n",
+						linkname, output_filename);
+				} else {
+					linkcontents[result] = 0;
+					if (strcmp(linkcontents, outname) != 0)
+						fprintf(stderr, "Link with name %s already exists but does not point to %s\n",
+							linkname, outname);
+				}
+			} else {
+				fprintf(stderr, "Could not create a link with name %s for %s: %s\n",
+					linkname, output_filename, strerror(errno));
+			}
+		}
+
+		free(linkname);
+		ptr = ptr->next;
+	}
+	free(outname);
 }
 
 int main(int argc, char *argv[]) {
@@ -357,6 +455,8 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 
 	write_maps();
+	if (akas != NULL)
+		create_links();
 
 	return EXIT_SUCCESS;
 }

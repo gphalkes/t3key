@@ -22,6 +22,6 @@ LDLIBS += -lcurses
 .objects/test.o: | library
 
 library:
-	@$(MAKE) -C ../src libt3key.la
+	@$(MAKE) -C ../src $(_VERBOSE_PRINT) libt3key.la
 
 .PHONY: library

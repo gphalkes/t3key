@@ -15,5 +15,6 @@ int line_number = 1;
 %leave                            return LEAVE;
 %include                          return INCLUDE;
 %best                             return BEST;
+%aka                              return AKA;
 \"([^\\"]|\\.)*\"                 return STRING;
 [{}=]                             return yytext[0];

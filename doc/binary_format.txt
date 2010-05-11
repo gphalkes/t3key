@@ -32,4 +32,7 @@ Best map     | 0    | A string with the name of the best map
 Map start    | 1    | A string with the name of the map that follows
 Key value    | 2    | Two strings, one for the key, one for the value
 Key terminfo | 3    | Two strings, one for the key, one for the terminfo key
+Name         | 4    | A string with the name of the file (terminal name)
+AKA          | 5    | Alternative terminal names for which this database is
+             |      |   valid
 End of file  | FFFF | None

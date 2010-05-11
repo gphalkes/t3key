@@ -1,7 +1,7 @@
 %options "generate-lexer-wrapper generate-symbol-table lowercase-symbols";
 
 {
-
+#include <stdlib.h>
 #include "t3keyc.h"
 
 void LLmessage(int class) {
@@ -29,16 +29,35 @@ t3_key_node_t **current_node;
 %label LEAVE, "%leave";
 %label INCLUDE, "%include";
 %label BEST, "%best";
+%label AKA, "%aka";
 %label MISSING_KEY, "key";
 %start parse, description;
 
-description :
+description {
+	t3_key_string_list_t **next_aka = &akas;
+} :
 	[
 		map
 	|
 		BEST '='? IDENTIFIER
 		{
 			best = safe_strdup(yytext);
+		}
+	|
+		AKA '='?
+		[
+			IDENTIFIER
+		|
+			STRING
+		]
+		{
+			if ((*next_aka = malloc(sizeof(t3_key_string_list_t))) == NULL)
+				fatal("Out of memory\n");
+			(*next_aka)->string = safe_strdup(yytext);
+			if (yytext[0] == '"')
+				parse_escapes((*next_aka)->string);
+			(*next_aka)->next = NULL;
+			next_aka = &(*next_aka)->next;
 		}
 	]+
 ;

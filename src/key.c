@@ -43,6 +43,11 @@ static int new_node(void **result, size_t size);
 #define NEW_NODE(_x) new_node((void **) (_x), sizeof(**(_x)))
 static t3_key_node_t *load_ti_keys(int *error);
 
+/** Open database.
+    @param term The terminal name to use or @c NULL for contents of @c TERM.
+    @param error The location to store an error.
+    @return A pointer to the @c FILE for the database, or @c NULL or error.
+*/
 static FILE *open_database(const char *term, int *error) {
 	size_t name_length, term_length;
 	FILE *input = NULL;
@@ -171,6 +176,10 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 				next_node = &(*next_node)->next;
 				break;
 			}
+			case NODE_NAME:
+			case NODE_AKA:
+				ENSURE(skip_string(input));
+				break;
  			case NODE_END_OF_FILE:
 				if (list == NULL && error != NULL)
 					*error = T3_ERR_NOMAP;
@@ -322,14 +331,23 @@ static const Mapping keymapping[] = {
 
 static t3_key_node_t *load_ti_keys(int *error) {
 	t3_key_node_t *list = NULL, **next_node = &list;
+	char function_key[10];
 	size_t i;
+	int j;
 
 	for (i = 0; i < sizeof(keymapping)/sizeof(keymapping[0]); i++) {
 		ENSURE(make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key));
 		if (*next_node != NULL)
 			next_node = &(*next_node)->next;
 	}
-	#warning FIXME: add function keys programmatically (f1-f63)
+
+	for (j = 1; j < 64; j++) {
+		sprintf(function_key, "kf%d", j);
+		ENSURE(make_node_from_ti(next_node, function_key, function_key + 1));
+		if (*next_node == NULL)
+			break;
+		next_node = &(*next_node)->next;
+	}
 	return list;
 
 return_error:
@@ -359,6 +377,10 @@ t3_key_string_list_t *t3_key_get_map_names(const char *term, int *error) {
 			case NODE_KEY_VALUE:
 			case NODE_KEY_TERMINFO:
 				ENSURE(skip_string(input));
+				ENSURE(skip_string(input));
+				break;
+			case NODE_NAME:
+			case NODE_AKA:
 				ENSURE(skip_string(input));
 				break;
  			case NODE_END_OF_FILE:
