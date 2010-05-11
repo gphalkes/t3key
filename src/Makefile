@@ -1,8 +1,3 @@
-CFLAGS += -I.
-LCFLAGS += -DT3_KEY_BUILD_DSO
-
-LDLIBS += -lcurses
-
 LCFILES.libt3key.la := key.c
 CFLAGS.key := -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
 
@@ -16,6 +11,10 @@ include ../../makesys/rules.mk
 #================================================#
 T3NAME := key
 include ../../t3shared/rules.mk
+
+CFLAGS += -I.
+LCFLAGS += -DT3_KEY_BUILD_DSO
+LDLIBS += -lcurses
 
 updatedb: | utils
 	@./updatedb
