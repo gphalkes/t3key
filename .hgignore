@@ -4,12 +4,12 @@ src/key_api.h
 doc/doxygen.conf
 doc/DoxygenLayout.xml
 doc/API
-src/.objects
-src/.deps
-src/.libs
-src/t3learnkeys
-src/t3keyc
-src/test
+src*/.objects
+src*/.deps
+src*/.libs
+src.util/t3learnkeys
+src.util/t3keyc
+src.util/test
 src/libt3key.la
 src/database/?/*
 

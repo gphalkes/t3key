@@ -11,30 +11,32 @@ ifeq ($(VERSION),debug)
 else
 	CFLAGS:=-Wall -W $(ANSIFLAGS) -O2
 endif
-CFLAGS+=-I.
-LCFLAGS+=-DT3_KEY_BUILD_DSO
+CFLAGS+=-I. -I../src -I.objects
 
 LDLIBS+=-lcurses
 
-LCFILES.libt3key.la:= key.c
-CFLAGS.key:= -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
-LDFLAGS.libt3key.so:= -shared
+CFILES.t3learnkeys:= t3learnkeys.c
+CFILES.t3keyc:= t3keyc.c
+GFILES.t3keyc:= grammar.g
+LFILES.t3keyc:= lex.l
+CFLAGS.lex:= -Wno-shadow -Wno-switch-default -Wno-unused
+CFILES.test:= test.c
+LDFLAGS.test:= -L../src/.libs
+LDLIBS.test:= -lt3key
 
-TARGETS:= libt3key.la
-EXTRATARGETS:= updatedb
+DEPS.grammar.g:= lex.l t3keyc.c
+
+TARGETS:= t3learnkeys t3keyc test
 
 #================================================#
 # NO RULES SHOULD BE DEFINED BEFORE THIS INCLUDE #
 #================================================#
 include ../../makesys/rules.mk
 #================================================#
-T3NAME:=key
-include ../../t3shared/rules.mk
 
-updatedb: | utils
-	@./updatedb
+.objects/test.o: | library
 
-utils: | libt3key.la
-	@$(MAKE) -C ../src.util
+library:
+	@$(MAKE) -C ../src libt3key.la
 
-.PHONY: updatedb utils
+.PHONY: library

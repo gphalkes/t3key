@@ -12,5 +12,5 @@ for i in `ls -d database/*` ; do
 
 	[ -d "database/${base:0:1}" ] || mkdir -p "database/${base:0:1}" > /dev/null
 	echo "== Compiling $base =="
-	./t3keyc -o "database/${base:0:1}/$base" "$i"
+	../src.util/t3keyc -o "database/${base:0:1}/$base" "$i"
 done
