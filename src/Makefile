@@ -20,6 +20,6 @@ updatedb: | utils
 	@./updatedb
 
 utils: | libt3key.la
-	@$(MAKE) -C ../src.util
+	@$(MAKE) -C ../src.util $(_VERBOSE_PRINT)
 
 .PHONY: updatedb utils
