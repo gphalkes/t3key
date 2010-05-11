@@ -81,14 +81,15 @@ right: Right
 kp_home: Keypad Home
 kp_up: Keypad Up
 kp_page_up: Keypad Page Up
+kp_page_down: Keypad Page Down
 kp_left: Keypad Left
 kp_center: Keypad Center
 kp_right: Keypad Right
 kp_end: Keypad End
 kp_down: Keypad Down
-kp_page_down: Keypad Page Down
 kp_insert: Keypad Insert
 kp_delete: Keypad Delete
+kp_enter: Keypad enter
 tab: Tab
 backspace: Backspace
 f<num>: Function key <num>

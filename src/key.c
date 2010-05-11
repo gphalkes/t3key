@@ -293,18 +293,31 @@ typedef struct {
 static const Mapping keymapping[] = {
 	{ "smkx", "%enter" },
 	{ "rmkx", "%leave" },
-	{ "khome", "kp_home" }, //FIXME: shouldn't this be home and ka1 be kp_home??
-	{ "kend", "kp_end" },
-	{ "kcud1", "kp_down" },
-	{ "kcuu1", "kp_up" },
-	{ "kcub1", "kp_left" },
-	{ "kcuf1", "kp_right" },
-	{ "kpp", "kp_page_up" },
-	{ "knp", "kp_page_down" },
-	{ "kdch1", "kp_delete" },
-	{ "kich1", "kp_insert" },
-	{ "kbs", "backspace" }
-	//FIXME: add all the keys we know of
+	{ "kich1", "insert" },
+	{ "kdch1", "delete" },
+	{ "khome", "home" },
+	{ "kend", "end" },
+	{ "kpp", "page_up" },
+	{ "knp", "page_down" },
+	{ "kcuu1", "up" },
+	{ "kcub1", "left" },
+	{ "kcud1", "down" },
+	{ "kcuf1", "right" },
+	{ "ka1", "kp_home" },
+	{ "kc1", "kp_end" },
+	{ "kb2", "kp_center" },
+	{ "ka3", "kp_page_up" },
+	{ "kc3", "kp_page_down" },
+	{ "kbs", "backspace" },
+
+	{ "kIC", "insert+s" },
+	{ "kDC", "delete+s" },
+	{ "kHOM", "home+s" },
+	{ "kEND", "end+s" },
+	{ "kLFT", "left+s" },
+	{ "kRIT", "right+s" },
+	{ "kcbt", "tab+s" },
+	{ "kent", "enter" },
 };
 
 static t3_key_node_t *load_ti_keys(int *error) {
@@ -316,6 +329,7 @@ static t3_key_node_t *load_ti_keys(int *error) {
 		if (*next_node != NULL)
 			next_node = &(*next_node)->next;
 	}
+	#warning FIXME: add function keys programmatically (f1-f63)
 	return list;
 
 return_error:
