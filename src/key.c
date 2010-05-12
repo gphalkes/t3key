@@ -323,6 +323,8 @@ static const Mapping keymapping[] = {
 	{ "kDC", "delete+s" },
 	{ "kHOM", "home+s" },
 	{ "kEND", "end+s" },
+	{ "KNXT", "page_up+s" },
+	{ "KPRV", "page_down+s" },
 	{ "kLFT", "left+s" },
 	{ "kRIT", "right+s" },
 	{ "kcbt", "tab+s" },

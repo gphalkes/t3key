@@ -37,9 +37,13 @@ static Map keynames[] = {
 	{ "Left", "left" },
 	{ "Down", "down" },
 	{ "Right", "right" },
+	{ "Keypad /", "kp_div" },
+	{ "Keypad *", "kp_mul" },
+	{ "Keypad -", "kp_minus" },
 	{ "Keypad Home", "kp_home" },
 	{ "Keypad Up", "kp_up" },
 	{ "Keypad Page Up", "kp_page_up" },
+	{ "Keypad +", "kp_plus" },
 	{ "Keypad Left", "kp_left" },
 	{ "Keypad Center", "kp_center" },
 	{ "Keypad Right", "kp_right" },
@@ -48,6 +52,7 @@ static Map keynames[] = {
 	{ "Keypad Page Down", "kp_page_down" },
 	{ "Keypad Insert", "kp_insert" },
 	{ "Keypad Delete", "kp_delete" },
+	{ "Keypad Enter", "kp_enter" },
 	{ "Tab", "tab" }
 #endif
 };

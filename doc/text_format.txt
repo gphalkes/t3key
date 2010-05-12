@@ -90,6 +90,10 @@ kp_down: Keypad Down
 kp_insert: Keypad Insert
 kp_delete: Keypad Delete
 kp_enter: Keypad enter
+kp_div: Keypad /
+kp_mul: Keypad *
+kp_minus: Keypad -
+kp_plus: Keypad +
 tab: Tab
 backspace: Backspace
 f<num>: Function key <num>

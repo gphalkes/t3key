@@ -15,6 +15,8 @@
 #include "t3keyc.h"
 #include "shareddefs.h"
 
+#warning FIXME: we need to emit a warning for unknown key descriptors
+
 typedef enum { false, true } bool;
 
 static FILE *output;

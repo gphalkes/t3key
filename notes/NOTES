@@ -1,0 +1,8 @@
+XTerm (and many other terminals) have the annoying habit of hiding a lot of
+keys from the application. For XTerm this can be disabled by adding the
+following to the .Xresources file:
+
+XTerm*VT100*translations: #override\n\
+	~Meta <KeyPress>:insert-seven-bit()
+
+Simply using #override doesn't work.
