@@ -23,6 +23,7 @@ typedef struct {
 	const char *tikey;
 	const char *key;
 } Mapping;
+
 static const Mapping keymapping[] = {
 	{ "kich1", "insert" },
 	{ "kdch1", "delete" },
@@ -134,6 +135,7 @@ static PARSE_FUNCTION(parse_options)
 		database_dir = safe_strdup(".");
 END_FUNCTION
 
+/* Allocate a new map. */
 t3_key_map_t *new_map(const char *name) {
 	t3_key_map_t *result = calloc(1, sizeof(t3_key_map_t));
 
@@ -259,6 +261,7 @@ size_t parse_escapes(char *string) {
 	return write_position;
 }
 
+/* Allocate a new node and initialize it. Strings passed in the string argument are fully expanded. */
 t3_key_node_t *new_node(const char *key, const char *string, const char *ident) {
 	t3_key_node_t *result = calloc(1, sizeof(t3_key_node_t));
 
@@ -277,6 +280,7 @@ t3_key_node_t *new_node(const char *key, const char *string, const char *ident) 
 	return result;
 }
 
+/* Find a node by name in a map. */
 static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *key) {
 	t3_key_node_t *node_ptr;
 
@@ -287,6 +291,7 @@ static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *key) {
 	return NULL;
 }
 
+/* Find a map used as argument in a %include directive. */
 static t3_key_map_t *lookup_map(const char *name) {
 	t3_key_map_t *map_ptr;
 
@@ -297,6 +302,7 @@ static t3_key_map_t *lookup_map(const char *name) {
 	return NULL;
 }
 
+/* Search for a known terminfo to t3_key symbol mapping. Returns the index into keymapping, or -1 if not found. */
 static int get_ti_mapping(const char *name) {
 	int i;
 	for (i = 0; i < (int) (sizeof(keymapping) / sizeof(keymapping[0])); i++) {
@@ -306,32 +312,47 @@ static int get_ti_mapping(const char *name) {
 	return -1;
 }
 
+/* Check the contents of a map for duplicates and non-existent %include's */
 static void check_nodes(t3_key_map_t *map) {
 	t3_key_node_t *node_ptr, *other_node;
 	bool check_ti = false;
 	int idx;
 
+	/* If smkx is defined, we should check whether the keys defined in the map
+	   that defines %enter as smkx correspond to the definitions in the terminfo
+	   database. */
 	if (smkx != NULL) {
 		for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
 			if (strcmp("%enter", node_ptr->key) == 0) {
-				if (node_ptr->ident != NULL && strcmp(node_ptr->ident, "smkx") == 0)
+				if ((node_ptr->ident != NULL && strcmp(node_ptr->ident, "smkx") == 0) ||
+						(node_ptr->string != NULL && strcmp(node_ptr->string, smkx) == 0))
 					check_ti = true;
-				else if (node_ptr->string != NULL && strcmp(node_ptr->string, smkx) == 0)
-					check_ti = true;
+
 				break;
 			}
 		}
 	}
 
 	for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
+		/* Check whether an %include'd map actually exists. */
+		if (strcmp("%include", node_ptr->key) == 0) {
+			if (lookup_map(node_ptr->ident) == NULL)
+				error("%d: %%include map %s not found\n", node_ptr->line_number, node_ptr->string);
+			#warning FIXME: check for duplicate includes
+			continue;
+		}
+		#warning FIXME: we currently skip the included maps when checking for duplicate keys!!
+
+		/* Check whether the current key is already defined in this map.
+		   Note that because we check whether the found definition for "key"
+		   is the same as the current node, we automatically only emit an
+		   error on second or later occurence. */
 		if ((other_node = lookup_node(map, node_ptr->key)) != node_ptr)
 			error("%d: node %s:%s already defined on line %d\n", node_ptr->line_number, map->name, node_ptr->key, other_node->line_number);
 
-		if (strcmp("%include", node_ptr->key) == 0)
-			if (lookup_map(node_ptr->ident) == NULL)
-				error("%d: %%include map %s not found\n", node_ptr->line_number, node_ptr->string);
-
-		if (check_ti && (idx = get_ti_mapping(node_ptr->key)) >= 0) {
+		/* Check whether the key is contained in the terminfo database, and if so,
+		   check whether the definition is the same. If not, emit a warning. */
+		if (check_ti && node_ptr->key[0] != '%' && (idx = get_ti_mapping(node_ptr->key)) >= 0) {
 			char *tistr = tigetstr(keymapping[idx].tikey);
 			if (!(tistr == (char *) -1 || tistr == NULL)) {
 				if (node_ptr->string != NULL && strcmp(tistr, node_ptr->string) != 0)
@@ -342,6 +363,7 @@ static void check_nodes(t3_key_map_t *map) {
 	}
 }
 
+/* Check all maps for validity. */
 static void check_maps(void) {
 	t3_key_map_t *map_ptr, *other_map;
 
@@ -351,10 +373,13 @@ static void check_maps(void) {
 
 		check_nodes(map_ptr);
 	}
+
 	if (best == NULL)
 		error("No %%best key was found in the file\n");
 }
 
+/* Write a string to the output file. This requires writing the length in network byte order,
+   followed by the string contents (without the trailing zero byte). */
 static void fwrite_string(const char *string, FILE *output) {
 	uint16_t out_short;
 	out_short = htons(strlen(string));
@@ -362,6 +387,8 @@ static void fwrite_string(const char *string, FILE *output) {
 	fwrite(string, 1, strlen(string), output);
 }
 
+/* Write all nodes in a list (map). If all all_keys is false, keys starting with % will
+   not be written to file. */
 static void write_nodes(t3_key_node_t *nodes, bool all_keys) {
 	t3_key_node_t *node_ptr;
 	uint16_t out_short;
@@ -385,6 +412,7 @@ static void write_nodes(t3_key_node_t *nodes, bool all_keys) {
 	}
 }
 
+/* Write the output file containing all maps. */
 static void write_maps(void) {
 	t3_key_map_t *map_ptr;
 	const char magic[] = "CKEY";
@@ -454,6 +482,7 @@ static void write_maps(void) {
 	free(outname);
 }
 
+/* Create all symbolic links indicated by %aka directives. */
 static void create_links(void) {
 	size_t outlen;
 	char *outname, *linkname, *linkcontents;

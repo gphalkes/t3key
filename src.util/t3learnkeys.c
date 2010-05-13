@@ -17,6 +17,7 @@
 
 //FIXME: test modifier-letter as well
 //FIXME: test modifier-tab
+//FIXME: put entries that are the same for two or more maps in a single shared map
 
 typedef struct {
 	const char *name;
