@@ -23,8 +23,12 @@ struct t3_key_map_t {
 	char *name;
 	t3_key_node_t *mapping;
 	int line_number;
+	int flags;
 	t3_key_map_t *next;
 };
+
+#define FLAG_MARK_INCLUDED (1<<0)
+#define FLAG_MARK_LOOKUP (1<<1)
 
 typedef struct t3_key_string_list_t t3_key_string_list_t;
 struct t3_key_string_list_t {
