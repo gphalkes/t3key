@@ -56,20 +56,18 @@ struct t3_key_string_list_t {
 
 /** @name Error codes (libt3key specific) */
 /*@{*/
-/** Error code: no terminal given and @c TERM environment variable not set. */
-#define T3_ERR_NO_TERM (-32)
 /** Error code: invalid key-database file format. */
-#define T3_ERR_INVALID_FORMAT (-31)
+#define T3_ERR_INVALID_FORMAT (-32)
 /** Error code: Required terminfo key not found in terminfo database. */
-#define T3_ERR_TERMINFO_UNKNOWN (-30)
+#define T3_ERR_TERMINFO_UNKNOWN (-31)
 /** Error code: Key database contains no maps. */
-#define T3_ERR_NOMAP (-29)
+#define T3_ERR_NOMAP (-30)
 /** Error code: Key database is truncated. */
-#define T3_ERR_TRUNCATED_DB (-28)
+#define T3_ERR_TRUNCATED_DB (-29)
 /** Error code: Error reading key database. */
-#define T3_ERR_READ_ERROR (-27)
+#define T3_ERR_READ_ERROR (-28)
 /** Error code: Key database is of an unsupported version. */
-#define T3_ERR_WRONG_VERSION (-26)
+#define T3_ERR_WRONG_VERSION (-27)
 /*@}*/
 
 /** Load a key map from database.

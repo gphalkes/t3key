@@ -17,7 +17,8 @@ TARGETS := t3learnkeys t3keyc test
 include ../../makesys/rules.mk
 #================================================#
 CFLAGS += -I. -I../src -I.objects
-LDLIBS += -lcurses
+LDLIBS.t3learnkeys += -lcurses
+LDLIBS.t3keyc += -lcurses
 
 .objects/test.o: | library
 

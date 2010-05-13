@@ -1,8 +1,9 @@
 TODO
 ====
-- implement %aka keys
 - location of database directory should be configurable through environment
   and the user's home directory should also be searched
+- handle keys that are available in terminfo, but not in the (text) database,
+  and keys for which the TI entry differs.
 - what to do with all these keys that may be available on hardware terminals,
   but not on PC keyboards?
 

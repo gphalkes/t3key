@@ -37,7 +37,6 @@ int main(int argc, char *argv[]) {
 	if (argc == 2)
 		term = argv[1];
 
-	setupterm(term, 1, NULL);
 	node = t3_key_load_map(term, NULL, &error);
 	printf("%s: %s\n", term, t3_key_strerror(error));
 

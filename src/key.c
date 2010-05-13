@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <arpa/inet.h>
+#include <term.h>
 
 #ifdef USE_GETTEXT
 #include <libintl.h>
@@ -41,7 +42,7 @@ static int skip_string(FILE *input);
 static int read_string(FILE *input, char **string);
 static int new_node(void **result, size_t size);
 #define NEW_NODE(_x) new_node((void **) (_x), sizeof(**(_x)))
-static t3_key_node_t *load_ti_keys(int *error);
+static t3_key_node_t *load_ti_keys(const char *term, int *error);
 
 /** Open database.
     @param term The terminal name to use or @c NULL for contents of @c TERM.
@@ -96,7 +97,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 	if ((input = open_database(term, error)) == NULL) {
 		if (errno != ENOENT)
 			RETURN_ERROR(T3_ERR_ERRNO);
-		return load_ti_keys(error);
+		return load_ti_keys(term, error);
 	}
 
 	while (fread(&node, 2, 1, input) == 1) {
@@ -331,11 +332,21 @@ static const Mapping keymapping[] = {
 	{ "kent", "enter" },
 };
 
-static t3_key_node_t *load_ti_keys(int *error) {
+static t3_key_node_t *load_ti_keys(const char *term, int *error) {
 	t3_key_node_t *list = NULL, **next_node = &list;
 	char function_key[10];
 	size_t i;
-	int j;
+	int errret, j;
+
+	if (setupterm(term, 1, &errret) == ERR) {
+		if (errret == 1)
+			RETURN_ERROR(T3_ERR_HARDCOPY_TERMINAL);
+		else if (errret == -1)
+			RETURN_ERROR(T3_ERR_TERMINFODB_NOT_FOUND);
+		else if (errret == 0)
+			RETURN_ERROR(T3_ERR_TERMINAL_TOO_LIMITED);
+		RETURN_ERROR(T3_ERR_UNKNOWN);
+	}
 
 	for (i = 0; i < sizeof(keymapping)/sizeof(keymapping[0]); i++) {
 		ENSURE(make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key));
@@ -459,8 +470,15 @@ const char *t3_key_strerror(int error) {
 			return _("Bad argument passed to function");
 		case T3_ERR_OUT_OF_MEMORY:
 			return _("Out of memory");
+		case T3_ERR_TERMINFODB_NOT_FOUND:
+			return _("No information found in terminfo database for terminal");
+		case T3_ERR_HARDCOPY_TERMINAL:
+			return _("Terminal is a hard-copy terminal");
+		case T3_ERR_TERMINAL_TOO_LIMITED:
+			return _("Terminal provides too limited functionality");
 		case T3_ERR_NO_TERM:
 			return _("No terminal given and TERM environment variable not set");
+
 		case T3_ERR_INVALID_FORMAT:
 			return _("Invalid key-database file format");
 		case T3_ERR_TERMINFO_UNKNOWN:
