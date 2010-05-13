@@ -9,15 +9,51 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <term.h>
 
 #include "optionMacros.h"
 #include "grammar.h"
 #include "t3keyc.h"
 #include "shareddefs.h"
 
-#warning FIXME: we need to emit a warning for unknown key descriptors
-
 typedef enum { false, true } bool;
+
+/* FIXME: we should only keep one copy of this (also in src/key.c) */
+typedef struct {
+	const char *tikey;
+	const char *key;
+} Mapping;
+static const Mapping keymapping[] = {
+	{ "kich1", "insert" },
+	{ "kdch1", "delete" },
+	{ "khome", "home" },
+	{ "kend", "end" },
+	{ "kpp", "page_up" },
+	{ "knp", "page_down" },
+	{ "kcuu1", "up" },
+	{ "kcub1", "left" },
+	{ "kcud1", "down" },
+	{ "kcuf1", "right" },
+	{ "ka1", "kp_home" },
+	{ "kc1", "kp_end" },
+	{ "kb2", "kp_center" },
+	{ "ka3", "kp_page_up" },
+	{ "kc3", "kp_page_down" },
+	{ "kbs", "backspace" },
+
+	{ "kIC", "insert+s" },
+	{ "kDC", "delete+s" },
+	{ "kHOM", "home+s" },
+	{ "kEND", "end+s" },
+	{ "KNXT", "page_up+s" },
+	{ "KPRV", "page_down+s" },
+	{ "kLFT", "left+s" },
+	{ "kRIT", "right+s" },
+	{ "kcbt", "tab+s" },
+	{ "kent", "enter" },
+};
+
+static char *smkx;
 
 static FILE *output;
 static char *output_filename, *database_dir;
@@ -261,8 +297,31 @@ static t3_key_map_t *lookup_map(const char *name) {
 	return NULL;
 }
 
+static int get_ti_mapping(const char *name) {
+	int i;
+	for (i = 0; i < (int) (sizeof(keymapping) / sizeof(keymapping[0])); i++) {
+		if (strcmp(name, keymapping[i].key) == 0)
+			return i;
+	}
+	return -1;
+}
+
 static void check_nodes(t3_key_map_t *map) {
 	t3_key_node_t *node_ptr, *other_node;
+	bool check_ti = false;
+	int idx;
+
+	if (smkx != NULL) {
+		for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
+			if (strcmp("%enter", node_ptr->key) == 0) {
+				if (node_ptr->ident != NULL && strcmp(node_ptr->ident, "smkx") == 0)
+					check_ti = true;
+				else if (node_ptr->string != NULL && strcmp(node_ptr->string, smkx) == 0)
+					check_ti = true;
+				break;
+			}
+		}
+	}
 
 	for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
 		if ((other_node = lookup_node(map, node_ptr->key)) != node_ptr)
@@ -271,6 +330,15 @@ static void check_nodes(t3_key_map_t *map) {
 		if (strcmp("%include", node_ptr->key) == 0)
 			if (lookup_map(node_ptr->ident) == NULL)
 				error("%d: %%include map %s not found\n", node_ptr->line_number, node_ptr->string);
+
+		if (check_ti && (idx = get_ti_mapping(node_ptr->key)) >= 0) {
+			char *tistr = tigetstr(keymapping[idx].tikey);
+			if (!(tistr == (char *) -1 || tistr == NULL)) {
+				if (node_ptr->string != NULL && strcmp(tistr, node_ptr->string) != 0)
+					fprintf(stderr, "%d: warning: key %s:%s has a different definition than retrieved from the terminfo database (key %s)\n",
+						node_ptr->line_number, map->name, node_ptr->key, keymapping[idx].tikey);
+			}
+		}
 	}
 }
 
@@ -444,6 +512,8 @@ static void create_links(void) {
 }
 
 int main(int argc, char *argv[]) {
+	int errret;
+
 	parse_options(argc, argv);
 
 	if (input == NULL)
@@ -451,6 +521,11 @@ int main(int argc, char *argv[]) {
 	else if ((yyin = fopen(input, "r")) == NULL)
 		fatal("Could not open input %s: %s\n", input, strerror(errno));
 	parse();
+
+	setupterm(output_filename, 1, &errret);
+	smkx = tigetstr("smkx");
+	if (smkx == (char *) -1)
+		smkx = NULL;
 
 	check_maps();
 	if (error_seen)
