@@ -465,7 +465,9 @@ int main(int argc, char *argv[]) {
 		Sequence *current, *last, *before_insert;
 		int c;
 
-		printf("Starting mode %s%s\n", mode_head->name, mode_head->esc_seq_enter ? mode_head->esc_seq_enter : "");
+		printf("Starting mode %s\n", mode_head->name);
+		if (mode_head->esc_seq_enter != NULL)
+			putp(mode_head->esc_seq_enter);
 
 		for (i = 0; i < SIZEOF(modifiers); i++) {
 			before_insert = head;
@@ -521,7 +523,7 @@ int main(int argc, char *argv[]) {
 		head = NULL;
 
 		if (mode_head->esc_seq_leave != NULL)
-			printf("%s", mode_head->esc_seq_leave);
+			putp(mode_head->esc_seq_leave);
 		mode_head = mode_head->next;
 	}
 	fflush(output);
