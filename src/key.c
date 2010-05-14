@@ -44,15 +44,32 @@ static int new_node(void **result, size_t size);
 #define NEW_NODE(_x) new_node((void **) (_x), sizeof(**(_x)))
 static t3_key_node_t *load_ti_keys(const char *term, int *error);
 
+static char *make_name(const char *directory, const char *term) {
+	size_t name_length, term_length;
+	char *name;
+
+	term_length = strlen(term);
+	name_length = strlen(directory) + 3 + term_length + 1;
+	if ((name = malloc(name_length)) == NULL)
+		return NULL;
+
+	strcpy(name, directory);
+	strcat(name, "/");
+	strncat(name, term, 1);
+	strcat(name, "/");
+	strncat(name, term, term_length);
+	name[name_length - 1] = 0;
+	return name;
+}
+
 /** Open database.
     @param term The terminal name to use or @c NULL for contents of @c TERM.
     @param error The location to store an error.
     @return A pointer to the @c FILE for the database, or @c NULL or error.
 */
 static FILE *open_database(const char *term, int *error) {
-	size_t name_length, term_length;
+	char *name, *db_directory_env, *home_env;
 	FILE *input = NULL;
-	char *name;
 
 	if (term == NULL) {
 		term = getenv("TERM");
@@ -60,17 +77,43 @@ static FILE *open_database(const char *term, int *error) {
 			RETURN_ERROR(T3_ERR_NO_TERM);
 	}
 
-	term_length = strlen(term);
-	name_length = strlen(DB_DIRECTORY) + 3 + term_length + 1;
-	if ((name = malloc(name_length)) == NULL)
-		RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+	home_env = getenv("HOME");
+	if (home_env != NULL) {
+		#warning FIXME: check whether we should not use .config/t3key
+		if ((name = malloc(strlen(home_env) + strlen(".t3key") + 2)) == NULL)
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+		strcpy(name, home_env);
+		strcat(name, "/");
+		strcat(name, ".t3key");
+		home_env = name;
 
-	strcpy(name, DB_DIRECTORY);
-	strcat(name, "/");
-	strncat(name, term, 1);
-	strcat(name, "/");
-	strncat(name, term, term_length);
-	name[name_length - 1] = 0;
+		if ((name = make_name(home_env, term)) == NULL) {
+			free(home_env);
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+		}
+		free(home_env);
+
+		if ((input = fopen(name, "rb")) != NULL) {
+			free(name);
+			return input;
+		}
+		free(name);
+	}
+
+	db_directory_env = getenv("T3_KEY_DATABASE_DIR");
+	if (db_directory_env != NULL) {
+		if ((name = make_name(db_directory_env, term)) == NULL)
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+
+		if ((input = fopen(name, "rb")) != NULL) {
+			free(name);
+			return input;
+		}
+		free(name);
+	}
+
+	if ((name = make_name(DB_DIRECTORY, term)) == NULL)
+		RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 
 	if ((input = fopen(name, "rb")) == NULL) {
 		free(name);
@@ -220,7 +263,7 @@ static int check_magic_and_version(FILE *input) {
 	if (fread(magic, 1, 4, input) != 4)
 		return EOF_OR_ERROR(input);
 
-	if (memcmp(magic, "CKEY", 4) != 0)
+	if (memcmp(magic, "T3KY", 4) != 0)
 		return T3_ERR_INVALID_FORMAT;
 
 	if (fread(&version, 4, 1, input) != 1)
@@ -232,15 +275,33 @@ static int check_magic_and_version(FILE *input) {
 	return T3_ERR_SUCCESS;
 }
 
+static int do_seek(FILE *input, uint16_t length) {
+	char discard_buffer[256];
+
+	/* Don't use fseek, because it will call lseek internally, which is not
+	   necessary and causes a context switch. Because seeking will be a frequent
+	   operation, this should be avoided. Furthermore, it is very likely that the
+	   whole file is already buffered anyway, as it is very small.
+
+	   As most strings will be shorter than 256 bytes anyway, we
+	   don't use a 65536 bytes buffer. Using such a large buffer on the stack
+	   is not desirable. */
+	while (length > 0) {
+		uint16_t read_now = length > 256 ? 256 : length;
+		if (fread(discard_buffer, 1, read_now, input) != read_now)
+			return EOF_OR_ERROR(input);
+		length -= read_now;
+	}
+	return T3_ERR_SUCCESS;
+}
+
 static int skip_string(FILE *input) {
 	uint16_t length;
 
 	if (fread(&length, 2, 1, input) != 1)
 		return EOF_OR_ERROR(input);
 
-	if (fseek(input, ntohs(length), SEEK_CUR) != 0)
-		return T3_ERR_READ_ERROR;
-	return T3_ERR_SUCCESS;
+	return do_seek(input, ntohs(length));
 }
 
 static int read_string(FILE *input, char **string) {

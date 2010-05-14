@@ -455,7 +455,7 @@ static void write_map(t3_key_map_t *map, bool all_keys) {
 /* Write the output file containing all maps. */
 static void write_maps(void) {
 	t3_key_map_t *map_ptr;
-	const char magic[] = "CKEY";
+	const char magic[] = "T3KY";
 	const char version[] = { 0, 0, 0, 0 };
 	uint16_t out_short;
 	char *outname;
