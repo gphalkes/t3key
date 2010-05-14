@@ -13,7 +13,7 @@
 #define ESC 27
 #define KEY_TIMEOUT 10
 
-//#define TESTING
+#define TESTING
 
 //FIXME: test modifier-letter as well
 //FIXME: test modifier-tab
@@ -22,9 +22,9 @@
 typedef struct {
 	const char *name;
 	const char *identifier;
-} Map;
+} name_mapping_t;
 
-static Map keynames[] = {
+static name_mapping_t keynames[] = {
 #ifndef TESTING
 	{ "Insert", "insert" },
 	{ "Home", "home" },
@@ -58,12 +58,12 @@ static Map keynames[] = {
 #endif
 };
 
-static Map *functionkeys;
+static name_mapping_t *functionkeys;
 
-static Map modifiers[] = {
+static name_mapping_t modifiers[] = {
 	{ "", "" },
-#ifndef TESTING
 	{ "Control ", "+c" },
+#ifndef TESTING
 	{ "Meta ", "+m" },
 	{ "Shift ", "+s" },
 	{ "Control+Meta ", "+cm" },
@@ -73,28 +73,31 @@ static Map modifiers[] = {
 #endif
 };
 
-typedef struct Mode {
-	struct Mode *next;
+#define SIZEOF(_x) ((sizeof(_x)/sizeof(_x[0])))
+
+typedef struct sequence_t {
+	struct sequence_t *next;
+	char seq[MAX_SEQUENCE * 4 + 1];
+	name_mapping_t *modifiers;
+	name_mapping_t *keynames;
+	bool duplicate;
+} sequence_t;
+
+typedef struct map_t {
+	struct map_t *next;
 	char *esc_seq_enter;
 	char *esc_seq_enter_name;
 	char *esc_seq_leave;
 	char *esc_seq_leave_name;
 	char *name;
-} Mode;
+	sequence_t *sequences;
+} map_t;
 
-#define SIZEOF(_x) ((sizeof(_x)/sizeof(_x[0])))
-
-typedef struct Sequence {
-	struct Sequence *next;
-	char seq[MAX_SEQUENCE * 4 + 1];
-	Map *modifiers;
-	Map *keynames;
-	bool duplicate;
-} Sequence;
 
 static struct termios saved;
 static fd_set inset;
 static bool xterm_restore;
+static int maxfkeys = -1;
 
 
 /** Alert the user of a fatal error and quit.
@@ -143,6 +146,7 @@ static void init_terminal(void) {
 	FD_ZERO(&inset);
 	FD_SET(STDIN_FILENO, &inset);
 	env = getenv("TERM");
+	#warning FIXME: this probably should not be here
 	if (strncmp("xterm", env, 5) == 0) {
 		printf("\x1b[?1036s\x1b[?1036h");
 		xterm_restore = true;
@@ -150,6 +154,7 @@ static void init_terminal(void) {
 
 }
 
+/* Read a char masking interruptions. */
 static int safe_read_char(void) {
 	char c;
 	while (1) {
@@ -163,6 +168,7 @@ static int safe_read_char(void) {
 	}
 }
 
+/* Read a character from the keyboard, with timeout. */
 static int get_keychar(int msec) {
 	int retval;
 	fd_set _inset;
@@ -190,8 +196,9 @@ static int get_keychar(int msec) {
 	}
 }
 
-static Sequence *get_sequence(void) {
-	Sequence *retval;
+/* Read a sequence_t from the keyboard. */
+static sequence_t *get_sequence(void) {
+	sequence_t *retval;
 	char seq[MAX_SEQUENCE];
 	int c, idx = 0;
 
@@ -213,7 +220,7 @@ static Sequence *get_sequence(void) {
 				return NULL;
 			}
 
-			if ((retval = malloc(sizeof(Sequence))) == NULL)
+			if ((retval = malloc(sizeof(sequence_t))) == NULL)
 				fatal("Out of memory\n");
 
 			for (i = 0; i < idx; i++) {
@@ -244,14 +251,16 @@ static Sequence *get_sequence(void) {
 	return NULL;
 }
 
-static Sequence *head = NULL;
+static sequence_t *head = NULL;
 static FILE *output;
 
-static int getkeys(Map *keys, int max, int mod) {
-	Sequence *current;
+/* Get the set of key mappings for a single modifier combination.
+   Mappings are appended to "head". Returns 0 on success and -1 on failure. */
+static int getkeys(name_mapping_t *keys, int max, int mod) {
+	sequence_t *current;
 	int i;
 	for (i = 0; i < max; i++) {
-		Sequence *new_seq;
+		sequence_t *new_seq;
 		printf("%s%s ", modifiers[mod].name, keys[i].name);
 		fflush(stdout);
 		new_seq = get_sequence();
@@ -281,31 +290,18 @@ static int getkeys(Map *keys, int max, int mod) {
 	return 0;
 }
 
-static void printmap(Map *keys, int max, int mod) {
-	Sequence *current, *last;
-	int i;
+static void write_keys(sequence_t *keys) {
+	sequence_t *current, *ptr;
 
-	for (i = 0; i < max; i++) {
-		for (current = head; current != NULL; current = current->next) {
-			if (current->modifiers == modifiers + mod && current->keynames == keys + i)
-				break;
-		}
-		if (current == NULL) {
-			fprintf(output, "# %s%s (no sequence)\n", keys[i].identifier, modifiers[mod].identifier);
+	for (current = keys; current != NULL; current = current->next) {
+		if (current->duplicate) {
+			for (ptr = keys; ptr != current && strcmp(current->seq, ptr->seq) != 0; ptr = ptr->next) {}
+
+			fprintf(output, "# %s%s = %s%s\n", current->keynames->identifier, current->modifiers->identifier,
+				ptr->keynames->identifier, ptr->modifiers->identifier);
 		} else {
-			if (current->duplicate) {
-				last = current;
-				// Find first key for which this is a duplicate
-				while (last != NULL) {
-					if (strcmp(current->seq, last->seq) == 0 && !last->duplicate)
-						break;
-					last = last->next;
-				}
-				fprintf(output, "%s%s = %s%s\n", keys[i].identifier, modifiers[mod].identifier,
-					last->keynames->identifier, last->modifiers->identifier);
-			} else {
-				fprintf(output, "%s%s = \"%s\"\n", keys[i].identifier, modifiers[mod].identifier, current->seq);
-			}
+			fprintf(output, "%s%s = \"%s\"\n", current->keynames->identifier, current->modifiers->identifier,
+				current->seq);
 		}
 	}
 }
@@ -380,12 +376,94 @@ static char *parse_escapes(const char *seq) {
 	return strdup(buffer);
 }
 
+static void write_map(FILE *output, map_t *mode) {
+	sequence_t *current, *last;
+
+	fprintf(output, "%s {\n", mode->name);
+	if (mode->esc_seq_enter) {
+		if (mode->esc_seq_enter_name)
+			fprintf(output, "%%enter = %s\n", mode->esc_seq_enter_name);
+		else
+			fprintf(output, "%%enter = \"%s\"\n", get_print_seq(mode->esc_seq_enter));
+	}
+	if (mode->esc_seq_leave) {
+		if (mode->esc_seq_leave_name)
+			fprintf(output, "%%leave = %s\n", mode->esc_seq_leave_name);
+		else
+			fprintf(output, "%%leave = \"%s\"\n", get_print_seq(mode->esc_seq_leave));
+	}
+
+	write_keys(mode->sequences);
+
+	for (current = mode->sequences, last = NULL; current != NULL; last = current, current = current->next)
+		free(last);
+
+	fprintf(output, "}\n");
+}
+
+
+static void learn_map(map_t *mode) {
+	sequence_t *current, *before_insert;
+	size_t i;
+	int c;
+
+	printf("Starting mode %s\n", mode->name);
+	if (mode->esc_seq_enter != NULL)
+		putp(mode->esc_seq_enter);
+
+	for (i = 0; i < SIZEOF(modifiers); i++) {
+		before_insert = head;
+		if (getkeys(keynames, SIZEOF(keynames), i) < 0) {
+			printf("\nRestarting...\n");
+			goto skip;
+		}
+		if (getkeys(functionkeys, maxfkeys, i) < 0) {
+			printf("\nRestarting...\n");
+			goto skip;
+		}
+
+		do {
+			printf("Are you satisfied with the above keys? ");
+			fflush(stdout);
+			c = safe_read_char();
+			if (c == 3) {
+				printf("^C\n");
+				exit(EXIT_FAILURE);
+			}
+			printf("\n");
+		} while (c != 'y' && c != 'Y' && c != 'n' && c != 'N');
+
+		if (c == 'n' || c == 'N') {
+	skip:
+			while (head != before_insert) {
+				current = head;
+				head = current->next;
+				free(current);
+			}
+			i--;
+		}
+	}
+
+	mode->sequences = head;
+	current = head->next;
+	head->next = NULL;
+	while (current != NULL) {
+		sequence_t *ptr = current->next;
+		current->next = mode->sequences;
+		mode->sequences = current;
+		current = ptr;
+	}
+	head = NULL;
+
+	if (mode->esc_seq_leave != NULL)
+		putp(mode->esc_seq_leave);
+}
+
 int main(int argc, char *argv[]) {
 	size_t i;
-	int maxfkeys = -1;
 	char *smkx = NULL, *rmkx = NULL;
 	const char *term = getenv("TERM");
-	Mode *mode_head = NULL, **mode_next;
+	map_t *mode_head = NULL, *mode_ptr, **mode_next;
 
 	(void) argc;
 	(void) argv;
@@ -405,7 +483,7 @@ int main(int argc, char *argv[]) {
 		scanf("%d", &maxfkeys);
 	} while (maxfkeys < 0);
 	if (maxfkeys > 0) {
-		functionkeys = malloc(maxfkeys * sizeof(Map));
+		functionkeys = malloc(maxfkeys * sizeof(name_mapping_t));
 		for (i = 0; (int) i < maxfkeys; i++) {
 			char buffer[1024];
 			snprintf(buffer, 1024, "F%u", (unsigned) i + 1);
@@ -417,7 +495,7 @@ int main(int argc, char *argv[]) {
 
 
 	rmkx = tigetstr("rmkx");
-	mode_head = calloc(1, sizeof(Mode));
+	mode_head = calloc(1, sizeof(map_t));
 	mode_head->name = strdup("nokx");
 
 	if (rmkx != NULL && rmkx != (void *) -1) {
@@ -428,7 +506,7 @@ int main(int argc, char *argv[]) {
 	mode_next = &mode_head->next;
 	smkx = tigetstr("smkx");
 	if (smkx != NULL && smkx != (void *) -1) {
-		(*mode_next) = calloc(1, sizeof(Mode));
+		(*mode_next) = calloc(1, sizeof(map_t));
 		(*mode_next)->name = strdup("kx");
 		(*mode_next)->esc_seq_enter = strdup(smkx);
 		(*mode_next)->esc_seq_enter_name = strdup("smkx");
@@ -444,7 +522,7 @@ int main(int argc, char *argv[]) {
 
 		if (strcmp(buffer, "-") == 0)
 			break;
-		(*mode_next) = calloc(1, sizeof(Mode));
+		(*mode_next) = calloc(1, sizeof(map_t));
 		(*mode_next)->name = strdup(buffer);
 		do {
 			printf("Escape sequence to enter mode %s: ", (*mode_next)->name);
@@ -461,71 +539,13 @@ int main(int argc, char *argv[]) {
 
 	init_terminal();
 
-	while (mode_head != NULL) {
-		Sequence *current, *last, *before_insert;
-		int c;
+	for (mode_ptr = mode_head; mode_ptr != NULL; mode_ptr = mode_ptr->next)
+		learn_map(mode_ptr);
 
-		printf("Starting mode %s\n", mode_head->name);
-		if (mode_head->esc_seq_enter != NULL)
-			putp(mode_head->esc_seq_enter);
+	for (mode_ptr = mode_head; mode_ptr != NULL; mode_ptr = mode_ptr->next)
+		write_map(output, mode_ptr);
 
-		for (i = 0; i < SIZEOF(modifiers); i++) {
-			before_insert = head;
-			if (getkeys(keynames, SIZEOF(keynames), i) < 0) {
-				printf("\nRestarting...\n");
-				goto skip;
-			}
-			if (getkeys(functionkeys, maxfkeys, i) < 0) {
-				printf("\nRestarting...\n");
-				goto skip;
-			}
 
-			do {
-				printf("Are you satisfied with the above keys? ");
-				fflush(stdout);
-				c = safe_read_char();
-				printf("\n");
-			} while (c != 'y' && c != 'Y' && c != 'n' && c != 'N');
-
-			if (c == 'n' || c == 'N') {
-		skip:
-				while (head != before_insert) {
-					current = head;
-					head = current->next;
-					free(current);
-				}
-				i--;
-			}
-		}
-
-		fprintf(output, "%s {\n", mode_head->name);
-		if (mode_head->esc_seq_enter) {
-			if (mode_head->esc_seq_enter_name)
-				fprintf(output, "%%enter = %s\n", mode_head->esc_seq_enter_name);
-			else
-				fprintf(output, "%%enter = \"%s\"\n", get_print_seq(mode_head->esc_seq_enter));
-		}
-		if (mode_head->esc_seq_leave) {
-			if (mode_head->esc_seq_leave_name)
-				fprintf(output, "%%leave = %s\n", mode_head->esc_seq_leave_name);
-			else
-				fprintf(output, "%%leave = \"%s\"\n", get_print_seq(mode_head->esc_seq_leave));
-		}
-
-		for (i = 0; i < SIZEOF(modifiers); i++) {
-			printmap(keynames, SIZEOF(keynames), i);
-			printmap(functionkeys, maxfkeys, i);
-		}
-		for (current = head, last = NULL; current != NULL; last = current, current = current->next)
-			free(last);
-
-		fprintf(output, "}\n");
-		head = NULL;
-
-		if (mode_head->esc_seq_leave != NULL)
-			putp(mode_head->esc_seq_leave);
-		mode_head = mode_head->next;
-	}
 	fflush(output);
 	fclose(output);
 	return 0;
