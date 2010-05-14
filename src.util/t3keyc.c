@@ -99,6 +99,18 @@ char *safe_strdup(const char *str) {
 	return result;
 }
 
+/* Print usage message/help. */
+static void print_usage(void) {
+	printf("Usage: t3keyc [<OPTIONS>] [<INPUT>]\n"
+		"  -o<name>, --output=<name>        Name for the output file (no directories)\n"
+		"  -d<dir>, --database-dir=<dir>    Directory where the database should be\n"
+		"                                     written to\n"
+		"  -h, --help                       Print this help message\n"
+	    "\nIf no input file is given, standard input is used.\n");
+	exit(EXIT_SUCCESS);
+}
+
+/* Parse command line options */
 static PARSE_FUNCTION(parse_options)
 	OPTIONS
 		OPTION('o', "output", REQUIRED_ARG)
@@ -112,6 +124,9 @@ static PARSE_FUNCTION(parse_options)
 			if (database_dir != NULL)
 				fatal("Multiple database-dir options specified\n");
 			database_dir = optArg;
+		END_OPTION
+		OPTION('h', "help", NO_ARG)
+			print_usage();
 		END_OPTION
 		DOUBLE_DASH
 			NO_MORE_OPTIONS;
