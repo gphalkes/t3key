@@ -39,7 +39,7 @@
 
 static int check_magic_and_version(FILE *input);
 static int skip_string(FILE *input);
-static int read_string(FILE *input, char **string);
+static int read_string(FILE *input, char **string, size_t *length_ptr);
 static int new_node(void **result, size_t size);
 #define NEW_NODE(_x) new_node((void **) (_x), sizeof(**(_x)))
 static t3_key_node_t *load_ti_keys(const char *term, int *error);
@@ -152,7 +152,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 				if (best_map != NULL)
 					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
 
-				ENSURE(read_string(input, &best_map));
+				ENSURE(read_string(input, &best_map, NULL));
 				break;
 			case NODE_MAP_START:
 				if (best_map == NULL)
@@ -165,7 +165,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 
 				if (current_map != NULL)
 					free(current_map);
-				ENSURE(read_string(input, &current_map));
+				ENSURE(read_string(input, &current_map, NULL));
 
 				this_map = (map_name != NULL && strcmp(current_map, map_name) == 0) ||
 						(map_name == NULL && strcmp(current_map, best_map) == 0);
@@ -181,8 +181,8 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 				}
 
 				ENSURE(NEW_NODE(next_node));
-				ENSURE(read_string(input, &(*next_node)->key));
-				ENSURE(read_string(input, &(*next_node)->string));
+				ENSURE(read_string(input, &(*next_node)->key, NULL));
+				ENSURE(read_string(input, &(*next_node)->string, &(*next_node)->string_length));
 				next_node = &(*next_node)->next;
 				break;
 			case NODE_KEY_TERMINFO: {
@@ -198,8 +198,8 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 				}
 
 				ENSURE(NEW_NODE(next_node));
-				ENSURE(read_string(input, &(*next_node)->key));
-				ENSURE(read_string(input, &tikey));
+				ENSURE(read_string(input, &(*next_node)->key, NULL));
+				ENSURE(read_string(input, &tikey, NULL));
 
 				tiresult = tigetstr(tikey);
 				if (tiresult == (char *)-1 || tiresult == (char *)0) {
@@ -214,6 +214,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 				}
 				free(tikey);
 				(*next_node)->string = strdup(tiresult);
+				(*next_node)->string_length = strlen(tiresult);
 				if ((*next_node)->string == NULL)
 					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 
@@ -304,13 +305,15 @@ static int skip_string(FILE *input) {
 	return do_seek(input, ntohs(length));
 }
 
-static int read_string(FILE *input, char **string) {
+static int read_string(FILE *input, char **string, size_t *length_ptr) {
 	uint16_t length;
 
 	if (fread(&length, 2, 1, input) != 1)
 		return EOF_OR_ERROR(input);
 
 	length = ntohs(length);
+	if (length_ptr != NULL)
+		*length_ptr = length;
 
 	if ((*string = malloc(length + 1)) == NULL)
 		return T3_ERR_OUT_OF_MEMORY;
@@ -445,7 +448,7 @@ t3_key_string_list_t *t3_key_get_map_names(const char *term, int *error) {
 				break;
 			case NODE_MAP_START:
 				ENSURE(NEW_NODE(next_node));
-				ENSURE(read_string(input, &(*next_node)->string));
+				ENSURE(read_string(input, &(*next_node)->string, NULL));
 				next_node = &(*next_node)->next;
 				break;
 			case NODE_KEY_VALUE:
@@ -496,7 +499,7 @@ char *t3_key_get_best_map_name(const char *term, int *error) {
 	else if (node != NODE_BEST)
 		RETURN_ERROR(T3_ERR_INVALID_FORMAT);
 
-	ENSURE(read_string(input, &best_map));
+	ENSURE(read_string(input, &best_map, NULL));
 	return best_map;
 
 return_error:

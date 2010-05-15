@@ -20,8 +20,6 @@
 //~ #define TESTING
 
 //FIXME: test modifier-letter as well
-//FIXME: test modifier-tab
-//FIXME: put entries that are the same for two or more maps in a single shared map
 //FIXME: check calloc/malloc return values!
 
 typedef struct {
@@ -337,6 +335,13 @@ static sequence_t *get_sequence(void) {
 				exit(EXIT_FAILURE);
 			printf("(no escape sequence)");
 			return NULL;
+		} else if (c == 0177) {
+			if ((retval = malloc(sizeof(sequence_t))) == NULL)
+				fatal("Out of memory\n");
+			strcpy(retval->seq, "\\177");
+			retval->duplicate = NULL;
+			retval->remove = false;
+			return retval;
 		} else if (c == 18) {
 			return (void *) -1;
 		} else if (c >= 0) {

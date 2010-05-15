@@ -374,7 +374,7 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 		   Note that because we check whether the found definition for "key"
 		   is the same as the current node, we automatically only emit an
 		   error on second or later occurence. */
-		if ((other_node = lookup_node(start_map, node_ptr->string)) != node_ptr)
+		if (node_ptr->key[0] != '%' && (other_node = lookup_node(start_map, node_ptr->string)) != node_ptr)
 			error("%d: checking map %s: node %s:%s uses the same sequence as %s on line %d\n", node_ptr->line_number,
 				start_map->name, map->name, node_ptr->key, other_node->key, other_node->line_number);
 		clear_flags(FLAG_MARK_LOOKUP);

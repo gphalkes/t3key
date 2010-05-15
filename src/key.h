@@ -41,6 +41,7 @@ typedef struct t3_key_node_t t3_key_node_t;
 struct t3_key_node_t {
 	T3_KEY_CONST char *key; /**< The name of the key (with modifiers). */
 	T3_KEY_CONST char *string; /**< The character sequence associated with the key. */
+	T3_KEY_CONST size_t string_length; /**< The length in bytes of t3_key_node_t::string. */
 	T3_KEY_CONST t3_key_node_t *next; /**< Pointer to the next ::t3_key_node_t in the singly-linked list. */
 };
 
