@@ -1,7 +1,9 @@
 CFILES.t3learnkeys := t3learnkeys.c
+LDLIBS.t3learnkeys := -lcurses -lX11
 CFILES.t3keyc := t3keyc.c
 GFILES.t3keyc := grammar.g
 LFILES.t3keyc := lex.l
+LDLIBS.t3keyc := -lcurses
 CFLAGS.lex := -Wno-shadow -Wno-switch-default -Wno-unused
 CFILES.test := test.c
 LDFLAGS.test := -L../src/.libs
@@ -17,8 +19,6 @@ TARGETS := t3learnkeys t3keyc test
 include ../../makesys/rules.mk
 #================================================#
 CFLAGS += -I. -I../src -I.objects
-LDLIBS.t3learnkeys += -lcurses
-LDLIBS.t3keyc += -lcurses
 
 .objects/test.o: | library
 

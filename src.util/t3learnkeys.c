@@ -9,6 +9,10 @@
 #include <curses.h>
 #include <term.h>
 
+#include <X11/Xlib.h>
+#include <X11/keysym.h>
+
+
 #define MAX_SEQUENCE 50
 #define ESC 27
 #define KEY_TIMEOUT 10
@@ -18,58 +22,61 @@
 //FIXME: test modifier-letter as well
 //FIXME: test modifier-tab
 //FIXME: put entries that are the same for two or more maps in a single shared map
+//FIXME: check calloc/malloc return values!
 
 typedef struct {
 	const char *name;
 	const char *identifier;
+	long keysym;
 } name_mapping_t;
 
 static name_mapping_t keynames[] = {
 #ifndef TESTING
-	{ "Insert", "insert" },
-	{ "Home", "home" },
-	{ "Page Up", "page_up" },
-	{ "Delete", "delete" },
-	{ "End", "end" },
-	{ "Page Down", "page_down" },
+	{ "Insert", "insert", XK_Insert },
+	{ "Home", "home", XK_Home },
+	{ "Page Up", "page_up", XK_Page_Up },
+	{ "Delete", "delete", XK_Delete },
+	{ "End", "end", XK_End },
+	{ "Page Down", "page_down", XK_Page_Down },
 #endif
-	{ "Up", "up" },
+	{ "Up", "up", XK_Up },
 #ifndef TESTING
-	{ "Left", "left" },
-	{ "Down", "down" },
-	{ "Right", "right" },
-	{ "Keypad /", "kp_div" },
-	{ "Keypad *", "kp_mul" },
-	{ "Keypad -", "kp_minus" },
-	{ "Keypad Home", "kp_home" },
-	{ "Keypad Up", "kp_up" },
-	{ "Keypad Page Up", "kp_page_up" },
-	{ "Keypad +", "kp_plus" },
-	{ "Keypad Left", "kp_left" },
-	{ "Keypad Center", "kp_center" },
-	{ "Keypad Right", "kp_right" },
-	{ "Keypad End", "kp_end" },
-	{ "Keypad Down", "kp_down" },
-	{ "Keypad Page Down", "kp_page_down" },
-	{ "Keypad Insert", "kp_insert" },
-	{ "Keypad Delete", "kp_delete" },
-	{ "Keypad Enter", "kp_enter" },
-	{ "Tab", "tab" }
+	{ "Left", "left", XK_Left },
+	{ "Down", "down", XK_Down },
+	{ "Right", "right", XK_Right },
+	{ "Keypad /", "kp_div", XK_KP_Divide },
+	{ "Keypad *", "kp_mul", XK_KP_Multiply },
+	{ "Keypad -", "kp_minus", XK_KP_Subtract },
+	{ "Keypad Home", "kp_home", XK_KP_Home },
+	{ "Keypad Up", "kp_up", XK_KP_Up },
+	{ "Keypad Page Up", "kp_page_up", XK_KP_Page_Up },
+	{ "Keypad +", "kp_plus", XK_KP_Add },
+	{ "Keypad Left", "kp_left", XK_KP_Left },
+	{ "Keypad Center", "kp_center", XK_KP_Begin },
+	{ "Keypad Right", "kp_right", XK_KP_Right },
+	{ "Keypad End", "kp_end", XK_KP_End },
+	{ "Keypad Down", "kp_down", XK_KP_Down },
+	{ "Keypad Page Down", "kp_page_down", XK_KP_Page_Down },
+	{ "Keypad Insert", "kp_insert", XK_KP_Insert },
+	{ "Keypad Delete", "kp_delete", XK_KP_Delete },
+	{ "Keypad Enter", "kp_enter", XK_KP_Enter },
+	{ "Tab", "tab", XK_Tab },
+	{ "Backspace", "backspace", XK_Backspace }
 #endif
 };
 
 static name_mapping_t *functionkeys;
 
 static name_mapping_t modifiers[] = {
-	{ "", "" },
-	{ "Control ", "+c" },
+	{ "", "", 0 },
 #ifndef TESTING
-	{ "Meta ", "+m" },
-	{ "Shift ", "+s" },
-	{ "Control+Meta ", "+cm" },
-	{ "Control+Shift ", "+cs" },
-	{ "Meta+Shift ", "+ms" },
-	{ "Control+Meta+Shift ", "+cms" },
+	{ "Control ", "+c", ControlMask },
+	{ "Meta ", "+m", Mod1Mask },
+	{ "Shift ", "+s", ShiftMask },
+	{ "Control+Meta ", "+cm", ControlMask | Mod1Mask },
+	{ "Control+Shift ", "+cs", ControlMask | ShiftMask },
+	{ "Meta+Shift ", "+ms", Mod1Mask | ShiftMask },
+	{ "Control+Meta+Shift ", "+cms", ControlMask | Mod1Mask | ShiftMask },
 #endif
 };
 
@@ -81,7 +88,10 @@ typedef struct sequence_t {
 	name_mapping_t *modifiers;
 	name_mapping_t *keynames;
 	bool duplicate;
+	bool remove;
 } sequence_t;
+
+typedef struct map_list_t map_list_t;
 
 typedef struct map_t {
 	struct map_t *next;
@@ -91,13 +101,21 @@ typedef struct map_t {
 	char *esc_seq_leave_name;
 	char *name;
 	sequence_t *sequences;
+	map_list_t *collected_from;
 } map_t;
 
+struct map_list_t {
+	struct map_list_t *next;
+	map_t *map;
+};
 
 static struct termios saved;
 static fd_set inset;
 static bool xterm_restore;
 static int maxfkeys = -1;
+static bool x11_auto;
+static Display *display;
+static Window root, focus_window;
 
 
 /** Alert the user of a fatal error and quit.
@@ -120,6 +138,60 @@ static void restore_terminal(void) {
 	if (xterm_restore)
 		printf("\x1b[?1036r");
 	tcsetattr(STDOUT_FILENO, TCSADRAIN, &saved);
+}
+
+static bool initX11(void) {
+	int revert_to_return;
+
+	if ((display = XOpenDisplay(NULL)) == NULL)
+		return false;
+	root = XDefaultRootWindow(display);
+	XGetInputFocus(display, &focus_window, &revert_to_return);
+	return true;
+}
+
+static void send_event(KeySym keysym, unsigned state) {
+	XEvent event;
+
+	printf("Sending keysym %x mod %x\n", keysym, state);
+
+	event.xkey.type = KeyPress;
+	event.xkey.serial = 0;
+	event.xkey.send_event = 0;
+	event.xkey.display = display;
+	event.xkey.window = focus_window;
+	event.xkey.subwindow = None;
+	event.xkey.root = root;
+	event.xkey.time = CurrentTime;
+	event.xkey.x = 1;
+	event.xkey.y = 1;
+	event.xkey.x_root = 1;
+	event.xkey.y_root = 1;
+	event.xkey.state = state;
+	event.xkey.keycode = XKeysymToKeycode(display, keysym);
+	event.xkey.same_screen = True;
+
+	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, &event);
+
+	event.xkey.type = KeyRelease;
+	event.xkey.serial = 0;
+	event.xkey.send_event = 0;
+	event.xkey.display = display;
+	event.xkey.window = focus_window;
+	event.xkey.subwindow = None;
+	event.xkey.root = root;
+	event.xkey.time = CurrentTime;
+	event.xkey.x = 1;
+	event.xkey.y = 1;
+	event.xkey.x_root = 1;
+	event.xkey.y_root = 1;
+	event.xkey.state = state;
+	event.xkey.keycode = XKeysymToKeycode(display, keysym);
+	event.xkey.same_screen = True;
+
+	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, &event);
+	while (XPending(display))
+		XNextEvent(display, &event);
 }
 
 static void init_terminal(void) {
@@ -196,6 +268,23 @@ static int get_keychar(int msec) {
 	}
 }
 
+static bool confirm(const char *question) {
+	int c;
+
+	do {
+		printf("%s? ", question);
+		fflush(stdout);
+		c = safe_read_char();
+		if (c == 3) {
+			printf("^C\n");
+			exit(EXIT_FAILURE);
+		}
+		printf("\n");
+	} while (c != 'y' && c != 'Y' && c != 'n' && c != 'N');
+
+	return c == 'y' || c == 'Y';
+}
+
 /* Read a sequence_t from the keyboard. */
 static sequence_t *get_sequence(void) {
 	sequence_t *retval;
@@ -203,7 +292,7 @@ static sequence_t *get_sequence(void) {
 	int c, idx = 0;
 
 	do {
-		c = get_keychar(-1);
+		c = get_keychar(x11_auto ? 100 : -1);
 		if (c == ESC) {
 			int i, dest = 0;
 
@@ -224,7 +313,10 @@ static sequence_t *get_sequence(void) {
 				fatal("Out of memory\n");
 
 			for (i = 0; i < idx; i++) {
-				if (isprint(seq[i])) {
+				if (seq[i] == '\\') {
+					retval->seq[dest++] = '\\';
+					retval->seq[dest++] = '\\';
+				} else if (isprint(seq[i])) {
 					retval->seq[dest++] = seq[i];
 				} else if (seq[i] == 27) {
 					retval->seq[dest++] = '\\';
@@ -237,9 +329,12 @@ static sequence_t *get_sequence(void) {
 			retval->seq[dest] = 0;
 			retval->duplicate = FALSE;
 			return retval;
-		} else if (c == 3) {
-			printf("\n");
-			exit(EXIT_SUCCESS);
+		} else if (!x11_auto && c == 3) {
+			printf("^C\n");
+			if (confirm("Are you sure you want to quit"))
+				exit(EXIT_FAILURE);
+			printf("(no escape sequence)");
+			return NULL;
 		} else if (c == 18) {
 			return (void *) -1;
 		} else if (c >= 0) {
@@ -263,6 +358,9 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 		sequence_t *new_seq;
 		printf("%s%s ", modifiers[mod].name, keys[i].name);
 		fflush(stdout);
+		if (x11_auto)
+			send_event(keys[i].keysym, modifiers[mod].keysym);
+
 		new_seq = get_sequence();
 		if (new_seq == NULL) {
 			printf("\n");
@@ -314,13 +412,18 @@ static char *get_print_seq(const char *seq) {
 		if (*seq == '"') {
 			*dest++ = '\\';
 			*dest++ = '"';
+			seq++;
+		} else if (*seq == '\\') {
+			*dest++ = *seq;
+			*dest++ = *seq++;
 		} else if (isprint(*seq)) {
 			*dest++ = *seq++;
 		} else if (*seq == 27) {
 			*dest++ = '\\';
 			*dest++ = 'e';
+			seq++;
 		} else {
-			sprintf(dest, "\\%03o", *seq);
+			sprintf(dest, "\\%03o", *seq++);
 			dest += 4;
 		}
 	}
@@ -376,10 +479,17 @@ static char *parse_escapes(const char *seq) {
 	return strdup(buffer);
 }
 
-static void write_map(FILE *output, map_t *mode) {
+static void write_map(FILE *output, map_t *mode, map_t *maps) {
 	sequence_t *current, *last;
 
-	fprintf(output, "%s {\n", mode->name);
+	if (mode->name != NULL) {
+		fprintf(output, "%s {\n", mode->name);
+	} else {
+		map_list_t *ptr;
+		for (ptr = mode->collected_from; ptr != NULL; ptr = ptr->next)
+			fprintf(output, "_%s", ptr->map->name);
+		fprintf(output, " {\n");
+	}
 	if (mode->esc_seq_enter) {
 		if (mode->esc_seq_enter_name)
 			fprintf(output, "%%enter = %s\n", mode->esc_seq_enter_name);
@@ -393,23 +503,51 @@ static void write_map(FILE *output, map_t *mode) {
 			fprintf(output, "%%leave = \"%s\"\n", get_print_seq(mode->esc_seq_leave));
 	}
 
+	for (; maps != NULL; maps = maps->next) {
+		map_list_t *collected;
+		for (collected = maps->collected_from; collected != NULL; collected = collected->next) {
+			if (collected->map == mode) {
+				fprintf(output, "%%include ");
+				for (collected = maps->collected_from; collected != NULL; collected = collected->next)
+					fprintf(output, "_%s", collected->map->name);
+				fprintf(output, "\n");
+				break;
+			}
+		}
+	}
+
 	write_keys(mode->sequences);
 
 	for (current = mode->sequences, last = NULL; current != NULL; last = current, current = current->next)
 		free(last);
 
-	fprintf(output, "}\n");
+	fprintf(output, "}\n\n");
 }
 
+static sequence_t *reverse_key_list(sequence_t *list) {
+	sequence_t *ptr, *current;
+	current = list->next;
+	list->next = NULL;
+	while (current != NULL) {
+		ptr = current->next;
+		current->next = list;
+		list = current;
+		current = ptr;
+	}
+	return list;
+}
 
 static void learn_map(map_t *mode) {
 	sequence_t *current, *before_insert;
 	size_t i;
-	int c;
 
 	printf("Starting mode %s\n", mode->name);
 	if (mode->esc_seq_enter != NULL)
 		putp(mode->esc_seq_enter);
+
+	fflush(stdout);
+	if (x11_auto)
+		usleep(100000);
 
 	for (i = 0; i < SIZEOF(modifiers); i++) {
 		before_insert = head;
@@ -422,18 +560,7 @@ static void learn_map(map_t *mode) {
 			goto skip;
 		}
 
-		do {
-			printf("Are you satisfied with the above keys? ");
-			fflush(stdout);
-			c = safe_read_char();
-			if (c == 3) {
-				printf("^C\n");
-				exit(EXIT_FAILURE);
-			}
-			printf("\n");
-		} while (c != 'y' && c != 'Y' && c != 'n' && c != 'N');
-
-		if (c == 'n' || c == 'N') {
+		if (!x11_auto && !confirm("Are you satisfied with the above keys")) {
 	skip:
 			while (head != before_insert) {
 				current = head;
@@ -444,26 +571,80 @@ static void learn_map(map_t *mode) {
 		}
 	}
 
-	mode->sequences = head;
-	current = head->next;
-	head->next = NULL;
-	while (current != NULL) {
-		sequence_t *ptr = current->next;
-		current->next = mode->sequences;
-		mode->sequences = current;
-		current = ptr;
-	}
+	mode->sequences = reverse_key_list(head);
 	head = NULL;
 
 	if (mode->esc_seq_leave != NULL)
 		putp(mode->esc_seq_leave);
 }
 
+static void extract_shared_maps(map_t *head, map_t *last_new) {
+	map_t *new_maps_head = NULL;
+	map_t *current_map, *new_map;
+	sequence_t *current_key, *search_for, *key, *last_key;
+
+	for (current_map = head; current_map != NULL; current_map = current_map->next) {
+		if (current_map == last_new)
+			continue;
+
+		new_map = NULL;
+		for (search_for = last_new->sequences; search_for != NULL; search_for = search_for->next) {
+			for (current_key = current_map->sequences; current_key != NULL; current_key = current_key->next) {
+				if (search_for->keynames == current_key->keynames &&
+						search_for->modifiers == current_key->modifiers &&
+						strcmp(search_for->seq, current_key->seq) == 0)
+				{
+					if (new_map == NULL) {
+						new_map = calloc(1, sizeof(map_t));
+						new_map->collected_from = calloc(1, sizeof(map_list_t));
+						new_map->collected_from->map = last_new;
+						if (current_map->collected_from != NULL) {
+							new_map->collected_from->next = current_map->collected_from;
+						} else {
+							new_map->collected_from->next = calloc(1, sizeof(map_list_t));
+							new_map->collected_from->next->map = current_map;
+						}
+						new_map->next = new_maps_head;
+						new_maps_head = new_map;
+					}
+					key = malloc(sizeof(sequence_t));
+					*key = *search_for;
+					key->next = new_map->sequences;
+					new_map->sequences = key;
+					search_for->remove = true;
+					current_key->remove = true;
+				}
+			}
+		}
+		if (new_map != NULL)
+			new_map->sequences = reverse_key_list(new_map->sequences);
+	}
+
+	for (current_map = head; current_map != NULL; current_map = current_map->next) {
+		for (last_key = NULL, current_key = current_map->sequences; current_key != NULL; ) {
+			if (current_key->remove) {
+				key = current_key;
+				current_key = current_key->next;
+				if (last_key == NULL)
+					current_map->sequences = current_key;
+				else
+					last_key->next = current_key;
+			} else {
+				last_key = current_key;
+				current_key = current_key->next;
+			}
+		}
+	}
+
+	for (current_map = head; current_map->next != NULL; current_map = current_map->next) {}
+	current_map->next = new_maps_head;
+}
+
 int main(int argc, char *argv[]) {
 	size_t i;
 	char *smkx = NULL, *rmkx = NULL;
 	const char *term = getenv("TERM");
-	map_t *mode_head = NULL, *mode_ptr, **mode_next;
+	map_t *mode_head = NULL, *mode_ptr, **mode_next, *last_mode_ptr;
 
 	(void) argc;
 	(void) argv;
@@ -475,13 +656,26 @@ int main(int argc, char *argv[]) {
 	if ((output = fopen(term, "w")) == NULL)
 		fatal("Can't open output file '%s': %s\n", term, strerror(errno));
 
-	printf("libckey key learning program\n");
-	printf("Learning keys for terminal %s. Please press the requested key or enter\n", term);
-	printf("WARNING: Be carefull when pressing combinations as they may be bound to actions\nyou don't want to execute! For best results don't run this in a window manager.\n");
-	do {
-		printf("How many function keys does your keyboard have? ");
-		scanf("%d", &maxfkeys);
-	} while (maxfkeys < 0);
+	x11_auto = initX11();
+
+	printf("libt3key key learning program\n");
+	if (x11_auto) {
+		printf("Automatically learning keys for terminal %s. DO NOT press a key while the key learning is in progress.\n", term);
+#ifdef TESTING
+		maxfkeys = 0;
+#else
+		maxfkeys = 35;
+#endif
+	} else {
+		printf("Learning keys for terminal %s. Please press the requested key or enter\n", term);
+		printf("WARNING: Be carefull when pressing combinations as they may be bound to actions\nyou don't want to execute! For best results don't run this in a window manager.\n");
+		do {
+			printf("How many function keys does your keyboard have? ");
+			scanf("%d", &maxfkeys);
+		} while (maxfkeys < 0);
+	}
+
+
 	if (maxfkeys > 0) {
 		functionkeys = malloc(maxfkeys * sizeof(name_mapping_t));
 		for (i = 0; (int) i < maxfkeys; i++) {
@@ -490,15 +684,16 @@ int main(int argc, char *argv[]) {
 			functionkeys[i].name = strdup(buffer);
 			snprintf(buffer, 1024, "f%u", (unsigned) i + 1);
 			functionkeys[i].identifier = strdup(buffer);
+			functionkeys[i].keysym = XK_F1 + i;
 		}
 	}
 
-
 	rmkx = tigetstr("rmkx");
+	if (rmkx == (char *) -1)
+		rmkx = NULL;
 	mode_head = calloc(1, sizeof(map_t));
 	mode_head->name = strdup("nokx");
-
-	if (rmkx != NULL && rmkx != (void *) -1) {
+	if (rmkx != NULL) {
 		mode_head->esc_seq_enter = strdup(rmkx);
 		mode_head->esc_seq_enter_name = strdup("rmkx");
 	}
@@ -525,28 +720,50 @@ int main(int argc, char *argv[]) {
 		(*mode_next) = calloc(1, sizeof(map_t));
 		(*mode_next)->name = strdup(buffer);
 		do {
-			printf("Escape sequence to enter mode %s: ", (*mode_next)->name);
+			printf("Escape sequence to enter mode %s (- for none): ", (*mode_next)->name);
 			scanf("%1023s", buffer);
 		} while (buffer[0] == 0);
-		(*mode_next)->esc_seq_enter = parse_escapes(buffer);
+		if (strcmp(buffer, "-") != 0)
+			(*mode_next)->esc_seq_enter = parse_escapes(buffer);
 		do {
-			printf("Escape sequence to leave mode %s: ", (*mode_next)->name);
+			printf("Escape sequence to leave mode %s (- for none): ", (*mode_next)->name);
 			scanf("%1023s", buffer);
 		} while (buffer[0] == 0);
-		(*mode_next)->esc_seq_leave = parse_escapes(buffer);
+		if (strcmp(buffer, "-") != 0)
+			(*mode_next)->esc_seq_leave = parse_escapes(buffer);
 		mode_next = &(*mode_next)->next;
 	}
 
 	init_terminal();
 
-	for (mode_ptr = mode_head; mode_ptr != NULL; mode_ptr = mode_ptr->next)
+	for (mode_ptr = mode_head; mode_ptr != NULL && mode_ptr->name != NULL; mode_ptr = mode_ptr->next) {
 		learn_map(mode_ptr);
+		extract_shared_maps(mode_head, mode_ptr);
+	}
+
+	for (mode_ptr = mode_head, last_mode_ptr = NULL; mode_ptr != NULL; ) {
+		if (mode_ptr->name == NULL && mode_ptr->sequences == NULL) {
+			map_t *current = mode_ptr;
+			mode_ptr = mode_ptr->next;
+			if (last_mode_ptr == NULL)
+				mode_head = mode_ptr;
+			else
+				last_mode_ptr->next = mode_ptr;
+			free(current);
+		} else {
+			last_mode_ptr = mode_ptr;
+			mode_ptr = mode_ptr->next;
+		}
+	}
 
 	for (mode_ptr = mode_head; mode_ptr != NULL; mode_ptr = mode_ptr->next)
-		write_map(output, mode_ptr);
+		write_map(output, mode_ptr, mode_head);
 
 
 	fflush(output);
 	fclose(output);
+
+	if (x11_auto)
+		XCloseDisplay(display);
 	return 0;
 }

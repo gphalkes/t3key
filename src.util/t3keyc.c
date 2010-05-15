@@ -317,7 +317,7 @@ static t3_key_map_t *lookup_map(const char *name) {
 }
 
 /* Find a node by name in a map. */
-static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *key) {
+static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *string) {
 	t3_key_node_t *node_ptr, *result;
 	t3_key_map_t *other_map;
 
@@ -327,9 +327,9 @@ static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *key) {
 
 	for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
 		if (strcmp(node_ptr->key, "%include") == 0 && (other_map = lookup_map(node_ptr->ident)) != NULL &&
-				(result = lookup_node(other_map, key)) != NULL)
+				(result = lookup_node(other_map, string)) != NULL)
 			return result;
-		if (strcmp(node_ptr->key, key) == 0)
+		if (node_ptr->string != NULL && strcmp(node_ptr->string, string) == 0)
 			return node_ptr;
 	}
 	return NULL;
@@ -367,13 +367,16 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 			continue;
 		}
 
+		if (node_ptr->key[0] != '%' && node_ptr->string == NULL)
+			continue;
+
 		/* Check whether the current key is already defined in this map.
 		   Note that because we check whether the found definition for "key"
 		   is the same as the current node, we automatically only emit an
 		   error on second or later occurence. */
-		if ((other_node = lookup_node(start_map, node_ptr->key)) != node_ptr)
-			error("%d: checking map %s: node %s:%s already defined on line %d\n", node_ptr->line_number,
-				start_map->name, map->name, node_ptr->key, other_node->line_number);
+		if ((other_node = lookup_node(start_map, node_ptr->string)) != node_ptr)
+			error("%d: checking map %s: node %s:%s uses the same sequence as %s on line %d\n", node_ptr->line_number,
+				start_map->name, map->name, node_ptr->key, other_node->key, other_node->line_number);
 		clear_flags(FLAG_MARK_LOOKUP);
 
 		/* Check whether the key is contained in the terminfo database, and if so,
@@ -381,7 +384,7 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 		if (check_ti && node_ptr->key[0] != '%' && (idx = get_ti_mapping(node_ptr->key)) >= 0) {
 			char *tistr = tigetstr(keymapping[idx].tikey);
 			if (!(tistr == (char *) -1 || tistr == NULL)) {
-				if (node_ptr->string != NULL && strcmp(tistr, node_ptr->string) != 0)
+				if (strcmp(tistr, node_ptr->string) != 0)
 					fprintf(stderr, "%d: warning: key %s:%s has a different definition than "
 						"retrieved from the terminfo database (key %s)\n",
 						node_ptr->line_number, map->name, node_ptr->key, keymapping[idx].tikey);
