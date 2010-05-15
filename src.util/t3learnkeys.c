@@ -17,7 +17,7 @@
 #define ESC 27
 #define KEY_TIMEOUT 10
 
-#define TESTING
+//~ #define TESTING
 
 //FIXME: test modifier-letter as well
 //FIXME: test modifier-tab
@@ -61,7 +61,7 @@ static name_mapping_t keynames[] = {
 	{ "Keypad Delete", "kp_delete", XK_KP_Delete },
 	{ "Keypad Enter", "kp_enter", XK_KP_Enter },
 	{ "Tab", "tab", XK_Tab },
-	{ "Backspace", "backspace", XK_Backspace }
+	{ "Backspace", "backspace", XK_BackSpace }
 #endif
 };
 
@@ -87,7 +87,7 @@ typedef struct sequence_t {
 	char seq[MAX_SEQUENCE * 4 + 1];
 	name_mapping_t *modifiers;
 	name_mapping_t *keynames;
-	bool duplicate;
+	struct sequence_t *duplicate;
 	bool remove;
 } sequence_t;
 
@@ -152,8 +152,6 @@ static bool initX11(void) {
 
 static void send_event(KeySym keysym, unsigned state) {
 	XEvent event;
-
-	printf("Sending keysym %x mod %x\n", keysym, state);
 
 	event.xkey.type = KeyPress;
 	event.xkey.serial = 0;
@@ -292,7 +290,10 @@ static sequence_t *get_sequence(void) {
 	int c, idx = 0;
 
 	do {
-		c = get_keychar(x11_auto ? 100 : -1);
+		c = get_keychar(x11_auto ? 50 : -1);
+		if (x11_auto && c < 0)
+			return NULL;
+
 		if (c == ESC) {
 			int i, dest = 0;
 
@@ -327,7 +328,8 @@ static sequence_t *get_sequence(void) {
 				}
 			}
 			retval->seq[dest] = 0;
-			retval->duplicate = FALSE;
+			retval->duplicate = NULL;
+			retval->remove = false;
 			return retval;
 		} else if (!x11_auto && c == 3) {
 			printf("^C\n");
@@ -371,9 +373,9 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 		printf("%s ", new_seq->seq);
 		current = head;
 		while (current != NULL) {
-			if (strcmp(current->seq, new_seq->seq) == 0 && !current->duplicate) {
+			if (strcmp(current->seq, new_seq->seq) == 0 && current->duplicate == NULL) {
 				printf("(duplicate for %s%s)", current->modifiers->name, current->keynames->name);
-				new_seq->duplicate = TRUE;
+				new_seq->duplicate = current;
 				break;
 			} else {
 				current = current->next;
@@ -389,14 +391,12 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 }
 
 static void write_keys(sequence_t *keys) {
-	sequence_t *current, *ptr;
+	sequence_t *current;
 
 	for (current = keys; current != NULL; current = current->next) {
-		if (current->duplicate) {
-			for (ptr = keys; ptr != current && strcmp(current->seq, ptr->seq) != 0; ptr = ptr->next) {}
-
+		if (current->duplicate != NULL) {
 			fprintf(output, "# %s%s = %s%s\n", current->keynames->identifier, current->modifiers->identifier,
-				ptr->keynames->identifier, ptr->modifiers->identifier);
+				current->duplicate->keynames->identifier, current->duplicate->modifiers->identifier);
 		} else {
 			fprintf(output, "%s%s = \"%s\"\n", current->keynames->identifier, current->modifiers->identifier,
 				current->seq);
@@ -661,20 +661,15 @@ int main(int argc, char *argv[]) {
 	printf("libt3key key learning program\n");
 	if (x11_auto) {
 		printf("Automatically learning keys for terminal %s. DO NOT press a key while the key learning is in progress.\n", term);
-#ifdef TESTING
-		maxfkeys = 0;
-#else
-		maxfkeys = 35;
-#endif
 	} else {
 		printf("Learning keys for terminal %s. Please press the requested key or enter\n", term);
 		printf("WARNING: Be carefull when pressing combinations as they may be bound to actions\nyou don't want to execute! For best results don't run this in a window manager.\n");
-		do {
-			printf("How many function keys does your keyboard have? ");
-			scanf("%d", &maxfkeys);
-		} while (maxfkeys < 0);
 	}
 
+	do {
+		printf("How many function keys does your keyboard have? ");
+		scanf("%d", &maxfkeys);
+	} while (maxfkeys < 0);
 
 	if (maxfkeys > 0) {
 		functionkeys = malloc(maxfkeys * sizeof(name_mapping_t));
@@ -689,7 +684,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	rmkx = tigetstr("rmkx");
-	if (rmkx == (char *) -1)
+	if (rmkx == (char *) -1 || strlen(rmkx) == 0)
 		rmkx = NULL;
 	mode_head = calloc(1, sizeof(map_t));
 	mode_head->name = strdup("nokx");
@@ -700,7 +695,7 @@ int main(int argc, char *argv[]) {
 
 	mode_next = &mode_head->next;
 	smkx = tigetstr("smkx");
-	if (smkx != NULL && smkx != (void *) -1) {
+	if (smkx != NULL && smkx != (void *) -1 && strlen(smkx) > 0) {
 		(*mode_next) = calloc(1, sizeof(map_t));
 		(*mode_next)->name = strdup("kx");
 		(*mode_next)->esc_seq_enter = strdup(smkx);
@@ -735,6 +730,10 @@ int main(int argc, char *argv[]) {
 	}
 
 	init_terminal();
+
+	send_event(XK_a, 0);
+	if (get_keychar(100) < 0)
+		fatal("Sending keys does not work. Aborting.\n");
 
 	for (mode_ptr = mode_head; mode_ptr != NULL && mode_ptr->name != NULL; mode_ptr = mode_ptr->next) {
 		learn_map(mode_ptr);
