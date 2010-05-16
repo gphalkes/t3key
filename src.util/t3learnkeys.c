@@ -335,10 +335,10 @@ static sequence_t *get_sequence(void) {
 				exit(EXIT_FAILURE);
 			printf("(no escape sequence)");
 			return NULL;
-		} else if (c == 0177) {
+		} else if (c == 0177 || c == 8) {
 			if ((retval = malloc(sizeof(sequence_t))) == NULL)
 				fatal("Out of memory\n");
-			strcpy(retval->seq, "\\177");
+			sprintf(retval->seq, "\\%03o", c);
 			retval->duplicate = NULL;
 			retval->remove = false;
 			return retval;
