@@ -1,9 +1,9 @@
 %best kx
 %aka "xterm-256color"
-%aka "xterm+256color"
 
 nokx {
-%enter = rmkx
+%enter = "\e[?1l\e>\e[?1036s\e[?1036h"
+%leave = "\e[?1036r"
 %include _kx_nokx
 home = "\e[H"
 end = "\e[F"
@@ -54,8 +54,8 @@ kp_center+cm = "\e[1;7E"
 }
 
 kx {
-%enter = smkx
-%leave = rmkx
+%enter = "\e[?1h\e=\e[?1036s\e[?1036h"
+%leave = "\e[?1l\e>\e[?1036r"
 %include _kx_nokx
 home = "\eOH"
 end = "\eOF"
