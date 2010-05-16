@@ -508,6 +508,13 @@ return_error:
 }
 
 t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name) {
+	if (name == NULL) {
+		if (map == NULL)
+			return NULL;
+		name = map->key;
+		map = map->next;
+	}
+
 	for (; map != NULL; map = map->next) {
 		if (strcmp(map->key, name) == 0)
 			return map;
