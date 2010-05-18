@@ -317,7 +317,7 @@ static t3_key_map_t *lookup_map(const char *name) {
 }
 
 /* Find a node by name in a map. */
-static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *string) {
+static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *string, t3_key_map_t **other_map_store) {
 	t3_key_node_t *node_ptr, *result;
 	t3_key_map_t *other_map;
 
@@ -327,10 +327,13 @@ static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *string) {
 
 	for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
 		if (strcmp(node_ptr->key, "%include") == 0 && (other_map = lookup_map(node_ptr->ident)) != NULL &&
-				(result = lookup_node(other_map, string)) != NULL)
+				(result = lookup_node(other_map, string, other_map_store)) != NULL)
 			return result;
-		if (node_ptr->string != NULL && strcmp(node_ptr->string, string) == 0)
+		if (node_ptr->string != NULL && strcmp(node_ptr->string, string) == 0) {
+			if (other_map_store != NULL)
+				*other_map_store = map;
 			return node_ptr;
+		}
 	}
 	return NULL;
 }
@@ -348,6 +351,7 @@ static int get_ti_mapping(const char *name) {
 /* Check the contents of a map for duplicates and non-existent %include's */
 static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_ti) {
 	t3_key_node_t *node_ptr, *other_node;
+	t3_key_map_t *other_map;
 	int idx;
 
 	/* Prevent loops in inclusion and double includes. */
@@ -374,9 +378,9 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 		   Note that because we check whether the found definition for "key"
 		   is the same as the current node, we automatically only emit an
 		   error on second or later occurence. */
-		if (node_ptr->key[0] != '%' && (other_node = lookup_node(start_map, node_ptr->string)) != node_ptr)
-			error("%d: checking map %s: node %s:%s uses the same sequence as %s on line %d\n", node_ptr->line_number,
-				start_map->name, map->name, node_ptr->key, other_node->key, other_node->line_number);
+		if (node_ptr->key[0] != '%' && (other_node = lookup_node(start_map, node_ptr->string, &other_map)) != node_ptr)
+			error("%d: checking map %s: node %s:%s uses the same sequence as %s:%s on line %d\n", node_ptr->line_number,
+				start_map->name, map->name, node_ptr->key, other_map->name, other_node->key, other_node->line_number);
 		clear_flags(FLAG_MARK_LOOKUP);
 
 		/* Check whether the key is contained in the terminfo database, and if so,
