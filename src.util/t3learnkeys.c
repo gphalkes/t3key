@@ -109,11 +109,11 @@ struct map_list_t {
 
 static struct termios saved;
 static fd_set inset;
-static bool xterm_restore;
 static int maxfkeys = -1;
 static bool x11_auto;
 static Display *display;
 static Window root, focus_window;
+static int reprogram_code = -1;
 
 
 /** Alert the user of a fatal error and quit.
@@ -133,8 +133,6 @@ static void restore_terminal(void) {
 	char *rmkx = tigetstr("rmkx");
 	if (rmkx != NULL && rmkx != (void *) -1)
 		printf("%s", rmkx);
-	if (xterm_restore)
-		printf("\x1b[?1036r");
 	tcsetattr(STDOUT_FILENO, TCSADRAIN, &saved);
 }
 
@@ -144,12 +142,23 @@ static bool initX11(void) {
 	if ((display = XOpenDisplay(NULL)) == NULL)
 		return false;
 	root = XDefaultRootWindow(display);
+
+	for (reprogram_code = 255; reprogram_code >= 0; reprogram_code--)
+		if (XKeycodeToKeysym(display, reprogram_code, 0) == NoSymbol)
+			break;
+
 	XGetInputFocus(display, &focus_window, &revert_to_return);
 	return true;
 }
 
 static void send_event(KeySym keysym, unsigned state) {
 	XEvent event;
+	unsigned int keycode;
+
+	if (reprogram_code == -1 || XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1) != 0)
+		keycode = XKeysymToKeycode(display, keysym);
+	else
+		keycode = reprogram_code;
 
 	event.xkey.type = KeyPress;
 	event.xkey.serial = 0;
@@ -164,7 +173,7 @@ static void send_event(KeySym keysym, unsigned state) {
 	event.xkey.x_root = 1;
 	event.xkey.y_root = 1;
 	event.xkey.state = state;
-	event.xkey.keycode = XKeysymToKeycode(display, keysym);
+	event.xkey.keycode = keycode;
 	event.xkey.same_screen = True;
 
 	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, &event);
@@ -182,7 +191,7 @@ static void send_event(KeySym keysym, unsigned state) {
 	event.xkey.x_root = 1;
 	event.xkey.y_root = 1;
 	event.xkey.state = state;
-	event.xkey.keycode = XKeysymToKeycode(display, keysym);
+	event.xkey.keycode = keycode;
 	event.xkey.same_screen = True;
 
 	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, &event);
@@ -214,12 +223,6 @@ static void init_terminal(void) {
 	FD_ZERO(&inset);
 	FD_SET(STDIN_FILENO, &inset);
 	env = getenv("TERM");
-	#warning FIXME: this probably should not be here
-	if (strncmp("xterm", env, 5) == 0) {
-		printf("\x1b[?1036s\x1b[?1036h");
-		xterm_restore = true;
-	}
-
 }
 
 /* Read a char masking interruptions. */
@@ -666,15 +669,16 @@ int main(int argc, char *argv[]) {
 	printf("libt3key key learning program\n");
 	if (x11_auto) {
 		printf("Automatically learning keys for terminal %s. DO NOT press a key while the key learning is in progress.\n", term);
+		maxfkeys = 35;
 	} else {
 		printf("Learning keys for terminal %s. Please press the requested key or enter\n", term);
 		printf("WARNING: Be carefull when pressing combinations as they may be bound to actions\nyou don't want to execute! For best results don't run this in a window manager.\n");
+		do {
+			printf("How many function keys does your keyboard have? ");
+			scanf("%d", &maxfkeys);
+		} while (maxfkeys < 0);
 	}
 
-	do {
-		printf("How many function keys does your keyboard have? ");
-		scanf("%d", &maxfkeys);
-	} while (maxfkeys < 0);
 
 	if (maxfkeys > 0) {
 		functionkeys = malloc(maxfkeys * sizeof(name_mapping_t));
@@ -767,7 +771,10 @@ int main(int argc, char *argv[]) {
 	fflush(output);
 	fclose(output);
 
-	if (x11_auto)
+	if (x11_auto) {
+		KeySym keysym = NoSymbol;
+		XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1);
 		XCloseDisplay(display);
+	}
 	return 0;
 }
