@@ -297,7 +297,7 @@ t3_key_node_t *new_node(const char *key, const char *string, const char *ident) 
 	result->key = key;
 	if (string != NULL) {
 		result->string = safe_strdup(string);
-		parse_escapes(result->string);
+		result->string_len = parse_escapes(result->string);
 	}
 
 	if (ident != NULL)
@@ -317,7 +317,7 @@ static t3_key_map_t *lookup_map(const char *name) {
 }
 
 /* Find a node by name in a map. */
-static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *string, t3_key_map_t **other_map_store) {
+static t3_key_node_t *lookup_node(t3_key_map_t *map, t3_key_node_t *needle, t3_key_map_t **other_map_store) {
 	t3_key_node_t *node_ptr, *result;
 	t3_key_map_t *other_map;
 
@@ -327,9 +327,11 @@ static t3_key_node_t *lookup_node(t3_key_map_t *map, const char *string, t3_key_
 
 	for (node_ptr = map->mapping; node_ptr != NULL; node_ptr = node_ptr->next) {
 		if (strcmp(node_ptr->key, "%include") == 0 && (other_map = lookup_map(node_ptr->ident)) != NULL &&
-				(result = lookup_node(other_map, string, other_map_store)) != NULL)
+				(result = lookup_node(other_map, needle, other_map_store)) != NULL)
 			return result;
-		if (node_ptr->string != NULL && strcmp(node_ptr->string, string) == 0) {
+		if (node_ptr->string != NULL && needle->string_len == node_ptr->string_len &&
+				memcmp(node_ptr->string, needle->string, needle->string_len) == 0)
+		{
 			if (other_map_store != NULL)
 				*other_map_store = map;
 			return node_ptr;
@@ -374,11 +376,11 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 		if (node_ptr->key[0] != '%' && node_ptr->string == NULL)
 			continue;
 
-		/* Check whether the current key is already defined in this map.
+		/* Check whether the current key sequence is already defined in this map.
 		   Note that because we check whether the found definition for "key"
 		   is the same as the current node, we automatically only emit an
 		   error on second or later occurence. */
-		if (node_ptr->key[0] != '%' && (other_node = lookup_node(start_map, node_ptr->string, &other_map)) != node_ptr)
+		if (node_ptr->key[0] != '%' && (other_node = lookup_node(start_map, node_ptr, &other_map)) != node_ptr)
 			error("%d: checking map %s: node %s:%s uses the same sequence as %s:%s on line %d\n", node_ptr->line_number,
 				start_map->name, map->name, node_ptr->key, other_map->name, other_node->key, other_node->line_number);
 		clear_flags(FLAG_MARK_LOOKUP);
@@ -438,18 +440,23 @@ static void check_maps(void) {
 
 /* Write a string to the output file. This requires writing the length in network byte order,
    followed by the string contents (without the trailing zero byte). */
-static void fwrite_string(const char *string, FILE *output) {
+static void fwrite_nstring(const char *string, size_t len, FILE *output) {
 	uint16_t out_short;
-	out_short = htons(strlen(string));
+	out_short = htons((uint16_t) len);
 	fwrite(&out_short, 1, 2, output);
-	fwrite(string, 1, strlen(string), output);
+	fwrite(string, 1, len, output);
+}
+
+static void fwrite_string(const char *string, FILE *output) {
+	fwrite_nstring(string, strlen(string), output);
 }
 
 /* Write all nodes in a list (map). If all all_keys is false, keys starting with % will
    not be written to file. */
 static void write_map(t3_key_map_t *map, bool all_keys) {
 	t3_key_node_t *node_ptr;
-	uint16_t out_short;
+	uint16_t tag;
+	size_t string_len;
 	char *string;
 
 	if (map->flags & FLAG_MARK_INCLUDED)
@@ -461,15 +468,17 @@ static void write_map(t3_key_map_t *map, bool all_keys) {
 			write_map(lookup_map(node_ptr->ident), false);
 		else if (node_ptr->key[0] != '%' || all_keys) {
 			if (node_ptr->string != NULL) {
-				out_short = htons(NODE_KEY_VALUE);
+				tag = htons(NODE_KEY_VALUE);
 				string = node_ptr->string;
+				string_len = node_ptr->string_len;
 			} else {
-				out_short = htons(NODE_KEY_TERMINFO);
+				tag = htons(NODE_KEY_TERMINFO);
 				string = node_ptr->ident;
+				string_len = strlen(node_ptr->ident);
 			}
-			fwrite(&out_short, 1, 2, output);
+			fwrite(&tag, 1, 2, output);
 			fwrite_string(node_ptr->key, output);
-			fwrite_string(string, output);
+			fwrite_nstring(string, string_len, output);
 		}
 	}
 }

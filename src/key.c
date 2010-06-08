@@ -240,7 +240,6 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 		*error = EOF_OR_ERROR(input);
 
 return_error:
-	CLEANUP();
 	t3_key_free_map(list);
 	return NULL;
 }

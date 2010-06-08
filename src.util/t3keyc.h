@@ -13,6 +13,7 @@ typedef struct t3_key_node_t t3_key_node_t;
 struct t3_key_node_t {
 	const char *key;
 	char *string;
+	size_t string_len;
 	char *ident;
 	int line_number;
 	t3_key_node_t *next;
