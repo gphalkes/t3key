@@ -365,7 +365,7 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 		if (strcmp("%include", node_ptr->key) == 0) {
 			t3_key_map_t *other_map;
 			if ((other_map = lookup_map(node_ptr->ident)) == NULL)
-				error("%d: %%include map %s not found\n", node_ptr->line_number, node_ptr->string);
+				error("%d: %%include map %s not found\n", node_ptr->line_number, node_ptr->ident);
 			else
 				check_nodes(start_map, other_map, check_ti);
 			continue;
