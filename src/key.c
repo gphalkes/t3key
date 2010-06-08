@@ -528,38 +528,38 @@ int t3_key_get_version(void) {
 const char *t3_key_strerror(int error) {
 	switch (error) {
 		case T3_ERR_SUCCESS:
-			return _("Success");
+			return _("success");
 		case T3_ERR_ERRNO:
 			return strerror(errno);
 		case T3_ERR_EOF:
-			return _("End of file");
+			return _("end of file");
 		default: /* FALLTHROUGH */
 		case T3_ERR_UNKNOWN:
-			return _("Unknown error");
+			return _("unknown error");
 		case T3_ERR_BAD_ARG:
-			return _("Bad argument passed to function");
+			return _("bad argument passed to function");
 		case T3_ERR_OUT_OF_MEMORY:
-			return _("Out of memory");
+			return _("out of memory");
 		case T3_ERR_TERMINFODB_NOT_FOUND:
-			return _("No information found in terminfo database for terminal");
+			return _("no information found in terminfo database for terminal");
 		case T3_ERR_HARDCOPY_TERMINAL:
-			return _("Terminal is a hard-copy terminal");
+			return _("terminal is a hard-copy terminal");
 		case T3_ERR_TERMINAL_TOO_LIMITED:
-			return _("Terminal provides too limited functionality");
+			return _("terminal provides too limited functionality");
 		case T3_ERR_NO_TERM:
-			return _("No terminal given and TERM environment variable not set");
+			return _("no terminal given and TERM environment variable not set");
 
 		case T3_ERR_INVALID_FORMAT:
-			return _("Invalid key-database file format");
+			return _("invalid key-database file format");
 		case T3_ERR_TERMINFO_UNKNOWN:
-			return _("Required terminfo key not found in terminfo database");
+			return _("required terminfo key not found in terminfo database");
 		case T3_ERR_NOMAP:
-			return _("Key database contains no maps");
+			return _("key database contains no maps");
 		case T3_ERR_TRUNCATED_DB:
-			return _("Key database is truncated");
+			return _("key database is truncated");
 		case T3_ERR_READ_ERROR:
-			return _("Error reading key database");
+			return _("error reading key database");
 		case T3_ERR_WRONG_VERSION:
-			return _("Key database is of an unsupported version");
+			return _("key database is of an unsupported version");
 	}
 }
