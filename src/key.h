@@ -128,9 +128,9 @@ T3_KEY_API char *t3_key_get_best_map_name(const char *term, int *error);
 */
 T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name);
 
-/** Get the value of ::T3_KEY_VERSION corresponding to the actual used library.
+/** Get the value of ::T3_KEY_API_VERSION corresponding to the actual used library.
     @ingroup t3window_other
-    @return The value of ::T3_KEY_VERSION.
+    @return The value of ::T3_KEY_API_VERSION.
 
     This function can be useful to determine at runtime what version of the library
     was linked to the program. Although currently there are no known uses for this

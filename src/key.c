@@ -79,7 +79,6 @@ static FILE *open_database(const char *term, int *error) {
 
 	home_env = getenv("HOME");
 	if (home_env != NULL) {
-		#warning FIXME: check whether we should not use .config/t3key
 		if ((name = malloc(strlen(home_env) + strlen(".t3key") + 2)) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		strcpy(name, home_env);
