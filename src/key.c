@@ -521,32 +521,13 @@ t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char
 }
 
 int t3_key_get_version(void) {
-	return T3_KEY_API_VERSION;
+	return T3_KEY_VERSION;
 }
 
 const char *t3_key_strerror(int error) {
 	switch (error) {
-		case T3_ERR_SUCCESS:
-			return _("success");
-		case T3_ERR_ERRNO:
-			return strerror(errno);
-		case T3_ERR_EOF:
-			return _("end of file");
-		default: /* FALLTHROUGH */
-		case T3_ERR_UNKNOWN:
-			return _("unknown error");
-		case T3_ERR_BAD_ARG:
-			return _("bad argument passed to function");
-		case T3_ERR_OUT_OF_MEMORY:
-			return _("out of memory");
-		case T3_ERR_TERMINFODB_NOT_FOUND:
-			return _("no information found in terminfo database for terminal");
-		case T3_ERR_HARDCOPY_TERMINAL:
-			return _("terminal is a hard-copy terminal");
-		case T3_ERR_TERMINAL_TOO_LIMITED:
-			return _("terminal provides too limited functionality");
-		case T3_ERR_NO_TERM:
-			return _("no terminal given and TERM environment variable not set");
+		default:
+			t3_key_strerror_base(error);
 
 		case T3_ERR_INVALID_FORMAT:
 			return _("invalid key-database file format");

@@ -1,4 +1,5 @@
 syntax: glob
+src/key_shared.c
 src/key_errors.h
 src/key_api.h
 doc/doxygen.conf

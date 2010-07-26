@@ -1,4 +1,4 @@
-LCFILES.libt3key.la := key.c
+LCFILES.libt3key.la := key.c key_shared.c
 CFLAGS.key := -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
 
 TARGETS := libt3key.la
@@ -14,6 +14,7 @@ include ../../t3shared/rules.mk
 
 CFLAGS += -I.
 LCFLAGS += -DT3_KEY_BUILD_DSO
+LCFLAGS += -DT3_DEBUG
 LDLIBS += -lcurses
 
 updatedb: | utils
