@@ -12,9 +12,6 @@ include ../../makesys/rules.mk
 T3NAME := key
 include ../../t3shared/rules.mk
 
-CFLAGS += -I.
-LCFLAGS += -DT3_KEY_BUILD_DSO
-LCFLAGS += -DT3_DEBUG
 LDLIBS += -lcurses
 
 updatedb: | utils
