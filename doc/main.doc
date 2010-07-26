@@ -55,11 +55,15 @@ the desired character sequences. The @c name argument must be one of:
 - f<num>: Function key <num>
 
 optionally combined with a plus symbol and one or more of the modifier letters
-c[ontrol], m[eta] and s[hift] (in alphabetical order). For example, to retrieve the character
-sequence for Meta-Shift-right, pass the name @c right+ms.
+c[ontrol], m[eta] and s[hift] (in alphabetical order). For example, to retrieve
+the character sequence for Meta-Shift-right, pass the name @c right+ms.
 
 \note Although the library provides separate character sequences for
 the keypad and regular cursor keys, it is a very bad idea to distinghuish
 between them. They should be treated as if they are the same keys as far as the
 behavior of the program is concerned.
+
+Each key may have multiple character sequences associated with it. By calling
+::t3_key_get_named_node multiple times, the second and later times with @c NULL
+as the @c name argument, all character sequences can be retrieved.
 */
