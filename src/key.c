@@ -366,6 +366,7 @@ static int make_node_from_ti(t3_key_node_t **next_node, const char *tikey, const
 		*next_node = NULL;
 		return T3_ERR_OUT_OF_MEMORY;
 	}
+	(*next_node)->string_length = strlen(tiresult);
 
 	return T3_ERR_SUCCESS;
 }
