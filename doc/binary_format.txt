@@ -11,8 +11,8 @@ followed by that number of bytes representing the string.
 File header
 -----------
 
-Each file starts with a 4 byte identifier. These bytes are the letters C, K, E,
-and Y (43h, 4Bh, 45h and 59h).
+Each file starts with a 4 byte identifier. These bytes are the letters T, 3, K,
+and Y (54h, 33h, 4Bh and 59h).
 
 After the identifier, the version number is included. The version is a 4 byte
 integer.

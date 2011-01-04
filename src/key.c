@@ -31,7 +31,7 @@
 #include "key.h"
 
 #ifndef DB_DIRECTORY
-#define DB_DIRECTORY "/usr/local/share/libckey"
+#define DB_DIRECTORY "/usr/local/share/libt3key"
 #endif
 
 #define MAX_VERSION 0
