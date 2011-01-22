@@ -11,14 +11,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-CFILES.t3learnkeys := t3learnkeys.c
+SOURCES.t3learnkeys := t3learnkeys.c
 LDLIBS.t3learnkeys := -lcurses -lX11
-CFILES.t3keyc := t3keyc.c
-GFILES.t3keyc := grammar.g
-LFILES.t3keyc := lex.l
+SOURCES.t3keyc := t3keyc.c grammar.g lex.l
 LDLIBS.t3keyc := -lcurses
 CFLAGS.lex := -Wno-shadow -Wno-switch-default -Wno-unused
-CFILES.test := test.c
+SOURCES.test := test.c
 LDFLAGS.test := -L../src/.libs
 LDLIBS.test := -lt3key
 

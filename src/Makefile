@@ -11,10 +11,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-LCFILES.libt3key.la := key.c key_shared.c
+SOURCES.libt3key.la := key.c key_shared.c
 CFLAGS.key := -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
 
-TARGETS := libt3key.la
+LTTARGETS := libt3key.la
 EXTRATARGETS := updatedb
 
 #================================================#
