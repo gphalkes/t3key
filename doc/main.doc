@@ -52,7 +52,7 @@ the desired character sequences. The @c name argument must be one of:
 - kp_plus: Keypad +
 - tab: Tab
 - backspace: Backspace
-- f<num>: Function key <num>
+- f&lt;num&gt;: Function key &lt;num&gt;
 
 optionally combined with a plus symbol and one or more of the modifier letters
 c[ontrol], m[eta] and s[hift] (in alphabetical order). For example, to retrieve
@@ -65,5 +65,6 @@ behavior of the program is concerned.
 
 Each key may have multiple character sequences associated with it. By calling
 ::t3_key_get_named_node multiple times, the second and later times with @c NULL
-as the @c name argument, all character sequences can be retrieved.
+as the @c name argument @b and the returned value as the first argument, all
+character sequences can be retrieved.
 */

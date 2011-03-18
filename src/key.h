@@ -137,7 +137,7 @@ T3_KEY_API char *t3_key_get_best_map_name(const char *term, int *error);
 	@return The ::t3_key_node_t with the given name, or @c NULL if no such node exists.
 
     Multiple nodes may exist with the same name. To retrieve all of them, ::t3_key_get_named_node
-    may be called multiple times. The second and later calls should use the returned value
+    may be called multiple times. The second and later calls @b must use the returned value
 	as the @p map parameter, and pass @c NULL as @p name.
 */
 T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name);
