@@ -541,7 +541,7 @@ int t3_key_get_version(void) {
 const char *t3_key_strerror(int error) {
 	switch (error) {
 		default:
-			t3_key_strerror_base(error);
+			return t3_key_strerror_base(error);
 
 		case T3_ERR_INVALID_FORMAT:
 			return _("invalid key-database file format");

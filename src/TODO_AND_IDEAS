@@ -4,6 +4,8 @@ TODO
   and keys for which the TI entry differs.
 - what to do with all these keys that may be available on hardware terminals,
   but not on PC keyboards?
+- perhaps we should add a key "ambiguous", such that we can assign all sequences
+  that can not be reasonably assigned to a single key
 
 - omit keys with standard mappings such as \t for tab
 - switch to X session with only the terminal emulator running to capture as many
