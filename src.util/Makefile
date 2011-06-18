@@ -30,6 +30,7 @@ TARGETS := t3learnkeys t3keyc test
 include ../../makesys/rules.mk
 #================================================#
 CFLAGS += -I. -I../src -I.objects
+FLFLAGS += --never-interactive --nounistd
 
 .objects/test.o: | library
 
