@@ -35,7 +35,6 @@
 //~ #define TESTING
 
 //FIXME: test modifier-letter as well
-//FIXME: check calloc/malloc return values!
 
 typedef struct {
 	const char *name;
@@ -152,6 +151,28 @@ static void fatal(const char *fmt, ...) {
 	exit(EXIT_FAILURE);
 }
 
+static void *safe_malloc(size_t size) {
+	void *result;
+	if ((result = malloc(size)) == NULL)
+		fatal("Out of memory\n");
+	return result;
+}
+
+static void *safe_calloc(size_t nmemb, size_t size) {
+	void *result;
+	if ((result = calloc(nmemb, size)) == NULL)
+		fatal("Out of memory\n");
+	return result;
+}
+
+static char *safe_strdup(const char *str) {
+	char *result;
+	if ((result = malloc(strlen(str) + 1)) == 0)
+		fatal("Out of memory\n");
+	strcpy(result, str);
+	return result;
+}
+
 static void restore_terminal(void) {
 	char *rmkx = tigetstr("rmkx");
 	if (rmkx != NULL && rmkx != (void *) -1)
@@ -166,6 +187,10 @@ static bool initX11(void) {
 		return false;
 	root = XDefaultRootWindow(display);
 
+	/* Find a key code to reprogram with all the different possible keys. This is
+	   required because not all keys that we want to test are available on all keyboards
+	   (e.g. the function keys up to F36). If we find a key that is not used, we
+	   can temporarily reprogram that key to the key we need for each key stroke. */
 	for (reprogram_code = 255; reprogram_code >= 0; reprogram_code--)
 		if (XKeycodeToKeysym(display, reprogram_code, 0) == NoSymbol)
 			break;
@@ -178,6 +203,9 @@ static void send_event(KeySym keysym, unsigned state) {
 	XEvent event;
 	unsigned int keycode;
 
+	/* If an unused key is available, reprogram that for sending the key stroke to
+	   the terminal. This will allow us to use keys which are not available on the
+	   user's keyboard. */
 	if (reprogram_code == -1 || XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1) != 0)
 		keycode = XKeysymToKeycode(display, keysym);
 	else
@@ -227,8 +255,6 @@ static void init_terminal(void) {
 	struct termios new_params;
 	if (!isatty(STDOUT_FILENO))
 		fatal("Stdout is not a terminal\n");
-
-	//~ setupterm((char *)0, 1, (int *)0);
 
 	if (tcgetattr(STDOUT_FILENO, &saved) < 0)
 		fatal("Could not retrieve terminal settings: %s\n", strerror(errno));
@@ -334,8 +360,7 @@ static sequence_t *get_sequence(void) {
 				return NULL;
 			}
 
-			if ((retval = malloc(sizeof(sequence_t))) == NULL)
-				fatal("Out of memory\n");
+			retval = safe_malloc(sizeof(sequence_t));
 
 			for (i = 0; i < idx; i++) {
 				if (seq[i] == '\\') {
@@ -359,16 +384,14 @@ static sequence_t *get_sequence(void) {
 			printf("^C\n");
 			if (confirm("Are you sure you want to quit [y/n]"))
 				exit(EXIT_FAILURE);
-			printf("(no escape sequence)");
-			return NULL;
+			c = -1;
 		} else if (c == 0177 || c == 8) {
-			if ((retval = malloc(sizeof(sequence_t))) == NULL)
-				fatal("Out of memory\n");
+			retval = safe_malloc(sizeof(sequence_t));
 			sprintf(retval->seq, "\\%03o", c);
 			retval->duplicate = NULL;
 			retval->remove = false;
 			return retval;
-		} else if (c == 18) {
+		} else if (c == 18) { /* Control-r */
 			return (void *) -1;
 		} else if (c >= 0) {
 			while (get_keychar(KEY_TIMEOUT) >= 0) {}
@@ -379,13 +402,16 @@ static sequence_t *get_sequence(void) {
 	return NULL;
 }
 
+/* Compare a key/modifier combination with a blocked key description. */
 static int check_key(name_mapping_t *key_desc, const char **key_name) {
 	const char *key_modifiers;
 	size_t key_name_len, modifier_len = strlen(key_desc[1].name);
 
+	/* First try if the user used the descriptive names that we print on screen... */
 	if (strncmp(*key_name, key_desc[1].name, modifier_len) == 0 && strcmp((*key_name) + modifier_len, key_desc[0].name) == 0)
 		return 0;
 
+	/* ... and if not, check if it is one of the identifiers as used in the output file. */
 	key_modifiers = strpbrk(*key_name, "+");
 	key_name_len = key_modifiers == NULL ? strlen(*key_name) : (size_t) (key_modifiers - *key_name);
 	if (strlen(key_desc[0].identifier) != key_name_len || memcmp(key_desc[0].identifier, *key_name, key_name_len) != 0)
@@ -404,6 +430,7 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 	int i;
 
 	for (i = 0; i < max; i++) {
+		/* Check if the key is blocked from the command line. */
 		if (blocked_keys != NULL) {
 			name_mapping_t key_mod[2] = { keys[i], modifiers[mod] };
 			if (lfind(&key_mod, blocked_keys, &blocked_keys_fill, sizeof(char *),
@@ -416,9 +443,12 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 
 		printf("%s%s ", modifiers[mod].name, keys[i].name);
 		fflush(stdout);
+
+		/* When auto learning, just send the appropriate events to the terminal. */
 		if (option_auto_learn)
 			send_event(keys[i].keysym, modifiers[mod].keysym);
 
+		/* Retrieve key sequence. */
 		new_seq = get_sequence();
 		if (new_seq == NULL) {
 			printf("\n");
@@ -428,6 +458,7 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 		}
 		printf("%s ", new_seq->seq);
 		current = head;
+		/* Check for duplicate sequences, and set the duplicate field if one is found. */
 		while (current != NULL) {
 			if (strcmp(current->seq, new_seq->seq) == 0 && current->duplicate == NULL) {
 				printf("(duplicate for %s%s)", current->modifiers->name, current->keynames->name);
@@ -437,6 +468,7 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 				current = current->next;
 			}
 		}
+
 		new_seq->modifiers = modifiers + mod;
 		new_seq->keynames = keys + i;
 		new_seq->next = head;
@@ -460,6 +492,7 @@ static void write_keys(sequence_t *keys) {
 	}
 }
 
+/* Convert a sequence to a printable representation. */
 static char *get_print_seq(const char *seq) {
 	static char buffer[1024];
 	char *dest = buffer;
@@ -487,6 +520,7 @@ static char *get_print_seq(const char *seq) {
 	return buffer;
 }
 
+/* Convert a string into a representation usable for writing to the terminal. */
 static char *parse_escapes(const char *seq) {
 	char buffer[1024];
 	int dest = 0;
@@ -532,12 +566,16 @@ static char *parse_escapes(const char *seq) {
 		}
 	}
 	buffer[dest] = 0;
-	return strdup(buffer);
+	return safe_strdup(buffer);
 }
 
+/* Write a single map (mode) to the output. */
 static void write_map(FILE *output, map_t *mode, map_t *maps) {
 	sequence_t *current, *last;
 
+	/* Mode name is NULL when the map is created by extracting common parts of
+	   other maps. In that case the collected_from list is a linked list of map
+	   pointers from which it was created. */
 	if (mode->name != NULL) {
 		fprintf(output, "%s {\n", mode->name);
 	} else {
@@ -546,6 +584,7 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
 			fprintf(output, "_%s", ptr->map->name);
 		fprintf(output, " {\n");
 	}
+
 	if (mode->esc_seq_enter) {
 		if (mode->esc_seq_enter_name)
 			fprintf(output, "%%enter = %s\n", mode->esc_seq_enter_name);
@@ -559,6 +598,8 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
 			fprintf(output, "%%leave = \"%s\"\n", get_print_seq(mode->esc_seq_leave));
 	}
 
+	/* Locate all the maps which contain common pieces collected from this map.
+	   These have to be %include'd in this map. */
 	for (; maps != NULL; maps = maps->next) {
 		map_list_t *collected;
 		for (collected = maps->collected_from; collected != NULL; collected = collected->next) {
@@ -593,11 +634,12 @@ static sequence_t *reverse_key_list(sequence_t *list) {
 	return list;
 }
 
+/* Learn a single map. */
 static void learn_map(map_t *mode) {
 	sequence_t *current, *before_insert;
 	size_t i;
 
-	printf("Starting mode %s\n", mode->name);
+	printf("Starting mode %s (press Control R to restart)\n", mode->name);
 	if (mode->esc_seq_enter != NULL)
 		putp(mode->esc_seq_enter);
 
@@ -634,48 +676,62 @@ static void learn_map(map_t *mode) {
 		putp(mode->esc_seq_leave);
 }
 
+/* Extract all shared parts of a new map, so we only save them once. */
 static void extract_shared_maps(map_t *head, map_t *last_new) {
 	map_t *new_maps_head = NULL;
 	map_t *current_map, *new_map;
 	sequence_t *current_key, *search_for, *key, *last_key;
+
+	/* The newly created partial maps are created in a separate list, which is
+	   linked to the main list at the end of this function. This makes it easier
+	   to reason about the list of maps. */
 
 	for (current_map = head; current_map != NULL; current_map = current_map->next) {
 		if (current_map == last_new)
 			continue;
 
 		new_map = NULL;
+		/* Note: we only compare the sequences from last_new with the sequences in
+		   all other maps. This is _not_ an all to all compare. */
 		for (search_for = last_new->sequences; search_for != NULL; search_for = search_for->next) {
 			for (current_key = current_map->sequences; current_key != NULL; current_key = current_key->next) {
+				/* We can avoid using strcmp here, because they all point into the
+				   static arrays with descriptions. */
 				if (search_for->keynames == current_key->keynames &&
 						search_for->modifiers == current_key->modifiers &&
 						strcmp(search_for->seq, current_key->seq) == 0)
 				{
 					if (new_map == NULL) {
-						new_map = calloc(1, sizeof(map_t));
-						new_map->collected_from = calloc(1, sizeof(map_list_t));
+						new_map = safe_calloc(1, sizeof(map_t));
+						new_map->collected_from = safe_calloc(1, sizeof(map_list_t));
 						new_map->collected_from->map = last_new;
 						if (current_map->collected_from != NULL) {
 							new_map->collected_from->next = current_map->collected_from;
 						} else {
-							new_map->collected_from->next = calloc(1, sizeof(map_list_t));
+							new_map->collected_from->next = safe_calloc(1, sizeof(map_list_t));
 							new_map->collected_from->next->map = current_map;
 						}
 						new_map->next = new_maps_head;
 						new_maps_head = new_map;
 					}
-					key = malloc(sizeof(sequence_t));
+					key = safe_malloc(sizeof(sequence_t));
 					*key = *search_for;
 					key->next = new_map->sequences;
 					new_map->sequences = key;
+					/* Mark keys for later removal. Removing here would interfere with the
+					   for-loop conditions and update steps. */
 					search_for->remove = true;
 					current_key->remove = true;
 				}
 			}
 		}
+		/* Keys are inserted at the front, because that takes less book-keeping. But
+		   in the output we still want them in the original order, so reverse them here. */
 		if (new_map != NULL)
 			new_map->sequences = reverse_key_list(new_map->sequences);
 	}
 
+	/* Remove all keys that have been marked for removal. */
 	for (current_map = head; current_map != NULL; current_map = current_map->next) {
 		for (last_key = NULL, current_key = current_map->sequences; current_key != NULL; ) {
 			if (current_key->remove) {
@@ -692,6 +748,7 @@ static void extract_shared_maps(map_t *head, map_t *last_new) {
 		}
 	}
 
+	/* Link the newly created maps the the end of the maps list. */
 	for (current_map = head; current_map->next != NULL; current_map = current_map->next) {}
 	current_map->next = new_maps_head;
 }
@@ -772,40 +829,47 @@ int main(int argc, char *argv[]) {
 	if ((output = fopen(option_output, "w")) == NULL)
 		fatal("Can't open output file '%s': %s\n", option_output, strerror(errno));
 
+	/* Set up functionkeys list. */
 	if (maxfkeys > 0) {
-		functionkeys = malloc(maxfkeys * sizeof(name_mapping_t));
+		functionkeys = safe_malloc(maxfkeys * sizeof(name_mapping_t));
 		for (i = 0; (int) i < maxfkeys; i++) {
 			char buffer[1024];
 			snprintf(buffer, 1024, "F%u", (unsigned) i + 1);
-			functionkeys[i].name = strdup(buffer);
+			functionkeys[i].name = safe_strdup(buffer);
 			snprintf(buffer, 1024, "f%u", (unsigned) i + 1);
-			functionkeys[i].identifier = strdup(buffer);
+			functionkeys[i].identifier = safe_strdup(buffer);
 			functionkeys[i].keysym = XK_F1 + i;
 		}
 	}
 
+	/* Figure out whether this terminal can switch between keypad-transmit and
+	   non-keypad-transmit modes. If so add the rmkx sequence as %enter sequence
+	   for the non-keypad-transmit mode. */
 	rmkx = tigetstr("rmkx");
 	if (rmkx == (char *) -1 || strlen(rmkx) == 0)
 		rmkx = NULL;
-	mode_head = calloc(1, sizeof(map_t));
-	mode_head->name = strdup("nokx");
+	mode_head = safe_calloc(1, sizeof(map_t));
+	mode_head->name = safe_strdup("nokx");
 	if (rmkx != NULL) {
-		mode_head->esc_seq_enter = strdup(rmkx);
-		mode_head->esc_seq_enter_name = strdup("rmkx");
+		mode_head->esc_seq_enter = safe_strdup(rmkx);
+		mode_head->esc_seq_enter_name = safe_strdup("rmkx");
 	}
 
+	/* If the terminal has a keypad-transmit mode, add that with the smkx sequence
+	   as the %enter sequence. */
 	mode_next = &mode_head->next;
 	smkx = tigetstr("smkx");
 	if (smkx != NULL && smkx != (void *) -1 && strlen(smkx) > 0) {
-		(*mode_next) = calloc(1, sizeof(map_t));
-		(*mode_next)->name = strdup("kx");
-		(*mode_next)->esc_seq_enter = strdup(smkx);
-		(*mode_next)->esc_seq_enter_name = strdup("smkx");
-		(*mode_next)->esc_seq_leave = strdup(rmkx);
-		(*mode_next)->esc_seq_leave_name = strdup("rmkx");
+		(*mode_next) = safe_calloc(1, sizeof(map_t));
+		(*mode_next)->name = safe_strdup("kx");
+		(*mode_next)->esc_seq_enter = safe_strdup(smkx);
+		(*mode_next)->esc_seq_enter_name = safe_strdup("smkx");
+		(*mode_next)->esc_seq_leave = safe_strdup(rmkx);
+		(*mode_next)->esc_seq_leave_name = safe_strdup("rmkx");
 		mode_next = &(*mode_next)->next;
 	}
 
+	/* Ask the user if he wants other modes apart from (non-)keypad-transmit. */
 	while (1) {
 		char buffer[1024];
 		printf("Name for extra mode (- to continue): ");
@@ -813,8 +877,8 @@ int main(int argc, char *argv[]) {
 
 		if (strcmp(buffer, "-") == 0)
 			break;
-		(*mode_next) = calloc(1, sizeof(map_t));
-		(*mode_next)->name = strdup(buffer);
+		(*mode_next) = safe_calloc(1, sizeof(map_t));
+		(*mode_next)->name = safe_strdup(buffer);
 		do {
 			printf("Escape sequence to enter mode %s (- for none): ", (*mode_next)->name);
 			scanf("%1023s", buffer);
@@ -830,19 +894,24 @@ int main(int argc, char *argv[]) {
 		mode_next = &(*mode_next)->next;
 	}
 
+	/* Setup the terminal in non-echo, wait for single keystroke mode. */
 	init_terminal();
 
+	/* Test if sending key events to the terminal results in characters being typed. */
 	if (option_auto_learn) {
 		send_event(XK_a, 0);
 		if (get_keychar(100) < 0)
-			fatal("Sending keys does not work. Aborting.\n");
+			fatal("Sending keys does not work. You may have to configure your terminal to accept SendEvents. Aborting.\n");
 	}
 
+	/* Learn the different maps. */
 	for (mode_ptr = mode_head; mode_ptr != NULL && mode_ptr->name != NULL; mode_ptr = mode_ptr->next) {
 		learn_map(mode_ptr);
+		/* Extract the common parts. */
 		extract_shared_maps(mode_head, mode_ptr);
 	}
 
+	/* Remove empty maps. These may have been created by extracting shared maps. */
 	for (mode_ptr = mode_head, last_mode_ptr = NULL; mode_ptr != NULL; ) {
 		if (mode_ptr->name == NULL && mode_ptr->sequences == NULL) {
 			map_t *current = mode_ptr;
@@ -851,6 +920,7 @@ int main(int argc, char *argv[]) {
 				mode_head = mode_ptr;
 			else
 				last_mode_ptr->next = mode_ptr;
+			/*FIXME: shouldn't we also be freeing out the collected_from lists? */
 			free(current);
 		} else {
 			last_mode_ptr = mode_ptr;
@@ -858,14 +928,15 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	/* Write the output maps. */
 	for (mode_ptr = mode_head; mode_ptr != NULL; mode_ptr = mode_ptr->next)
 		write_map(output, mode_ptr, mode_head);
-
 
 	fflush(output);
 	fclose(output);
 
-	if (option_auto_learn) {
+	if (option_auto_learn && reprogram_code != -1) {
+		/* Clear out the mapping we made. */
 		KeySym keysym = NoSymbol;
 		XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1);
 		XCloseDisplay(display);
