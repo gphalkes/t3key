@@ -45,7 +45,7 @@ PARSE_FUNCTION(parse_options)
 
 		printf("Unknown option " OPTFMT "\n", OPTPRARG);
 	NO_OPTION
-		printf("Non-option argument: " OPTFMT "\n", OPTPRARG);
+		printf("Non-option argument: %s\n", optcurrent);
 	END_OPTIONS
 END_FUNCTION
 

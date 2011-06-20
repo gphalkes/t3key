@@ -21,10 +21,12 @@
 #include <errno.h>
 #include <curses.h>
 #include <term.h>
+#include <search.h>
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
+#include "optionMacros.h"
 
 #define MAX_SEQUENCE 50
 #define ESC 27
@@ -34,7 +36,6 @@
 
 //FIXME: test modifier-letter as well
 //FIXME: check calloc/malloc return values!
-#warning FIXME: add options such that user can block X11 or certain keys from command line
 
 typedef struct {
 	const char *name;
@@ -121,13 +122,21 @@ struct map_list_t {
 	map_t *map;
 };
 
+static bool option_auto_learn;
+static const char *option_output;
+static char **blocked_keys;
+static size_t blocked_keys_fill;
+
 static struct termios saved;
 static fd_set inset;
 static int maxfkeys = -1;
-static bool x11_auto;
 static Display *display;
 static Window root, focus_window;
 static int reprogram_code = -1;
+
+static sequence_t *head = NULL;
+static FILE *output;
+
 
 
 /** Alert the user of a fatal error and quit.
@@ -305,8 +314,8 @@ static sequence_t *get_sequence(void) {
 	int c, idx = 0;
 
 	do {
-		c = get_keychar(x11_auto ? 50 : -1);
-		if (x11_auto && c < 0)
+		c = get_keychar(option_auto_learn ? 50 : -1);
+		if (option_auto_learn && c < 0)
 			return NULL;
 
 		if (c == ESC) {
@@ -346,9 +355,9 @@ static sequence_t *get_sequence(void) {
 			retval->duplicate = NULL;
 			retval->remove = false;
 			return retval;
-		} else if (!x11_auto && c == 3) {
+		} else if (!option_auto_learn && c == 3) {
 			printf("^C\n");
-			if (confirm("Are you sure you want to quit"))
+			if (confirm("Are you sure you want to quit [y/n]"))
 				exit(EXIT_FAILURE);
 			printf("(no escape sequence)");
 			return NULL;
@@ -370,19 +379,44 @@ static sequence_t *get_sequence(void) {
 	return NULL;
 }
 
-static sequence_t *head = NULL;
-static FILE *output;
+static int check_key(name_mapping_t *key_desc, const char **key_name) {
+	const char *key_modifiers;
+	size_t key_name_len, modifier_len = strlen(key_desc[1].name);
+
+	if (strncmp(*key_name, key_desc[1].name, modifier_len) == 0 && strcmp((*key_name) + modifier_len, key_desc[0].name) == 0)
+		return 0;
+
+	key_modifiers = strpbrk(*key_name, "+");
+	key_name_len = key_modifiers == NULL ? strlen(*key_name) : (size_t) (key_modifiers - *key_name);
+	if (strlen(key_desc[0].identifier) != key_name_len || memcmp(key_desc[0].identifier, *key_name, key_name_len) != 0)
+		return 1;
+
+	if (key_modifiers == NULL)
+		return strcmp(key_desc[1].name, "");
+
+	return strcmp(key_modifiers, key_desc[1].identifier);
+}
 
 /* Get the set of key mappings for a single modifier combination.
    Mappings are appended to "head". Returns 0 on success and -1 on failure. */
 static int getkeys(name_mapping_t *keys, int max, int mod) {
-	sequence_t *current;
+	sequence_t *current, *new_seq;
 	int i;
+
 	for (i = 0; i < max; i++) {
-		sequence_t *new_seq;
+		if (blocked_keys != NULL) {
+			name_mapping_t key_mod[2] = { keys[i], modifiers[mod] };
+			if (lfind(&key_mod, blocked_keys, &blocked_keys_fill, sizeof(char *),
+					(int (*)(const void *, const void *)) check_key) != NULL)
+			{
+				printf("Skipping blocked key %s%s\n", modifiers[mod].name, keys[i].name);
+				continue;
+			}
+		}
+
 		printf("%s%s ", modifiers[mod].name, keys[i].name);
 		fflush(stdout);
-		if (x11_auto)
+		if (option_auto_learn)
 			send_event(keys[i].keysym, modifiers[mod].keysym);
 
 		new_seq = get_sequence();
@@ -568,7 +602,7 @@ static void learn_map(map_t *mode) {
 		putp(mode->esc_seq_enter);
 
 	fflush(stdout);
-	if (x11_auto)
+	if (option_auto_learn)
 		usleep(100000);
 
 	for (i = 0; i < SIZEOF(modifiers); i++) {
@@ -582,7 +616,7 @@ static void learn_map(map_t *mode) {
 			goto skip;
 		}
 
-		if (!x11_auto && !confirm("Are you satisfied with the above keys")) {
+		if (!option_auto_learn && !confirm("Are you satisfied with the above keys [y/n]")) {
 	skip:
 			while (head != before_insert) {
 				current = head;
@@ -662,37 +696,81 @@ static void extract_shared_maps(map_t *head, map_t *last_new) {
 	current_map->next = new_maps_head;
 }
 
+PARSE_FUNCTION(parse_args)
+	OPTIONS
+		OPTION('a', "auto-learn", NO_ARG)
+			option_auto_learn = 1;
+		END_OPTION
+		OPTION('b', "block-keys", REQUIRED_ARG)
+			char *comma = strchr(optArg, ',');
+			size_t extra_blocked_keys = 1;
+			while (comma != NULL) {
+				extra_blocked_keys++;
+				comma = strchr(comma + 1, ',');
+			}
+			blocked_keys = realloc(blocked_keys, (blocked_keys_fill + extra_blocked_keys) * sizeof(char *));
+			if (blocked_keys == NULL)
+				fatal("Out of memory\n");
+			for (comma = strtok(optArg, ","); comma != NULL; comma = strtok(NULL, ","))
+				blocked_keys[blocked_keys_fill++] = comma;
+		END_OPTION
+		OPTION('o', "output", REQUIRED_ARG)
+			option_output = optArg;
+		END_OPTION
+		OPTION('h', "help", NO_ARG)
+			printf("Usage: t3learnkeys [<options>]\n"
+				"  -a,--auto-learn             Learn by emulating key events for X11 terminals\n"
+				"  -b<keys>,--block-keys=<keys>  Do not ask for keys described in <keys>\n"
+				"  -o<name>,--output=<name>    Write output to <name> (default: $TERM)\n"
+			);
+			exit(EXIT_SUCCESS);
+		END_OPTION
+		DOUBLE_DASH
+			NO_MORE_OPTIONS;
+		END_OPTION
+
+		fatal("Unknown option " OPTFMT "\n", OPTPRARG);
+	NO_OPTION
+		fatal("Extra arguments on command line: %s\n", optcurrent);
+	END_OPTIONS
+END_FUNCTION
+
+
 int main(int argc, char *argv[]) {
 	size_t i;
 	char *smkx = NULL, *rmkx = NULL;
-	const char *term = getenv("TERM");
+	const char *term = getenv("TERM"), *display_env = getenv("DISPLAY");
 	map_t *mode_head = NULL, *mode_ptr, **mode_next, *last_mode_ptr;
 
-	(void) argc;
-	(void) argv;
+	parse_args(argc, argv);
 
 	if (term == NULL)
 		fatal("No terminal type has been set in the TERM environment variable\n");
 	setupterm((char *)0, 1, (int *)0);
 
-	if ((output = fopen(term, "w")) == NULL)
-		fatal("Can't open output file '%s': %s\n", term, strerror(errno));
+	if (option_auto_learn && !initX11())
+		fatal("Failed to initialize X11 connection. Try running without -a/--auto-learn.\n");
 
-	x11_auto = initX11();
-
-	printf("libt3key key learning program\n");
-	if (x11_auto) {
+	if (option_auto_learn) {
 		printf("Automatically learning keys for terminal %s. DO NOT press a key while the key learning is in progress.\n", term);
 		maxfkeys = 35;
 	} else {
 		printf("Learning keys for terminal %s. Please press the requested key or enter\n", term);
-		printf("WARNING: Be carefull when pressing combinations as they may be bound to actions\nyou don't want to execute! For best results don't run this in a window manager.\n");
+		printf("WARNING: Be carefull when pressing combinations as they may be bound to actions\n"
+			"you don't want to execute! For best results don't run this in a window manager.\n");
+		if (display_env != NULL && strlen(display_env) > 0)
+			printf("\nHINT: It appears you are using an X11 terminal emulator. "
+				"Perhaps using the --auto-learn option would be helpful.\n\n");
 		do {
 			printf("How many function keys does your keyboard have? ");
 			scanf("%d", &maxfkeys);
 		} while (maxfkeys < 0);
 	}
 
+	if (option_output == NULL)
+		option_output = term;
+	if ((output = fopen(option_output, "w")) == NULL)
+		fatal("Can't open output file '%s': %s\n", option_output, strerror(errno));
 
 	if (maxfkeys > 0) {
 		functionkeys = malloc(maxfkeys * sizeof(name_mapping_t));
@@ -754,9 +832,11 @@ int main(int argc, char *argv[]) {
 
 	init_terminal();
 
-	send_event(XK_a, 0);
-	if (get_keychar(100) < 0)
-		fatal("Sending keys does not work. Aborting.\n");
+	if (option_auto_learn) {
+		send_event(XK_a, 0);
+		if (get_keychar(100) < 0)
+			fatal("Sending keys does not work. Aborting.\n");
+	}
 
 	for (mode_ptr = mode_head; mode_ptr != NULL && mode_ptr->name != NULL; mode_ptr = mode_ptr->next) {
 		learn_map(mode_ptr);
@@ -785,10 +865,10 @@ int main(int argc, char *argv[]) {
 	fflush(output);
 	fclose(output);
 
-	if (x11_auto) {
+	if (option_auto_learn) {
 		KeySym keysym = NoSymbol;
 		XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1);
 		XCloseDisplay(display);
 	}
-	return 0;
+	return EXIT_SUCCESS;
 }
