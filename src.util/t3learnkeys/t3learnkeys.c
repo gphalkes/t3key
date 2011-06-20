@@ -34,6 +34,7 @@
 
 //FIXME: test modifier-letter as well
 //FIXME: check calloc/malloc return values!
+#warning FIXME: add options such that user can block X11 or certain keys from command line
 
 typedef struct {
 	const char *name;

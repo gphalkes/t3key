@@ -11,26 +11,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SOURCES.t3learnkeys := t3learnkeys.c
-LDLIBS.t3learnkeys := -lcurses -lX11
-SOURCES.t3keyc := t3keyc.c grammar.g lex.l
-LDLIBS.t3keyc := -lcurses
-CFLAGS.lex := -Wno-shadow -Wno-switch-default -Wno-unused
 SOURCES.test := test.c
 LDFLAGS.test := -L../src/.libs
 LDLIBS.test := -lt3key
 
-DEPS.grammar.g := lex.l t3keyc.c
-
-TARGETS := t3learnkeys t3keyc test
+TARGETS := test
 
 #================================================#
 # NO RULES SHOULD BE DEFINED BEFORE THIS INCLUDE #
 #================================================#
 include ../../makesys/rules.mk
 #================================================#
-CFLAGS += -I. -I../src -I.objects
-FLFLAGS += --never-interactive --nounistd
+CFLAGS += -I. -I../src
 
 .objects/test.o: | library
 
