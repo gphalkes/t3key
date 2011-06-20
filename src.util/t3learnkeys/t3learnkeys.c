@@ -32,9 +32,9 @@
 #define ESC 27
 #define KEY_TIMEOUT 10
 
-//~ #define TESTING
+/* #define TESTING */
 
-//FIXME: test modifier-letter as well
+/* FIXME: test modifier-letter as well */
 
 typedef struct {
 	const char *name;
