@@ -49,10 +49,7 @@ SILENTLDLT=@echo '[LDLT]' $@ ;
 # Miscelaneous install paths
 libdir=$(prefix)/lib
 
-all: src/libtranscript.la tables modules
-
-tables: <TABLES>
-modules: <MODULES>
+all: src/libt3key.la
 
 .PHONY: all clean dist-clean
 .SUFFIXES: .c .o .lo .la .mo .po

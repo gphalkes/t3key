@@ -40,7 +40,7 @@ clean:
 dist-clean: clean
 
 .c.o:
-	$(SILENTCC) $(CC) $(CFLAGS) $(CONFIGFLAGS) -c -o $@ $<
+	$(SILENTCC) $(CC) $(CFLAGS) -Isrc -Isrc.util $(CONFIGFLAGS) -c -o $@ $<
 
 src.util/t3keyc/t3keyc: $(OBJECTS_T3KEYC)
 	$(SILENTLD) $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_T3KEYC) $(LDLIBS) $(CONFIGLIBS)

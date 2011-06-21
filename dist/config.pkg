@@ -147,5 +147,5 @@ EOF
 		error "!! Can not find curses library. The curses library is required to compile libt3window."
 	fi
 
-	create_makefile "CONFIGFLAGS=${CONFIGFLAGS}" "CONFIGLIBS=${CONFIGLIBS}"
+	create_makefile "CONFIGFLAGS=${CONFIGFLAGS}" "CONFIGLIBS=${CONFIGLIBS} ${CURSESLIBS}"
 }
