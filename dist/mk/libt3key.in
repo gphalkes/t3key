@@ -1,0 +1,73 @@
+# Copyright (C) 2011 G.P. Halkes
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.POSIX:
+
+# C-compiler flags
+CFLAGS=-O2
+
+# Configuration flags and libraries. Include flags here to compile against the
+# (n)curses library
+CONFIGFLAGS=
+CONFIGLIBS=-lcurses
+
+# The libtool executable
+LIBTOOL=libtool
+
+# Installation prefix and datadir (also defined in Makefile)
+prefix=/usr/local
+datadir=$(prefix)/share/t3key
+
+# Gettext configuration
+# GETTEXTFLAGS should contain -DUSE_GETTEXT to enable gettext translations
+# GETTEXTLIBS should contain all link flags to allow linking with gettext, if
+# it has been enabled. The GNU libc already contains the gettext library, so
+# there is no need to add any flags. Otherwise, -lintl is usually required, and
+# sometimes -liconv as well.
+# LOCALEDIR: the directory where the locale dependant files should be installed.
+# LINGUAS: translations to be installed. Look in po directory for available
+#  translations.
+GETTEXTFLAGS=
+GETTEXTLIBS=
+# LOCALEDIR is also defined in Makefile
+LOCALEDIR=$(prefix)/share/locale
+LINGUAS=
+
+SILENCELT=--silent
+SILENTCCLT=@echo '[CCLT]' $< ;
+SILENTLDLT=@echo '[LDLT]' $@ ;
+
+# Miscelaneous install paths
+libdir=$(prefix)/lib
+
+all: src/libtranscript.la tables modules
+
+tables: <TABLES>
+modules: <MODULES>
+
+.PHONY: all clean dist-clean
+.SUFFIXES: .c .o .lo .la .mo .po
+.SECONDARY: # Tell GNU make not to delete intermediate files
+
+OBJECTS_LIBT3KEY=<OBJECTS_LIBT3KEY>
+
+clean:
+	rm -rf src/*.lo src/.libs src/libt3key.la
+
+dist-clean: clean
+
+.c.lo:
+	$(SILENTCCLT) $(LIBTOOL) $(SILENCELT) --mode=compile --tag=CC $(CC) -shared $(CFLAGS) -Isrc $(CONFIGFLAGS) $(GETTEXTFLAGS) -DT3_KEY_BUILD_DSO -DLOCALEDIR=\"$(LOCALEDIR)\" -c -o $@ $<
+
+src/libt3key.la: $(OBJECTS_LIBT3KEY)
+	$(SILENTLDLT) $(LIBTOOL) $(SILENCELT) --mode=link --tag=CC $(CC) -shared -version-info <VERSIONINFO> $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_LIBT3KEY) $(LDLIBS) $(GETTEXTLIBS) -lltdl -rpath $(libdir)
+

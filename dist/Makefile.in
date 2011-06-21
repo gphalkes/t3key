@@ -1,0 +1,86 @@
+# Copyright (C) 2011 G.P. Halkes
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.POSIX:
+
+# Installation prefix (also defined in mk/libt3key)
+prefix=/usr/local
+
+# Install program to use (should be BSD install compatible)
+INSTALL=install
+
+# The libtool executable
+LIBTOOL=libtool
+
+# Miscelaneous install paths. Note that datadir and LOCALEDIR are also defined
+# in mk/libt3key
+bindir=$(prefix)/bin
+libdir=$(prefix)/lib
+datadir=$(prefix)/share/t3key
+docdir=$(prefix)/share/doc/libt3key-<VERSION>
+mandir=$(prefix)/share/man
+includedir=$(prefix)/include
+pkgconfigdir=$(libdir)/pkgconfig
+LOCALEDIR=$(prefix)/share/locale
+
+all: lib t3keyc t3learnkeys
+
+lib:
+	@$(MAKE) -f mk/libt3key
+
+t3keyc: lib
+	@$(MAKE) -f mk/t3keyc
+
+t3learnkeys: lib
+	@$(MAKE) -f mk/t3learnkeys
+
+.PHONY: all clean dist-clean install install-moddev lib t3keyc t3learnkeys uninstall
+.IGNORE: uninstall
+
+clean:
+	@$(MAKE) -f mk/libt3key clean
+	@$(MAKE) -f mk/t3keyc clean
+	@$(MAKE) -f mk/t3learnkeys clean
+	rm -rf libt3key.pc
+
+dist-clean:
+	@$(MAKE) -f mk/libt3key dist-clean
+	@$(MAKE) -f mk/t3keyc dist-clean
+	@$(MAKE) -f mk/t3learnkeys dist-clean
+	rm -rf Makefile mk/libt3key mk/t3keyc mk/t3learnkeys config.log libt3key.pc
+
+libt3key.pc: libt3key.pc.in
+	@echo '/^prefix=/c\' > .sedscript
+	@echo 'prefix=$(prefix)' >> .sedscript
+	sed -f .sedscript $< > $@
+
+install: all libt3key.pc
+	$(INSTALL) -d $(libdir)
+	$(LIBTOOL) --mode=install $(INSTALL) -s src/libt3key.la $(libdir)
+	chmod 0644 $(libdir)/libt3key.la
+	$(INSTALL) -d $(includedir)/t3/key
+	$(INSTALL) -m0644 src/key.h src/key_api.h src/key_errors.h $(includedir)/t3/key
+	$(INSTALL) -d $(docdir)/API/search
+	(cd doc ; find API -type f) | xargs -IX $(INSTALL) -m0644 doc/X $(docdir)/X
+	$(INSTALL) -m0644 COPYING $(docdir)
+	$(INSTALL) -d $(pkgconfigdir)
+	$(INSTALL) -m0644 libt3key.pc $(pkgconfigdir)
+	$(INSTALL) -d $(bindir)
+	$(INSTALL) src.util/t3keyc/t3keyc $(bindir)
+	src.util/t3keyc/t3keyc -d$(datadir) src/database/*
+	[ -f src.util/t3learnkeys/t3learnkeys ] && $(INSTALL) src.util/t3learnkeys/t3learnkeys $(bindir)
+
+uninstall:
+	$(LIBTOOL) --mode=uninstall rm $(libdir)/libt3key.la
+	rm -rf $(docdir) $(datadir)
+	rm -f $(bindir)/t3keyc $(bindir)/t3learnkeys $(pkgconfigdir)/libt3key.pc
+	rm -rf $(includedir)/t3/key

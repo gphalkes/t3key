@@ -16,15 +16,25 @@
 #include <ctype.h>
 #include <string.h>
 #include <termios.h>
-#include <unistd.h>
+#ifdef HAS_SELECT_H
 #include <sys/select.h>
+#else
+#include <sys/time.h>
+#include <sys/types.h>
+#endif
+#include <unistd.h>
 #include <errno.h>
 #include <curses.h>
 #include <term.h>
 #include <search.h>
 
+#ifndef NO_AUTOLEARN
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#define X_KEY_SYM(_x) _x
+#else
+#define X_KEY_SYM(_x) 0
+#endif
 
 #include "optionMacros.h"
 
@@ -44,36 +54,36 @@ typedef struct {
 
 static name_mapping_t keynames[] = {
 #ifndef TESTING
-	{ "Insert", "insert", XK_Insert },
-	{ "Home", "home", XK_Home },
-	{ "Page Up", "page_up", XK_Page_Up },
-	{ "Delete", "delete", XK_Delete },
-	{ "End", "end", XK_End },
-	{ "Page Down", "page_down", XK_Page_Down },
+	{ "Insert", "insert", X_KEY_SYM(XK_Insert) },
+	{ "Home", "home", X_KEY_SYM(XK_Home) },
+	{ "Page Up", "page_up", X_KEY_SYM(XK_Page_Up) },
+	{ "Delete", "delete", X_KEY_SYM(XK_Delete) },
+	{ "End", "end", X_KEY_SYM(XK_End) },
+	{ "Page Down", "page_down", X_KEY_SYM(XK_Page_Down) },
 #endif
-	{ "Up", "up", XK_Up },
+	{ "Up", "up", X_KEY_SYM(XK_Up) },
 #ifndef TESTING
-	{ "Left", "left", XK_Left },
-	{ "Down", "down", XK_Down },
-	{ "Right", "right", XK_Right },
-	{ "Keypad /", "kp_div", XK_KP_Divide },
-	{ "Keypad *", "kp_mul", XK_KP_Multiply },
-	{ "Keypad -", "kp_minus", XK_KP_Subtract },
-	{ "Keypad Home", "kp_home", XK_KP_Home },
-	{ "Keypad Up", "kp_up", XK_KP_Up },
-	{ "Keypad Page Up", "kp_page_up", XK_KP_Page_Up },
-	{ "Keypad +", "kp_plus", XK_KP_Add },
-	{ "Keypad Left", "kp_left", XK_KP_Left },
-	{ "Keypad Center", "kp_center", XK_KP_Begin },
-	{ "Keypad Right", "kp_right", XK_KP_Right },
-	{ "Keypad End", "kp_end", XK_KP_End },
-	{ "Keypad Down", "kp_down", XK_KP_Down },
-	{ "Keypad Page Down", "kp_page_down", XK_KP_Page_Down },
-	{ "Keypad Insert", "kp_insert", XK_KP_Insert },
-	{ "Keypad Delete", "kp_delete", XK_KP_Delete },
-	{ "Keypad Enter", "kp_enter", XK_KP_Enter },
-	{ "Tab", "tab", XK_Tab },
-	{ "Backspace", "backspace", XK_BackSpace }
+	{ "Left", "left", X_KEY_SYM(XK_Left) },
+	{ "Down", "down", X_KEY_SYM(XK_Down) },
+	{ "Right", "right", X_KEY_SYM(XK_Right) },
+	{ "Keypad /", "kp_div", X_KEY_SYM(XK_KP_Divide) },
+	{ "Keypad *", "kp_mul", X_KEY_SYM(XK_KP_Multiply) },
+	{ "Keypad -", "kp_minus", X_KEY_SYM(XK_KP_Subtract) },
+	{ "Keypad Home", "kp_home", X_KEY_SYM(XK_KP_Home) },
+	{ "Keypad Up", "kp_up", X_KEY_SYM(XK_KP_Up) },
+	{ "Keypad Page Up", "kp_page_up", X_KEY_SYM(XK_KP_Page_Up) },
+	{ "Keypad +", "kp_plus", X_KEY_SYM(XK_KP_Add) },
+	{ "Keypad Left", "kp_left", X_KEY_SYM(XK_KP_Left) },
+	{ "Keypad Center", "kp_center", X_KEY_SYM(XK_KP_Begin) },
+	{ "Keypad Right", "kp_right", X_KEY_SYM(XK_KP_Right) },
+	{ "Keypad End", "kp_end", X_KEY_SYM(XK_KP_End) },
+	{ "Keypad Down", "kp_down", X_KEY_SYM(XK_KP_Down) },
+	{ "Keypad Page Down", "kp_page_down", X_KEY_SYM(XK_KP_Page_Down) },
+	{ "Keypad Insert", "kp_insert", X_KEY_SYM(XK_KP_Insert) },
+	{ "Keypad Delete", "kp_delete", X_KEY_SYM(XK_KP_Delete) },
+	{ "Keypad Enter", "kp_enter", X_KEY_SYM(XK_KP_Enter) },
+	{ "Tab", "tab", X_KEY_SYM(XK_Tab) },
+	{ "Backspace", "backspace", X_KEY_SYM(XK_BackSpace) }
 #endif
 };
 
@@ -82,13 +92,13 @@ static name_mapping_t *functionkeys;
 static name_mapping_t modifiers[] = {
 	{ "", "", 0 },
 #ifndef TESTING
-	{ "Control ", "+c", ControlMask },
-	{ "Meta ", "+m", Mod1Mask },
-	{ "Shift ", "+s", ShiftMask },
-	{ "Control+Meta ", "+cm", ControlMask | Mod1Mask },
-	{ "Control+Shift ", "+cs", ControlMask | ShiftMask },
-	{ "Meta+Shift ", "+ms", Mod1Mask | ShiftMask },
-	{ "Control+Meta+Shift ", "+cms", ControlMask | Mod1Mask | ShiftMask },
+	{ "Control ", "+c", X_KEY_SYM(ControlMask) },
+	{ "Meta ", "+m", X_KEY_SYM(Mod1Mask) },
+	{ "Shift ", "+s", X_KEY_SYM(ShiftMask) },
+	{ "Control+Meta ", "+cm", X_KEY_SYM(ControlMask | Mod1Mask) },
+	{ "Control+Shift ", "+cs", X_KEY_SYM(ControlMask | ShiftMask) },
+	{ "Meta+Shift ", "+ms", X_KEY_SYM(Mod1Mask | ShiftMask) },
+	{ "Control+Meta+Shift ", "+cms", X_KEY_SYM(ControlMask | Mod1Mask | ShiftMask) },
 #endif
 };
 
@@ -129,10 +139,11 @@ static size_t blocked_keys_fill;
 static struct termios saved;
 static fd_set inset;
 static int maxfkeys = -1;
+#ifndef NO_AUTOLEARN
 static Display *display;
 static Window root, focus_window;
 static int reprogram_code = -1;
-
+#endif
 static sequence_t *head = NULL;
 static FILE *output;
 
@@ -180,6 +191,7 @@ static void restore_terminal(void) {
 	tcsetattr(STDOUT_FILENO, TCSADRAIN, &saved);
 }
 
+#ifndef NO_AUTOLEARN
 static bool initX11(void) {
 	int revert_to_return;
 
@@ -249,6 +261,7 @@ static void send_event(KeySym keysym, unsigned state) {
 	while (XPending(display))
 		XNextEvent(display, &event);
 }
+#endif
 
 static void init_terminal(void) {
 	char *env;
@@ -444,9 +457,11 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 		printf("%s%s ", modifiers[mod].name, keys[i].name);
 		fflush(stdout);
 
+#ifndef NO_AUTOLEARN
 		/* When auto learning, just send the appropriate events to the terminal. */
 		if (option_auto_learn)
 			send_event(keys[i].keysym, modifiers[mod].keysym);
+#endif
 
 		/* Retrieve key sequence. */
 		new_seq = get_sequence();
@@ -755,9 +770,11 @@ static void extract_shared_maps(map_t *head, map_t *last_new) {
 
 PARSE_FUNCTION(parse_args)
 	OPTIONS
+#ifndef NO_AUTOLEARN
 		OPTION('a', "auto-learn", NO_ARG)
 			option_auto_learn = 1;
 		END_OPTION
+#endif
 		OPTION('b', "block-keys", REQUIRED_ARG)
 			char *comma = strchr(optArg, ',');
 			size_t extra_blocked_keys = 1;
@@ -776,7 +793,9 @@ PARSE_FUNCTION(parse_args)
 		END_OPTION
 		OPTION('h', "help", NO_ARG)
 			printf("Usage: t3learnkeys [<options>]\n"
+#ifndef NO_AUTOLEARN
 				"  -a,--auto-learn             Learn by emulating key events for X11 terminals\n"
+#endif
 				"  -b<keys>,--block-keys=<keys>  Do not ask for keys described in <keys>\n"
 				"  -o<name>,--output=<name>    Write output to <name> (default: $TERM)\n"
 			);
@@ -805,8 +824,10 @@ int main(int argc, char *argv[]) {
 		fatal("No terminal type has been set in the TERM environment variable\n");
 	setupterm((char *)0, 1, (int *)0);
 
+#ifndef NO_AUTOLEARN
 	if (option_auto_learn && !initX11())
 		fatal("Failed to initialize X11 connection. Try running without -a/--auto-learn.\n");
+#endif
 
 	if (option_auto_learn) {
 		printf("Automatically learning keys for terminal %s. DO NOT press a key while the key learning is in progress.\n", term);
@@ -838,7 +859,7 @@ int main(int argc, char *argv[]) {
 			functionkeys[i].name = safe_strdup(buffer);
 			snprintf(buffer, 1024, "f%u", (unsigned) i + 1);
 			functionkeys[i].identifier = safe_strdup(buffer);
-			functionkeys[i].keysym = XK_F1 + i;
+			functionkeys[i].keysym = X_KEY_SYM(XK_F1 + i);
 		}
 	}
 
@@ -897,12 +918,14 @@ int main(int argc, char *argv[]) {
 	/* Setup the terminal in non-echo, wait for single keystroke mode. */
 	init_terminal();
 
+#ifndef NO_AUTOLEARN
 	/* Test if sending key events to the terminal results in characters being typed. */
 	if (option_auto_learn) {
 		send_event(XK_a, 0);
 		if (get_keychar(100) < 0)
 			fatal("Sending keys does not work. You may have to configure your terminal to accept SendEvents. Aborting.\n");
 	}
+#endif
 
 	/* Learn the different maps. */
 	for (mode_ptr = mode_head; mode_ptr != NULL && mode_ptr->name != NULL; mode_ptr = mode_ptr->next) {
@@ -935,11 +958,13 @@ int main(int argc, char *argv[]) {
 	fflush(output);
 	fclose(output);
 
+#ifndef NO_AUTOLEARN
 	if (option_auto_learn && reprogram_code != -1) {
 		/* Clear out the mapping we made. */
 		KeySym keysym = NoSymbol;
 		XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1);
 		XCloseDisplay(display);
 	}
+#endif
 	return EXIT_SUCCESS;
 }

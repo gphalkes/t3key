@@ -15,5 +15,6 @@ src.util/t3keyc/t3keyc
 src.tools/test
 src/libt3key.la
 src/database/?/*
+dist/tmp
 
 .backupfilter.hg

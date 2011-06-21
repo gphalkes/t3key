@@ -1,0 +1,10 @@
+prefix=<PREFIX>
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libt3key
+Description: Terminal key database
+Version: <VERSION>
+URL: http://os.ghalkes.nl/t3/libt3key.html
+Cflags: -I${includedir}/t3/key
+Libs: -L${libdir} -lt3key

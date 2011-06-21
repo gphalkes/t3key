@@ -106,10 +106,10 @@ void error(const char *fmt, ...) {
 
 /** Duplicate a string but exit on allocation failure */
 char *safe_strdup(const char *str) {
-	char *result = strdup(str);
+	char *result = malloc(strlen(str) + 1);
 	if (result == NULL)
 		fatal("Out of memory\n");
-	return result;
+	return strcpy(result, str);
 }
 
 /* Print usage message/help. */

@@ -1,0 +1,151 @@
+# Copyright (C) 2011 G.P. Halkes
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+EXTENSIONS="c libtool pkgconfig verbose_compile pkgconfig_dep gettext x11"
+MAKEFILES="Makefile mk/libt3key mk/t3keyc mk/t3learnkeys"
+LTSHARED=1
+DEFAULT_LINGUAS=nl
+SWITCHES="+t3learnkeys"
+USERHELP=print_help
+
+
+print_help() {
+	echo "  --without-t3learnkeys   Do not build the t3learnkeys program"
+}
+
+test_select() {
+	DESC="$1"
+	shift
+	clean_c
+	for HEADER in "$@"
+	do
+		echo "#include <${HEADER}>"
+	done > .config.c
+	cat >> .config.c <<EOF
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+	fd_set test;
+	FD_ZERO(&test);
+	FD_SET(0, &test);
+	FD_ISSET(0, &test);
+	FD_CLR(0, &test);
+	select(1, &test, NULL, NULL, NULL);
+	return;
+}
+EOF
+	test_link "${DESC}"
+}
+
+
+config() {
+	clean_c
+	cat > .config.c << EOF
+#include <arpa/inet.h>
+#include <stdint.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+	uint16_t foo = ntohs(1);
+	uint32_t bar = ntohl(1);
+	int result;
+	char buf[1024];
+
+	foo = htons(1);
+
+	result = mkdir("/foo", 0755);
+	result = (int) readlink("/foo", buf, sizeof(buf));
+	result = symlink("/foo", "/bar");
+	return 0;
+}
+EOF
+	test_link "required functions" || error "!! Some required functionality is not available. See config.log for details."
+
+	if [ yes = "${with_t3learnkeys}" ] ; then
+		clean_c
+		cat > .config.c << EOF
+#include <termios.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <search.h>
+
+int compar(const void *a, const void *b) {
+	return a < b;
+}
+
+int main(int argc, char *argv[]) {
+	struct termios attr;
+	int result;
+	char buf[1024];
+	size_t size = 0;
+
+	usleep(500);
+	isatty(result);
+	result = (int) read(argc, buf, sizeof(buf));
+	result = lfind(&result, &result, &size, sizeof(result), compar) == NULL;
+	tcgetattr(argc, &attr);
+	tcsetattr(argc, TCSADRAIN, &attr);
+	snprintf(buf, sizeof(buf), "%d", result);
+	return 0;
+}
+EOF
+		test_link "required functions for t3learnkeys" || error "!! Some required functionality for t3learnkeys is not available. See config.log for details. Try configuring with --without-t3learnkeys."
+		if test_select "select in <sys/select.h>" "sys/select.h" ; then
+			CONFIGFLAGS="${CONFIGFLAGS} -DHAS_SELECT_H"
+		else
+			test_select "select in <unistd.h>" "sys/time.h" "sys/types.h" "unistd.h" || error "!! Can not find required select function. Try configuring with --without-t3learnkeys."
+		fi
+
+		basic_x11 || {
+			check_message_result "!! Could not find X11 library. t3learnkeys will not provide the --auto-learn option."
+			X11_FLAGS="-DNO_AUTOLEARN"
+		}
+	fi
+
+	clean_c
+	cat > .config.c <<EOF
+#include <stdio.h>
+#include <stdlib.h>
+#include <curses.h>
+
+int main(int argc, char *argv[]) {
+	int args[9], error, fd;
+
+	if (setupterm(NULL, fd, &error) == OK) {
+		tigetstr("cup");
+		tigetnum("colors");
+		tigetflag("km");
+		tputs("\033[0m", 1, putchar);
+		tparm("\033[0m", args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
+	}
+	return 0;
+}
+EOF
+	if test_compile "curses header file" ; then
+		if test_link "curses library" "TESTLIBS=-lcurses" ; then
+			CURSESLIBS="-lcurses"
+		else
+			if test_link "ncurses library" "TESTLIBS=-lncurses" ; then
+				CURSESLIBS="-lncurses"
+			else
+				error "!! Can not find curses library. The curses library is required to compile libt3window."
+			fi
+		fi
+	else
+		error "!! Can not find curses library. The curses library is required to compile libt3window."
+	fi
+
+	create_makefile "CONFIGFLAGS=${CONFIGFLAGS}" "CONFIGLIBS=${CONFIGLIBS}"
+}

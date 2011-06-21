@@ -22,3 +22,5 @@ TARGETS := t3learnkeys
 include ../../../makesys/rules.mk
 #================================================#
 CFLAGS += -I..
+CFLAGS += -DHAS_SELECT_H
+#~ CFLAGS += -DNO_AUTOLEARN

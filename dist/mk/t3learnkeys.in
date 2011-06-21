@@ -1,0 +1,52 @@
+# Copyright (C) 2011 G.P. Halkes
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3, as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.POSIX:
+
+# C-compiler flags
+CFLAGS=-O2
+
+# Configuration flags and libraries. Include flags here to compile against the
+# (n)curses library
+CONFIGFLAGS=
+CONFIGLIBS=-lcurses
+
+# Flags and libraries to compile against libX11. Use -DNO_AUTOLEARN in X11_FLAGS
+# if X11 is not available
+X11_FLAGS=
+X11_LIBS=-lX11
+
+# Installation prefix
+prefix=/usr/local
+
+all: src.util/t3learnkeys/t3learnkeys
+
+.PHONY: all clean dist-clean
+.SUFFIXES: .c .o
+.SECONDARY: # Tell GNU make not to delete intermediate files
+
+SILENTCC=@echo '[CC]' $< ;
+SILENTLD=@echo '[LD]' $@ ;
+
+OBJECTS_T3LEARNKEYS=<OBJECTS_T3LEARNKEYS>
+
+clean:
+	rm -rf src.util/t3learnkeys/*.o src.util/t3learnkeys/t3learnkeys
+
+dist-clean: clean
+
+.c.o:
+	$(SILENTCC) $(CC) $(CFLAGS) $(CONFIGFLAGS) $(X11_FLAGS) -c -o $@ $<
+
+src.util/t3learnkeys/t3learnkeys: $(OBJECTS_T3LEARNKEYS)
+	$(SILENTLD) $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_T3LEARNKEYS) $(LDLIBS) $(CONFIGLIBS) $(X11_LIBS)
+
