@@ -76,8 +76,9 @@ install: all libt3key.pc
 	$(INSTALL) -m0644 libt3key.pc $(pkgconfigdir)
 	$(INSTALL) -d $(bindir)
 	$(INSTALL) src.util/t3keyc/t3keyc $(bindir)
-	src.util/t3keyc/t3keyc -d$(datadir) src/database/*
 	[ -f src.util/t3learnkeys/t3learnkeys ] && $(INSTALL) src.util/t3learnkeys/t3learnkeys $(bindir)
+	$(INSTALL) -d $(datadir)
+	find src/database | xargs -n1 src.util/t3keyc/t3keyc -d$(datadir)
 
 uninstall:
 	$(LIBTOOL) --mode=uninstall rm $(libdir)/libt3key.la

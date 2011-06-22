@@ -714,7 +714,8 @@ static void extract_shared_maps(map_t *head, map_t *last_new) {
 				   static arrays with descriptions. */
 				if (search_for->keynames == current_key->keynames &&
 						search_for->modifiers == current_key->modifiers &&
-						strcmp(search_for->seq, current_key->seq) == 0)
+						strcmp(search_for->seq, current_key->seq) == 0 &&
+						((search_for->duplicate == NULL) == (current_key->duplicate == NULL)))
 				{
 					if (new_map == NULL) {
 						new_map = safe_calloc(1, sizeof(map_t));
