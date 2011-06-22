@@ -846,6 +846,8 @@ int main(int argc, char *argv[]) {
 		} while (maxfkeys < 0);
 	}
 
+	printf("Make sure that NumLock is disabled before starting\n");
+
 	if (option_output == NULL)
 		option_output = term;
 	if ((output = fopen(option_output, "w")) == NULL)
