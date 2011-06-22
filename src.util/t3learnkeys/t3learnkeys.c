@@ -132,6 +132,7 @@ struct map_list_t {
 };
 
 static bool option_auto_learn;
+static bool option_no_abort_auto;
 static const char *option_output;
 static char **blocked_keys;
 static size_t blocked_keys_fill;
@@ -393,10 +394,15 @@ static sequence_t *get_sequence(void) {
 			retval->duplicate = NULL;
 			retval->remove = false;
 			return retval;
-		} else if (!option_auto_learn && c == 3) {
-			printf("^C\n");
-			if (confirm("Are you sure you want to quit [y/n]"))
-				exit(EXIT_FAILURE);
+		} else if (c == 3) {
+			if (option_auto_learn) {
+				if (!option_no_abort_auto)
+					exit(EXIT_FAILURE);
+			} else {
+				printf("^C\n");
+				if (confirm("Are you sure you want to quit [y/n]"))
+					exit(EXIT_FAILURE);
+			}
 			c = -1;
 		} else if (c == 0177 || c == 8) {
 			retval = safe_malloc(sizeof(sequence_t));
@@ -773,7 +779,10 @@ PARSE_FUNCTION(parse_args)
 	OPTIONS
 #ifndef NO_AUTOLEARN
 		OPTION('a', "auto-learn", NO_ARG)
-			option_auto_learn = 1;
+			option_auto_learn = true;
+		END_OPTION
+		OPTION('A', "dont-abort-auto-learn", NO_ARG)
+			option_no_abort_auto = true;
 		END_OPTION
 #endif
 		OPTION('b', "block-keys", REQUIRED_ARG)
@@ -796,6 +805,7 @@ PARSE_FUNCTION(parse_args)
 			printf("Usage: t3learnkeys [<options>]\n"
 #ifndef NO_AUTOLEARN
 				"  -a,--auto-learn             Learn by emulating key events for X11 terminals\n"
+				"  -A,--dont-abort-auto-learn  Do abort on C-c when auto-learning\n"
 #endif
 				"  -b<keys>,--block-keys=<keys>  Do not ask for keys described in <keys>\n"
 				"  -o<name>,--output=<name>    Write output to <name> (default: $TERM)\n"
@@ -814,16 +824,17 @@ END_FUNCTION
 
 
 int main(int argc, char *argv[]) {
-	size_t i;
 	char *smkx = NULL, *rmkx = NULL;
 	const char *term = getenv("TERM"), *display_env = getenv("DISPLAY");
 	map_t *mode_head = NULL, *mode_ptr, **mode_next, *last_mode_ptr;
+	int error;
+	size_t i;
 
 	parse_args(argc, argv);
 
 	if (term == NULL)
 		fatal("No terminal type has been set in the TERM environment variable\n");
-	setupterm((char *)0, 1, (int *)0);
+	setupterm(NULL, 1, &error);
 
 #ifndef NO_AUTOLEARN
 	if (option_auto_learn && !initX11())
@@ -870,7 +881,7 @@ int main(int argc, char *argv[]) {
 	   non-keypad-transmit modes. If so add the rmkx sequence as %enter sequence
 	   for the non-keypad-transmit mode. */
 	rmkx = tigetstr("rmkx");
-	if (rmkx == (char *) -1 || strlen(rmkx) == 0)
+	if (rmkx == (char *) -1 || rmkx == NULL || strlen(rmkx) == 0)
 		rmkx = NULL;
 	mode_head = safe_calloc(1, sizeof(map_t));
 	mode_head->name = safe_strdup("nokx");

@@ -1,5 +1,6 @@
 %best kx
 %aka "xterm-256color"
+%aka "xterm-color"
 
 nokx {
 %enter = rmkx

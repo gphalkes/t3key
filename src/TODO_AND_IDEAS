@@ -1,5 +1,10 @@
 TODO
 ====
+- we could store the fact that some keys with meta are simply esc-<key>. This
+  also holds for combinations (key+cms = esc key+cs). The reason for doing so
+  is that then we may be able to say whether a particular key is available by
+  looking it up in the database.
+
 - handle keys that are available in terminfo, but not in the (text) database,
   and keys for which the TI entry differs.
 - what to do with all these keys that may be available on hardware terminals,
