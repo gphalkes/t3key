@@ -1,0 +1,38 @@
+ORIGINAL TERMINALS
+==================
+linux (done, terminfo is complete)
+mlterm (done)
+vt100 (terminfo seems complete)
+vt220
+rxvt (done)
+rxvt-unicode (done)
+stterm (done)
+xterm (done)
+
+IMITATING TERMINALS
+===================
+aterm (rxvt)
+gnome-terminal (xterm)
+konsole (xterm)
+lxterminal (xterm)
+pterm (xterm)
+roxterm (xterm)
+sugar-terminal-activity (xterm)
+terminal.app [GNUstep] (manpage says TERM is set to linux, vt100, vt220 or xterm)
+vala-terminal (xterm)
+wterm (rxvt)
+xfce4-terminal (xterm)
+xiterm (xterm)
+xiterm+thai (xterm-color)
+
+
+TODO
+====
+mlrxvt (uses xterm sequences, which may have to be merged)
+bterm (bogl)
+fbiterm
+fbterm
+jfbterm
+Terminal.app [OS X]
+ajaxterm
+anyterm
