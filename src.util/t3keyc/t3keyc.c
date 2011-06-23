@@ -71,10 +71,13 @@ void error(const char *fmt, ...) {
 
 /** Duplicate a string but exit on allocation failure */
 char *safe_strdup(const char *str) {
-	char *result = malloc(strlen(str) + 1);
-	if (result == NULL)
+	char *result;
+	size_t len = strlen(str) + 1;
+
+	if ((result = malloc(len)) == NULL)
 		fatal("Out of memory\n");
-	return strcpy(result, str);
+	memcpy(result, str, len);
+	return result;
 }
 
 /* Print usage message/help. */

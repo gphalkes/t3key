@@ -148,5 +148,14 @@ EOF
 		error "!! Can not find curses library. The curses library is required to compile libt3window."
 	fi
 
+	clean_c
+	cat > .config.c <<EOF
+#include <string.h>
+int main(int argc, char *argv[]) {
+	strdup("foo");
+}
+EOF
+	test_link "strdup" && CONFIGFLAGS="${CONFIGFLAGS} -DHAS_STRDUP"
+
 	create_makefile "CONFIGFLAGS=${CONFIGFLAGS}" "CONFIGLIBS=${CONFIGLIBS} ${CURSESLIBS}"
 }

@@ -57,6 +57,20 @@ static int new_node(void **result, size_t size);
 #define NEW_NODE(_x) new_node((void **) (_x), sizeof(**(_x)))
 static t3_key_node_t *load_ti_keys(const char *term, int *error);
 
+#ifdef HAS_STRDUP
+#define strdup_impl strdup
+#else
+static char *strdup_impl(const char *str) {
+	char *result;
+	size_t len = strlen(str) + 1;
+
+	if ((result = malloc(len)) == NULL)
+		return NULL;
+	memcpy(result, str, len);
+	return result;
+}
+#endif
+
 static char *make_name(const char *directory, const char *term) {
 	size_t name_length, term_length;
 	char *name;
@@ -225,7 +239,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 					continue;
 				}
 				free(tikey);
-				(*next_node)->string = strdup(tiresult);
+				(*next_node)->string = strdup_impl(tiresult);
 				(*next_node)->string_length = strlen(tiresult);
 				if ((*next_node)->string == NULL)
 					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
@@ -239,7 +253,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 				break;
 			case NODE_SHIFTFN:
 				ENSURE(NEW_NODE(next_node));
-				if (((*next_node)->key = strdup("%shiftfn")) == NULL)
+				if (((*next_node)->key = strdup_impl("%shiftfn")) == NULL)
 					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 				(*next_node)->string_length = 3;
 				if (((*next_node)->string = malloc(3)) == NULL)
@@ -365,13 +379,13 @@ static int make_node_from_ti(t3_key_node_t **next_node, const char *tikey, const
 	if ((error = NEW_NODE(next_node)) != T3_ERR_SUCCESS)
 		return error;
 
-	if (((*next_node)->key = strdup(key)) == NULL) {
+	if (((*next_node)->key = strdup_impl(key)) == NULL) {
 		free(*next_node);
 		*next_node = NULL;
 		return T3_ERR_OUT_OF_MEMORY;
 	}
 
-	if (((*next_node)->string = strdup(tiresult)) == NULL) {
+	if (((*next_node)->string = strdup_impl(tiresult)) == NULL) {
 		free((*next_node)->string);
 		free(*next_node);
 		*next_node = NULL;
