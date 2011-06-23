@@ -371,14 +371,16 @@ static int make_node_from_ti(t3_key_node_t **next_node, const char *tikey, const
 	return T3_ERR_SUCCESS;
 }
 
+/* The START/END MAPPINGS comments below are markers to allow extraction of this
+   list for t3keyc. */
+
+/*START MAPPINGS*/
 typedef struct {
 	const char *tikey;
 	const char *key;
 } Mapping;
 
 static const Mapping keymapping[] = {
-	{ "smkx", "%enter" },
-	{ "rmkx", "%leave" },
 	{ "kich1", "insert" },
 	{ "kdch1", "delete" },
 	{ "khome", "home" },
@@ -400,13 +402,16 @@ static const Mapping keymapping[] = {
 	{ "kDC", "delete+s" },
 	{ "kHOM", "home+s" },
 	{ "kEND", "end+s" },
-	{ "KNXT", "page_up+s" },
-	{ "KPRV", "page_down+s" },
+	{ "kPRV", "page_up+s" },
+	{ "kNXT", "page_down+s" },
 	{ "kLFT", "left+s" },
 	{ "kRIT", "right+s" },
 	{ "kcbt", "tab+s" },
 	{ "kent", "enter" },
+	{ "kind", "down+s" },
+	{ "kri", "up+s" }
 };
+/*END MAPPINGS*/
 
 static t3_key_node_t *load_ti_keys(const char *term, int *error) {
 	t3_key_node_t *list = NULL, **next_node = &list;
@@ -423,6 +428,13 @@ static t3_key_node_t *load_ti_keys(const char *term, int *error) {
 			RETURN_ERROR(T3_ERR_TERMINAL_TOO_LIMITED);
 		RETURN_ERROR(T3_ERR_UNKNOWN);
 	}
+
+	ENSURE(make_node_from_ti(next_node, "smkx", "%enter"));
+	if (*next_node != NULL)
+		next_node = &(*next_node)->next;
+	ENSURE(make_node_from_ti(next_node, "rmkx", "%leave"));
+	if (*next_node != NULL)
+		next_node = &(*next_node)->next;
 
 	for (i = 0; i < sizeof(keymapping)/sizeof(keymapping[0]); i++) {
 		ENSURE(make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key));

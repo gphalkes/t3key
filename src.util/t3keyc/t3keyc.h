@@ -16,10 +16,13 @@
 
 #include <stdio.h>
 
+typedef enum { false, true } bool;
+
 void fatal(const char *fmt, ...);
 char *safe_strdup(const char *str);
 extern FILE *yyin;
 extern int line_number;
+extern const char *input;
 extern char *yytext;
 
 typedef struct t3_key_node_t t3_key_node_t;
@@ -29,6 +32,7 @@ struct t3_key_node_t {
 	size_t string_len;
 	char *ident;
 	int line_number;
+	bool check_ti;
 	t3_key_node_t *next;
 };
 

@@ -29,50 +29,14 @@
 #include "t3keyc.h"
 #include "shareddefs.h"
 
-typedef enum { false, true } bool;
-
-/* FIXME: we should only keep one copy of this (also in src/key.c) */
-typedef struct {
-	const char *tikey;
-	const char *key;
-} Mapping;
-
-static const Mapping keymapping[] = {
-	{ "kich1", "insert" },
-	{ "kdch1", "delete" },
-	{ "khome", "home" },
-	{ "kend", "end" },
-	{ "kpp", "page_up" },
-	{ "knp", "page_down" },
-	{ "kcuu1", "up" },
-	{ "kcub1", "left" },
-	{ "kcud1", "down" },
-	{ "kcuf1", "right" },
-	{ "ka1", "kp_home" },
-	{ "kc1", "kp_end" },
-	{ "kb2", "kp_center" },
-	{ "ka3", "kp_page_up" },
-	{ "kc3", "kp_page_down" },
-	{ "kbs", "backspace" },
-
-	{ "kIC", "insert+s" },
-	{ "kDC", "delete+s" },
-	{ "kHOM", "home+s" },
-	{ "kEND", "end+s" },
-	{ "KNXT", "page_up+s" },
-	{ "KPRV", "page_down+s" },
-	{ "kLFT", "left+s" },
-	{ "kRIT", "right+s" },
-	{ "kcbt", "tab+s" },
-	{ "kent", "enter" },
-};
+#include "mappings.c"
 
 static char *smkx;
 
 static FILE *output;
 static char *output_filename, *database_dir;
 static bool error_seen;
-static const char *input;
+const char *input;
 extern FILE *yyin;
 t3_key_map_t *maps;
 char *best;
@@ -192,7 +156,7 @@ size_t parse_escapes(char *string) {
 			read_position++;
 
 			if (read_position == max_read_position) {
-				fatal("%d: Single backslash at end of string\n", line_number);
+				fatal("%s:%d: Single backslash at end of string\n", input, line_number);
 			}
 			switch(string[read_position++]) {
 				case 'E':
@@ -247,14 +211,14 @@ size_t parse_escapes(char *string) {
 						if (value > UCHAR_MAX)
 							/* TRANSLATORS:
 							   The %s argument is a long option name without preceding dashes. */
-							fatal("%d: Invalid hexadecimal escape sequence in string\n", line_number);
+							fatal("%s:%d: Invalid hexadecimal escape sequence in string\n", input, line_number);
 					}
 					read_position += i;
 
 					if (i == 0)
 						/* TRANSLATORS:
 						   The %s argument is a long option name without preceding dashes. */
-						fatal("%d: Invalid hexadecimal escape sequence in string\n", line_number);
+						fatal("%s:%d: Invalid hexadecimal escape sequence in string\n", input, line_number);
 
 					string[write_position++] = (char) value;
 					break;
@@ -315,6 +279,7 @@ t3_key_node_t *new_node(const char *key, const char *string, const char *ident) 
 
 	if (ident != NULL)
 		result->ident = safe_strdup(ident);
+	result->check_ti = true;
 	return result;
 }
 
@@ -363,6 +328,14 @@ static int get_ti_mapping(const char *name) {
 	return -1;
 }
 
+static bool is_function_key(const char *name) {
+	if (name[0] != 'f')
+		return false;
+	if (strchr(name, '+') != NULL)
+		return false;
+	return name[1] >= '0' && name[1] <= '9';
+}
+
 /* Check the contents of a map for duplicates and non-existent %include's */
 static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_ti) {
 	t3_key_node_t *node_ptr, *other_node;
@@ -380,7 +353,7 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 		if (strcmp("%include", node_ptr->key) == 0) {
 			t3_key_map_t *other_map;
 			if ((other_map = lookup_map(node_ptr->ident)) == NULL)
-				error("%d: %%include map %s not found\n", node_ptr->line_number, node_ptr->ident);
+				error("%s:%d: %%include map %s not found\n", input, node_ptr->line_number, node_ptr->ident);
 			else
 				check_nodes(start_map, other_map, check_ti);
 			continue;
@@ -394,19 +367,30 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 		   is the same as the current node, we automatically only emit an
 		   error on second or later occurence. */
 		if (node_ptr->key[0] != '%' && (other_node = lookup_node(start_map, node_ptr, &other_map)) != node_ptr)
-			error("%d: checking map %s: node %s:%s uses the same sequence as %s:%s on line %d\n", node_ptr->line_number,
+			error("%s:%d: checking map %s: node %s:%s uses the same sequence as %s:%s on line %d\n", input, node_ptr->line_number,
 				start_map->name, map->name, node_ptr->key, other_map->name, other_node->key, other_node->line_number);
 		clear_flags(FLAG_MARK_LOOKUP);
 
 		/* Check whether the key is contained in the terminfo database, and if so,
 		   check whether the definition is the same. If not, emit a warning. */
-		if (check_ti && node_ptr->key[0] != '%' && (idx = get_ti_mapping(node_ptr->key)) >= 0) {
-			char *tistr = tigetstr(keymapping[idx].tikey);
+		if (check_ti && node_ptr->check_ti && node_ptr->key[0] != '%') {
+			char terminfo_key[100];
+			char *tistr = NULL;
+
+			if ((idx = get_ti_mapping(node_ptr->key)) >= 0) {
+				strcpy(terminfo_key, keymapping[idx].tikey);
+				tistr = tigetstr(terminfo_key);
+			} else if (is_function_key(node_ptr->key)) {
+				terminfo_key[0] = 'k';
+				strcpy(terminfo_key + 1, node_ptr->key);
+				tistr = tigetstr(terminfo_key);
+			}
+
 			if (!(tistr == (char *) -1 || tistr == NULL)) {
 				if (strcmp(tistr, node_ptr->string) != 0)
-					fprintf(stderr, "%d: warning: key %s:%s has a different definition than "
+					fprintf(stderr, "%s:%d: warning: key %s:%s has a different definition than "
 						"retrieved from the terminfo database (key %s)\n",
-						node_ptr->line_number, map->name, node_ptr->key, keymapping[idx].tikey);
+						input, node_ptr->line_number, map->name, node_ptr->key, terminfo_key);
 			}
 		}
 	}
@@ -439,7 +423,7 @@ static void check_maps(void) {
 		}
 
 		if ((other_map = lookup_map(map_ptr->name)) != map_ptr)
-			error("%d: map %s already defined on line %d\n", map_ptr->line_number, map_ptr->name, other_map->line_number);
+			error("%s:%d: map %s already defined on line %d\n", input, map_ptr->line_number, map_ptr->name, other_map->line_number);
 
 		check_nodes(map_ptr, map_ptr, check_ti);
 
@@ -448,7 +432,7 @@ static void check_maps(void) {
 	}
 
 	if (best == NULL)
-		error("No %%best key was found in the file\n");
+		error("%s: No %%best key was found in the file\n", input);
 }
 
 /* Write a string to the output file. This requires writing the length in network byte order,
@@ -630,10 +614,12 @@ int main(int argc, char *argv[]) {
 
 	parse_options(argc, argv);
 
-	if (input == NULL)
+	if (input == NULL) {
 		yyin = stdin;
-	else if ((yyin = fopen(input, "r")) == NULL)
+		input = "<stdin>";
+	} else if ((yyin = fopen(input, "r")) == NULL) {
 		fatal("Could not open input %s: %s\n", input, strerror(errno));
+	}
 	parse();
 
 	setupterm(output_filename, 1, &errret);

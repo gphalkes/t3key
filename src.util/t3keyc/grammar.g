@@ -20,13 +20,13 @@
 void LLmessage(int class) {
 	switch (class) {
 		case LL_MISSINGEOF:
-			fatal("%d: Expected %s, found %s.\n", line_number, LLgetSymbol(EOFILE), LLgetSymbol(LLsymb));
+			fatal("%s:%d: Expected %s, found %s.\n", input, line_number, LLgetSymbol(EOFILE), LLgetSymbol(LLsymb));
 			break;
 		case LL_DELETE:
-			fatal("%d: Unexpected %s.\n", line_number, LLgetSymbol(LLsymb));
+			fatal("%s:%d: Unexpected %s.\n", input, line_number, LLgetSymbol(LLsymb));
 			break;
 		default:
-			fatal("%d: Expected %s, found %s.\n", line_number, LLgetSymbol(class), LLgetSymbol(LLsymb));
+			fatal("%s:%d: Expected %s, found %s.\n", input, line_number, LLgetSymbol(class), LLgetSymbol(LLsymb));
 			break;
 	}
 }
@@ -44,6 +44,7 @@ t3_key_node_t **current_node;
 %label BEST, "%best";
 %label AKA, "%aka";
 %label MISSING_KEY, "key";
+%label NOTICHECK, "%noticheck";
 %start parse, description;
 
 description {
@@ -141,15 +142,17 @@ key
 		name = safe_strdup(yytext);
 	}
 	'='
-	[
-		STRING
-/*	|
-		IDENTIFIER
-	|
-		KEY_MOD */
-	]
+	STRING
 	{
 		*current_node = new_node(name, yytext, NULL);
+	}
+	[
+		NOTICHECK
+		{
+			(*current_node)->check_ti = false;
+		}
+	]?
+	{
 		current_node = &(*current_node)->next;
 	}
 ;

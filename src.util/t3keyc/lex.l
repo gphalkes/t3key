@@ -29,5 +29,6 @@ int line_number = 1;
 %include                          return INCLUDE;
 %best                             return BEST;
 %aka                              return AKA;
+%noticheck                        return NOTICHECK;
 \"([^\\"]|\\.)*\"                 return STRING;
 [{}=]                             return yytext[0];

@@ -266,7 +266,10 @@ page_down = "\e[6~"
 # kp_page_down = page_down
 # kp_insert = insert
 # kp_delete = delete
-backspace = "\177"
+# Terminfo says kbs is \010 (^H). However, when I press ^H, this does not work
+# as backspace. Furthermore, ^H is what backspace+c produces. Perhaps this is
+# a change from an older version of kterm.
+backspace = "\177" %noticheck
 f1 = "\e[11~"
 f2 = "\e[12~"
 f3 = "\e[13~"

@@ -27,9 +27,10 @@ include ../../../makesys/rules.mk
 CFLAGS += -I. -I../../src -I.objects -I..
 FLFLAGS += --never-interactive --nounistd
 
-.objects/test.o: | library
+.objects/mappings.c: ../../src/key.c
+	$(_VERBOSE_GEN) { echo "/* Generated from src/key.c */" ; sed -r '1,\%/\*START MAPPINGS\*/%d;\%/\*END MAPPINGS\*/%,$$d' $< ; } > $@
 
-library:
-	@$(MAKE) -C ../src $(_VERBOSE_PRINT) libt3key.la
+.objects/t3keyc.o: .objects/mappings.c
 
 .PHONY: library
+
