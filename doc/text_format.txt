@@ -62,6 +62,31 @@ specified in the %aka key.
 The value associated with an %aka key should be a string containing an
 additional name under which this map should be known.
 
+Shift FN
+--------
+
+Some terminals map (a limited range of) shifted function keys to higher
+numbered functions keys. For example, pressing shift-F1 in rxvt produces the
+same escape sequence as pressing F11. Because not all terminals do this, or use
+the same mapping, this information can be specified through the %shiftfn key.
+
+The %shiftfn key expects a string with three comma separated numbers. The first
+number represents the base of the mapped range. This is usually 1. The second
+number represents the end of the mapped range. Common values for this are 10
+and 12. The third number represents the mapping of the first function key as
+indicated by the first number. For example, the string "1,10,11" indicates that
+pressing shift-F1 will be mapped to F11, shift-F2 will be mapped to F12, up to
+shift-F10, which will be mapped to F20.
+
+The reason to include this information is to indicate to client programs that
+the terminal does not produce separate escape sequences for the indicated range
+of shifted function keys, but it may use the mapped range as an alternative if
+it so desires. Most current keyboards do not provide more than 12 function
+keys, but pressing shift in combination with a function key is a common
+operation. So a client program can choose to interpret the higher numbered
+function keys as shifted low-numbered function keys instead, thereby providing
+the expected behavior when the user presses a shifted function key.
+
 Valid key names
 ---------------
 

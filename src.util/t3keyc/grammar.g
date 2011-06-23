@@ -45,6 +45,7 @@ t3_key_node_t **current_node;
 %label AKA, "%aka";
 %label MISSING_KEY, "key";
 %label NOTICHECK, "%noticheck";
+%label SHIFTFN, "%shiftfn";
 %start parse, description;
 
 description {
@@ -72,6 +73,13 @@ description {
 				parse_escapes((*next_aka)->string);
 			(*next_aka)->next = NULL;
 			next_aka = &(*next_aka)->next;
+		}
+	|
+		SHIFTFN '='?
+		STRING
+		{
+			shiftfn = safe_strdup(yytext);
+			parse_escapes(shiftfn);
 		}
 	]+
 ;

@@ -57,6 +57,7 @@ struct t3_key_string_list_t {
 extern t3_key_map_t *maps;
 extern char *best;
 extern t3_key_string_list_t *akas;
+extern char *shiftfn;
 
 t3_key_map_t *new_map(const char *name);
 t3_key_node_t *new_node(const char *key, const char *string, const char *ident);

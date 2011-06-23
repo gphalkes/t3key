@@ -40,7 +40,7 @@
 
 #define RETURN_ERROR(_e) do { if (error != NULL) *error = _e; goto return_error; } while (0)
 #define CLEANUP() do { free(best_map); free(current_map); fclose(input); } while (0)
-#define CLEANUP_RETURN_ERROR(_e) do { CLEANUP(); t3_key_free_map(list); RETURN_ERROR(_e); } while (0)
+#define CLEANUP_RETURN_ERROR(_e) do { CLEANUP(); RETURN_ERROR(_e); } while (0)
 #define ENSURE(_x) do { int _error = (_x); \
 	if (_error == T3_ERR_SUCCESS) \
 		break; \
@@ -237,6 +237,16 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 			case NODE_AKA:
 				ENSURE(skip_string(input));
 				break;
+			case NODE_SHIFTFN:
+				ENSURE(NEW_NODE(next_node));
+				if (((*next_node)->key = strdup("%shiftfn")) == NULL)
+					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+				(*next_node)->string_length = 3;
+				if (((*next_node)->string = malloc(3)) == NULL)
+					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+				if (fread((*next_node)->string, 1, 3, input) != 3)
+					CLEANUP_RETURN_ERROR(T3_ERR_READ_ERROR);
+				break;
  			case NODE_END_OF_FILE:
 				if (list == NULL && error != NULL)
 					*error = T3_ERR_NOMAP;
@@ -339,6 +349,7 @@ static int read_string(FILE *input, char **string, size_t *length_ptr) {
 static int new_node(void **result, size_t size) {
 	if ((*result = malloc(size)) == NULL)
 		return T3_ERR_OUT_OF_MEMORY;
+	/* FIXME: this causes trouble if the data in *result contains pointers */
 	memset(*result, 0, size);
 	return T3_ERR_SUCCESS;
 }

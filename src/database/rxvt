@@ -1,6 +1,8 @@
 %best kx
 %aka "rxvt-256color"
 
+%shiftfn "1,10,11"
+
 # The best map is kx, simply because the nokx variant is problematic as it
 # changes its mapping when pressing numlock twice.
 

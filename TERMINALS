@@ -3,7 +3,7 @@ ORIGINAL TERMINALS
 linux (done, terminfo is complete)
 mlterm (done)
 vt100 (terminfo seems complete)
-vt220
+vt220 (terminfo is probably complete)
 rxvt (done)
 rxvt-unicode (done)
 stterm (done)
@@ -12,8 +12,8 @@ xterm (done)
 IMITATING TERMINALS
 ===================
 aterm (rxvt)
-gnome-terminal (xterm)
-konsole (xterm)
+gnome-terminal (xterm with exts)
+konsole (xterm with exts)
 lxterminal (xterm)
 pterm (xterm)
 roxterm (xterm)

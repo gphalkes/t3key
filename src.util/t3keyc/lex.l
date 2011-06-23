@@ -30,5 +30,6 @@ int line_number = 1;
 %best                             return BEST;
 %aka                              return AKA;
 %noticheck                        return NOTICHECK;
+%shiftfn                          return SHIFTFN;
 \"([^\\"]|\\.)*\"                 return STRING;
 [{}=]                             return yytext[0];

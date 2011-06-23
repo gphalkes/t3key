@@ -1,5 +1,7 @@
 %best nokx
 
+%shiftfn "1,10,11"
+
 nokx {
 %include _kx_nokx
 up = "\e[A"

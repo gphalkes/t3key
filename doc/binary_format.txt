@@ -35,4 +35,5 @@ Key terminfo | 3    | Two strings, one for the key, one for the terminfo key
 Name         | 4    | A string with the name of the file (terminal name)
 AKA          | 5    | Alternative terminal names for which this database is
              |      |   valid
+Shift FN     | 6    | Information passed to %shiftfn, one byte per value
 End of file  | FFFF | None

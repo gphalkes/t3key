@@ -41,6 +41,7 @@ extern FILE *yyin;
 t3_key_map_t *maps;
 char *best;
 t3_key_string_list_t *akas;
+char *shiftfn;
 
 /** Alert the user of a fatal error and quit.
     @param fmt The format string for the message. See fprintf(3) for details.
@@ -431,6 +432,29 @@ static void check_maps(void) {
 		clear_flags(FLAG_MARK_INCLUDED);
 	}
 
+	if (shiftfn != NULL) {
+		long value, last_value = 0;
+		char *ptr = shiftfn;
+		int i;
+
+		for (i = 0; i < 3; i++) {
+			value = strtol(ptr, &ptr, 0);
+			while (*ptr == ' ' || *ptr == '\t') ptr++;
+			if ((i < 2 && *ptr != ',') || (i == 2 && *ptr != 0)) {
+				error("%s: %%shiftfn argument is invalid at character %u\n", input, (unsigned) (ptr - shiftfn) + 1);
+				break;
+			} else if (value > 35 || value < 1) {
+				error("%s: %%shiftfn argument value %ld is out of range\n", input, value);
+				break;
+			} else if (value <= last_value) {
+				error("%s: %%shiftfn argument value %ld is smaller than or equal to preceding value %ld\n", input, value, last_value);
+				break;
+			}
+			ptr++;
+			shiftfn[i] = (unsigned) value;
+		}
+	}
+
 	if (best == NULL)
 		error("%s: No %%best key was found in the file\n", input);
 }
@@ -448,7 +472,7 @@ static void fwrite_string(const char *string, FILE *output) {
 	fwrite_nstring(string, strlen(string), output);
 }
 
-/* Write all nodes in a list (map). If all all_keys is false, keys starting with % will
+/* Write all nodes in a list (map). If all_keys is false, keys starting with % will
    not be written to file. */
 static void write_map(t3_key_map_t *map, bool all_keys) {
 	t3_key_node_t *node_ptr;
@@ -515,6 +539,13 @@ static void write_maps(void) {
 	out_short = htons(strlen(best));
 	fwrite(&out_short, 1, 2, output);
 	fwrite(best, 1, strlen(best), output);
+
+	if (shiftfn != NULL) {
+		out_short = htons(NODE_SHIFTFN);
+		fwrite(&out_short, 1, 2, output);
+
+		fwrite(shiftfn, 1, 3, output);
+	}
 
 	for (map_ptr = maps; map_ptr != NULL; map_ptr = map_ptr->next) {
 		if (map_ptr->name[0] == '_')
