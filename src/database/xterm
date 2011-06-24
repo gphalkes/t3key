@@ -4,7 +4,10 @@
 
 # Xterm itself doesn't need this, but some xterm "compatible" emulators do. The
 # problem is that we can't distinghuish between proper xterm and the emulators.
-%shiftfn "1,12,13"
+# Xterm with termcap setting would be
+#%shiftfn "1,12,13"
+# pterm uses
+#%shiftfn "1,10,11"
 
 nokx {
 %enter = rmkx
