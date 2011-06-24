@@ -49,7 +49,6 @@ EOF
 
 
 config() {
-echo "WARNING need to test for strdup and make strdup available in src/key.c"
 	clean_c
 	cat > .config.c << EOF
 #include <arpa/inet.h>
