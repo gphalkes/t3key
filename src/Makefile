@@ -25,6 +25,8 @@ include ../../makesys/rules.mk
 T3NAME := key
 include ../../t3shared/rules.mk
 
+CFLAGS += -DHAS_STRDUP
+
 LDLIBS += -lcurses
 
 updatedb: | utils

@@ -260,6 +260,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 				if (fread((*next_node)->string, 1, 3, input) != 3)
 					CLEANUP_RETURN_ERROR(T3_ERR_READ_ERROR);
+				next_node = &(*next_node)->next;
 				break;
  			case NODE_END_OF_FILE:
 				if (list == NULL && error != NULL)

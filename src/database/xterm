@@ -2,6 +2,10 @@
 %aka "xterm-256color"
 %aka "xterm-color"
 
+# Xterm itself doesn't need this, but some xterm "compatible" emulators do. The
+# problem is that we can't distinghuish between proper xterm and the emulators.
+%shiftfn "1,12,13"
+
 nokx {
 %enter = rmkx
 %include _kx_nokx
