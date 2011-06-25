@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 	FD_ISSET(0, &test);
 	FD_CLR(0, &test);
 	select(1, &test, NULL, NULL, NULL);
-	return;
+	return 0;
 }
 EOF
 	test_link "${DESC}"

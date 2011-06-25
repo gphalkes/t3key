@@ -67,8 +67,8 @@ install: all libt3key.pc
 	$(INSTALL) -d $(libdir)
 	$(LIBTOOL) --mode=install $(INSTALL) -s src/libt3key.la $(libdir)
 	chmod 0644 $(libdir)/libt3key.la
-	$(INSTALL) -d $(includedir)/t3/key
-	$(INSTALL) -m0644 src/key.h src/key_api.h src/key_errors.h $(includedir)/t3/key
+	$(INSTALL) -d $(includedir)/t3/key/t3key
+	$(INSTALL) -m0644 src/key.h src/key_api.h src/key_errors.h $(includedir)/t3/key/t3key
 	$(INSTALL) -d $(docdir)/API/search
 	(cd doc ; find API -type f) | xargs -IX $(INSTALL) -m0644 doc/X $(docdir)/X
 	$(INSTALL) -m0644 COPYING $(docdir)
