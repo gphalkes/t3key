@@ -134,10 +134,10 @@ int main(int argc, char *argv[]) {
 }
 EOF
 	if test_compile "curses header file" ; then
-		if test_link "curses library" "TESTLIBS=-lcurses" ; then
+		if test_link "curses library in -lcurses" "TESTLIBS=-lcurses" ; then
 			CURSESLIBS="-lcurses"
 		else
-			if test_link "ncurses library" "TESTLIBS=-lncurses" ; then
+			if test_link "ncurses library in -lncurses" "TESTLIBS=-lncurses" ; then
 				CURSESLIBS="-lncurses"
 			else
 				error "!! Can not find curses library. The curses library is required to compile libt3window."
