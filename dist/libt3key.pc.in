@@ -3,7 +3,7 @@ libdir=${prefix}/lib
 includedir=${prefix}/include
 
 Name: libt3key
-Description: Terminal key database
+Description: T3 terminal key database
 Version: <VERSION>
 URL: http://os.ghalkes.nl/t3/libt3key.html
 Cflags: -I${includedir}/t3/key

@@ -28,6 +28,7 @@ CFLAGS += -I. -I../../src -I.objects -I..
 FLFLAGS += --never-interactive --nounistd
 
 .objects/mappings.c: ../../src/key.c
+	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_GEN) { echo "/* Generated from src/key.c */" ; sed -r '1,\%/\*START MAPPINGS\*/%d;\%/\*END MAPPINGS\*/%,$$d' $< ; } > $@
 
 .objects/t3keyc.o: .objects/mappings.c
