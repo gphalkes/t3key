@@ -19,7 +19,7 @@
 /** @{ */
 
 #include <stdlib.h>
-#include "key_api.h"
+#include <t3key/key_api.h>
 
 #ifdef __cplusplus
 extern "C" {

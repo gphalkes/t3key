@@ -35,4 +35,7 @@ updatedb: | utils
 utils: | libt3key.la
 	@$(MAKE) -C ../src.util $(_VERBOSE_PRINT)
 
-.PHONY: updatedb utils
+links:
+	@[ -L t3key ] || ln -s . t3key
+
+.PHONY: updatedb utils links
