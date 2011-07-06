@@ -27,6 +27,8 @@ fi
 sed -i "s/<VERSION>/${VERSION}/g" `find ${TOPDIR} -type f`
 sed -i "/#define T3_KEY_VERSION/c #define T3_KEY_VERSION ${VERSION_BIN}" ${TOPDIR}/src/key.h
 
+( cd ${TOPDIR}/src ; ln -s . t3key )
+
 OBJECTS_LIBT3KEY="`echo \"${SOURCES} ${GENSOURCES} ${AUXSOURCES}\" | tr ' ' '\n' | sed -r 's%\.objects/%%' | egrep '^src/[^/]*\.c$' | sed -r 's/\.c\>/.lo/g' | tr '\n' ' '`"
 OBJECTS_T3KEYC="`echo \"${SOURCES} ${GENSOURCES}\" | tr ' ' '\n' | sed -r 's%\.objects/%%' | egrep '^src\.util/t3keyc/.*\.c$' | sed -r 's/\.c\>/.o/g' | tr '\n' ' '`"
 OBJECTS_T3LEARNKEYS="`echo \"${SOURCES} ${GENSOURCES} ${AUXSOURCES}\" | tr ' ' '\n' | sed -r 's%\.objects/%%' | egrep '^src\.util/t3learnkeys/.*\.c$' | sed -r 's/\.c\>/.o/g' | tr '\n' ' '`"
