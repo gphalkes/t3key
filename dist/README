@@ -19,7 +19,7 @@ libt3key is part of the Tilde Terminal Toolkit (T3) [http://os.ghalkes.nl/t3/]
 Prerequisites and installation
 ==============================
 
-libt3key requires the libtool utility to be compiled. Furthermore, it
+libt3key requires the GNU libtool utility to be compiled. Furthermore, it
 requires (n)curses for access to the terminfo database.
 
 There are two ways in which to compile libt3key:
