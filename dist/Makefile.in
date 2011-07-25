@@ -32,7 +32,7 @@ includedir=$(prefix)/include
 pkgconfigdir=$(libdir)/pkgconfig
 LOCALEDIR=$(prefix)/share/locale
 
-all: lib t3keyc t3learnkeys
+all: lib t3keyc t3learnkeys libt3key.pc
 
 lib:
 	@$(MAKE) -f mk/libt3key
@@ -63,7 +63,7 @@ libt3key.pc: libt3key.pc.in
 	@echo 'prefix=$(prefix)' >> .sedscript
 	sed -f .sedscript $< > $@
 
-install: all libt3key.pc
+install: all
 	$(INSTALL) -d $(libdir)
 	$(LIBTOOL) --mode=install $(INSTALL) -s src/libt3key.la $(libdir)
 	chmod 0644 $(libdir)/libt3key.la
