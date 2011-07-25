@@ -12,29 +12,9 @@ TODO
 - perhaps we should add a key "ambiguous", such that we can assign all sequences
   that can not be reasonably assigned to a single key
 
-- omit keys with standard mappings such as \t for tab
-- switch to X session with only the terminal emulator running to capture as many
-  key sequences as possible
 - what do we do with duplicates? It's not always possible to say which is the
   "original" and which is the actual duplicate. This is partly a job for the
   database creator to only include the ones that are sensible. In principle
   we should only have one key symbol return a particular sequence, because
   otherwise the program using libckey can't figure out what to do and results
   may depend on the comparison order.
-- function to read key from fd/FILE with translation (and UTF-8 decoding?)
-
-
-- make documentation:
-	- curses dependency for fallback and control sequences (terminfo only!)
-	- list of key names
-	- special key names %enter %leave
-	- name format for maps only included in others
-
-- make the database independant of the terminfo library. This means removing it
-  from the binary format as well as removing library support for looking up
-  strings from the terminfo database and removing grammar constructs for the
-  ascii format.
-
-
-FIXME: add documentation on how to use, with remark not to make a distinction
-between keypad and non-keypad keys because they may give the same keycode
