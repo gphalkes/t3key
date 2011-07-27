@@ -106,11 +106,11 @@ static FILE *open_database(const char *term, int *error) {
 
 	home_env = getenv("HOME");
 	if (home_env != NULL) {
-		if ((name = malloc(strlen(home_env) + strlen(".t3key") + 2)) == NULL)
+		if ((name = malloc(strlen(home_env) + strlen(".libt3key") + 2)) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		strcpy(name, home_env);
 		strcat(name, "/");
-		strcat(name, ".t3key");
+		strcat(name, ".libt3key");
 		home_env = name;
 
 		if ((name = make_name(home_env, term)) == NULL) {
@@ -126,7 +126,7 @@ static FILE *open_database(const char *term, int *error) {
 		free(name);
 	}
 
-	db_directory_env = getenv("T3_KEY_DATABASE_DIR");
+	db_directory_env = getenv("LIBT3KEY_DATABASE_DIR");
 	if (db_directory_env != NULL) {
 		if ((name = make_name(db_directory_env, term)) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);

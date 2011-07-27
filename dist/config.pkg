@@ -17,6 +17,7 @@ LTSHARED=1
 DEFAULT_LINGUAS=nl
 SWITCHES="+t3learnkeys"
 USERHELP=print_help
+INSTALLDIRS="bindir libdir datadir docdir mandir includedir"
 
 
 print_help() {

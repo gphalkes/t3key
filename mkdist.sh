@@ -15,7 +15,7 @@ get_sources_hg
 make_tmpdir
 copy_sources ${SOURCES} ${GENSOURCES} ${AUXSOURCES}
 copy_dist_files
-copy_files doc/API
+copy_files doc/API doc/binary_format.txt doc/text_format.txt
 create_configure
 
 if [[ "${VERSION}" =~ [0-9]{8} ]] ; then
@@ -35,7 +35,9 @@ OBJECTS_T3LEARNKEYS="`echo \"${SOURCES} ${GENSOURCES} ${AUXSOURCES}\" | tr ' ' '
 
 #FIXME: somehow verify binary compatibility, and print an error if not compatible
 VERSIONINFO="0:0:0"
+LIBVERSION="${VERSIONINFO%%:*}"
 
+sed -r -i "s%<LIBVERSION>%${LIBVERSION}%g" ${TOPDIR}/Makefile.in ${TOPDIR}/mk/libt3key.in
 sed -r -i "s%<OBJECTS_LIBT3KEY>%${OBJECTS_LIBT3KEY}%g;\
 s%<VERSIONINFO>%${VERSIONINFO}%g" ${TOPDIR}/mk/libt3key.in
 sed -r -i "s%<OBJECTS_T3KEYC>%${OBJECTS_T3KEYC}%g" ${TOPDIR}/mk/t3keyc.in
