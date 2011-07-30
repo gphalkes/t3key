@@ -1,4 +1,5 @@
 syntax: glob
+src/t3key
 src/key_shared.c
 src/key_errors.h
 src/key_api.h
