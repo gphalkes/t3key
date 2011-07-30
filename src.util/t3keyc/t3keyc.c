@@ -260,6 +260,34 @@ size_t parse_escapes(char *string) {
 	return write_position;
 }
 
+/* Convert a sequence to a printable representation. */
+static char *get_print_seq(const char *seq) {
+	static char buffer[1024];
+	char *dest = buffer;
+
+	while (*seq && dest - buffer < 1018) {
+		if (*seq == '"') {
+			*dest++ = '\\';
+			*dest++ = '"';
+			seq++;
+		} else if (*seq == '\\') {
+			*dest++ = *seq;
+			*dest++ = *seq++;
+		} else if (isprint(*seq)) {
+			*dest++ = *seq++;
+		} else if (*seq == 27) {
+			*dest++ = '\\';
+			*dest++ = 'e';
+			seq++;
+		} else {
+			sprintf(dest, "\\%03o", *seq++);
+			dest += 4;
+		}
+	}
+	*dest = 0;
+	return buffer;
+}
+
 /* Reset flags that prevent multiple inclusion. */
 static void clear_flags(int flags) {
 	t3_key_map_t *map_ptr;
@@ -391,10 +419,14 @@ static void check_nodes(t3_key_map_t *start_map, t3_key_map_t *map, bool check_t
 			}
 
 			if (!(tistr == (char *) -1 || tistr == NULL)) {
-				if (strcmp(tistr, node_ptr->string) != 0)
-					fprintf(stderr, "%s:%d: warning: key %s:%s has a different definition than "
-						"retrieved from the terminfo database (key %s)\n",
-						input, node_ptr->line_number, map->name, node_ptr->key, terminfo_key);
+				if (strcmp(tistr, node_ptr->string) != 0) {
+					char *terminfo_print_seq = safe_strdup(get_print_seq(tistr));
+					fprintf(stderr, "%s:%d: warning: key %s:%s = %s has a different definition than "
+						"retrieved from the terminfo database (key %s = %s)\n",
+						input, node_ptr->line_number, map->name, node_ptr->key,
+						get_print_seq(node_ptr->string), terminfo_key, terminfo_print_seq);
+					free(terminfo_print_seq);
+				}
 			}
 		}
 	}
