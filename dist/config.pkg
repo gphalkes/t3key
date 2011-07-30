@@ -157,5 +157,5 @@ int main(int argc, char *argv[]) {
 EOF
 	test_link "strdup" && CONFIGFLAGS="${CONFIGFLAGS} -DHAS_STRDUP"
 
-	create_makefile "CONFIGFLAGS=${CONFIGFLAGS}" "CONFIGLIBS=${CONFIGLIBS} ${CURSESLIBS}"
+	create_makefile "CONFIGFLAGS=${CONFIGFLAGS}" "CONFIGLIBS=${CONFIGLIBS} ${CURSESLIBS}" "X11_FLAGS=${X11_FLAGS}" "X11_LIBS=${X11_LIBS}"
 }
