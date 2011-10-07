@@ -151,7 +151,7 @@ T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key
     information, future library additions may prompt library users to want to operate
     differently depending on the available features.
 */
-T3_KEY_API int t3_key_get_version(void);
+T3_KEY_API long t3_key_get_version(void);
 
 /** Get a string description for an error code.
     @param error The error code returned by a function in libt3key.

@@ -572,7 +572,7 @@ t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char
 	return NULL;
 }
 
-int t3_key_get_version(void) {
+long t3_key_get_version(void) {
 	return T3_KEY_VERSION;
 }
 

@@ -23,7 +23,7 @@ EXTRATARGETS := updatedb
 include ../../makesys/rules.mk
 #================================================#
 T3NAME := key
-include ../../t3shared/rules.mk
+include ../../shared/rules.mk
 
 CFLAGS += -DHAS_STRDUP
 
