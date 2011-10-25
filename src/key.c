@@ -53,6 +53,7 @@
 static int check_magic_and_version(FILE *input);
 static int skip_string(FILE *input);
 static int read_string(FILE *input, char **string, size_t *length_ptr);
+/* FIXME: make a function specific for each type (there seems to be only one anyway. */
 static int new_node(void **result, size_t size);
 #define NEW_NODE(_x) new_node((void **) (_x), sizeof(**(_x)))
 static t3_key_node_t *load_ti_keys(const char *term, int *error);

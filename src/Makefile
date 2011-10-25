@@ -29,6 +29,8 @@ CFLAGS += -DHAS_STRDUP
 
 LDLIBS += -lcurses
 
+all: | links
+
 updatedb: | utils
 	@./updatedb
 
