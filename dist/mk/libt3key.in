@@ -17,8 +17,9 @@ CFLAGS=-O2
 
 # Configuration flags and libraries. Include flags here to compile against the
 # (n)curses library
-CONFIGFLAGS=
-CONFIGLIBS=-lcurses
+# If your system does not provide strdup, remove -DHAS_STRDUP
+CONFIGFLAGS=-DHAS_STRDUP
+CONFIGLIBS=
 
 # The libtool executable
 LIBTOOL=libtool
