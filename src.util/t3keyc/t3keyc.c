@@ -248,7 +248,7 @@ size_t parse_escapes(char *string) {
 					break;
 				}
 				default:
-					string[write_position++] = string[read_position];
+					string[write_position++] = string[read_position - 1];
 					break;
 			}
 		} else {
