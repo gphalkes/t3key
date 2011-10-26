@@ -34,7 +34,6 @@ OBJECTS_T3KEYC="`echo \"${SOURCES} ${GENSOURCES}\" | tr ' ' '\n' | sed -r 's%\.o
 OBJECTS_T3LEARNKEYS="`echo \"${SOURCES} ${GENSOURCES} ${AUXSOURCES}\" | tr ' ' '\n' | sed -r 's%\.objects/%%' | egrep '^src\.util/t3learnkeys/.*\.c$' | sed -r 's/\.c\>/.o/g' | tr '\n' ' '`"
 
 #FIXME: somehow verify binary compatibility, and print an error if not compatible
-VERSIONINFO="0:0:0"
 LIBVERSION="${VERSIONINFO%%:*}"
 
 sed -r -i "s%<LIBVERSION>%${LIBVERSION}%g" ${TOPDIR}/Makefile.in ${TOPDIR}/mk/libt3key.in
