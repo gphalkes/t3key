@@ -113,6 +113,13 @@ EOF
 			check_message_result "!! Could not find X11 library. t3learnkeys will not provide the --auto-learn option."
 			X11_FLAGS="-DNO_AUTOLEARN"
 		}
+	else
+		MAKEFILES="Makefile mk/libt3key mk/t3keyc"
+		cat > mk/t3learnkeys <<EOF
+all:
+clean:
+dist-clean:
+EOF
 	fi
 
 	clean_c
