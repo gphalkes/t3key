@@ -1,2 +1,7 @@
+Version 0.1.2:
+	Bug fixes:
+	- correct return type for t3_key_get_version
+	- build system update to support DESTDIR
+
 Version 0.1.1:
 	Initial release
