@@ -42,6 +42,7 @@ t3_key_map_t *maps;
 char *best;
 t3_key_string_list_t *akas;
 char *shiftfn;
+bool xterm_mouse;
 
 /** Alert the user of a fatal error and quit.
     @param fmt The format string for the message. See fprintf(3) for details.
@@ -580,6 +581,11 @@ static void write_maps(void) {
 		fwrite(&out_short, 1, 2, output);
 
 		fwrite(shiftfn, 1, 3, output);
+	}
+
+	if (xterm_mouse) {
+		out_short = htons(NODE_XTERM_MOUSE);
+		fwrite(&out_short, 1, 2, output);
 	}
 
 	for (map_ptr = maps; map_ptr != NULL; map_ptr = map_ptr->next) {

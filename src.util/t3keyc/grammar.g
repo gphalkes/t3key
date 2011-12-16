@@ -46,6 +46,7 @@ t3_key_node_t **current_node;
 %label MISSING_KEY, "key";
 %label NOTICHECK, "%noticheck";
 %label SHIFTFN, "%shiftfn";
+%label XTERM_MOUSE, "%xterm_mouse";
 %start parse, description;
 
 description {
@@ -80,6 +81,11 @@ description {
 		{
 			shiftfn = safe_strdup(yytext);
 			parse_escapes(shiftfn);
+		}
+	|
+		XTERM_MOUSE
+		{
+			xterm_mouse = true;
 		}
 	]+
 ;

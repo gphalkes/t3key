@@ -31,5 +31,6 @@ int line_number = 1;
 %aka                              return AKA;
 %noticheck                        return NOTICHECK;
 %shiftfn                          return SHIFTFN;
+%xterm_mouse                      return XTERM_MOUSE;
 \"([^\\"]|\\.)*\"                 return STRING;
 [{}=]                             return yytext[0];

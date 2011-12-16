@@ -1,5 +1,7 @@
 %best kx
 
+%xterm_mouse
+
 nokx {
 %enter = rmkx
 %include _kx_nokx

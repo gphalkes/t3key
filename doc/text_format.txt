@@ -87,6 +87,26 @@ operation. So a client program can choose to interpret the higher numbered
 function keys as shifted low-numbered function keys instead, thereby providing
 the expected behavior when the user presses a shifted function key.
 
+XTerm mouse reporting
+---------------------
+
+Several terminal emulators support the XTerm mouse reporting protocol, or a
+subset. There are three different things that a terminal emulator may support:
+- Basic button up/down reporting, enabled by ESC [?1000h
+- Button up/down reporting with motion reporting if a button is down, enabled
+  by ESC [?1002h
+- Full reporting (i.e. buttons and motion all the time), enabled by ESC [?1003h
+- Extended coordinate mode for the previous modes, enabled by ESC [?1005h
+
+If any of these is supported, you can add %xterm_mouse to the description of
+the terminal emulator.
+
+When enabling the mouse modes from a client program (provided the terminal
+emulator supports it) the enable strings should be sent, in the above order:
+ESC [?1000h ESC [?1002h ESC [?1005h
+
+This will ensure that the best mode is automatically selected.
+
 Valid key names
 ---------------
 

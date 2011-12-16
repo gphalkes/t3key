@@ -2,6 +2,7 @@
 %aka "rxvt-256color"
 
 %shiftfn "1,10,11"
+%xterm_mouse
 
 # The best map is kx, simply because the nokx variant is problematic as it
 # changes its mapping when pressing numlock twice.

@@ -1,12 +1,14 @@
 %best nokx
 
 %shiftfn "1,10,11"
+%xterm_mouse
 
 nokx {
 %include _kx_nokx
 up = "\e[A"
 left = "\e[D"
-right = "\e[B\e[C"
+right = "\e[C"
+down = "\e[B"
 up+c = "\eOa"
 left+c = "\eOd"
 down+c = "\eOb"

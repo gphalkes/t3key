@@ -263,6 +263,14 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 					CLEANUP_RETURN_ERROR(T3_ERR_READ_ERROR);
 				next_node = &(*next_node)->next;
 				break;
+			case NODE_XTERM_MOUSE:
+				ENSURE(NEW_NODE(next_node));
+				if (((*next_node)->key = strdup_impl("%xterm_mouse")) == NULL)
+					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+				(*next_node)->string_length = 0;
+				(*next_node)->string = NULL;
+				next_node = &(*next_node)->next;
+				break;
  			case NODE_END_OF_FILE:
 				if (list == NULL && error != NULL)
 					*error = T3_ERR_NOMAP;

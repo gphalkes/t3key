@@ -8,6 +8,7 @@
 #%shiftfn "1,12,13"
 # pterm uses
 #%shiftfn "1,10,11"
+%xterm_mouse
 
 nokx {
 %enter = rmkx
