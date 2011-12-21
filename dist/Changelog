@@ -1,7 +1,15 @@
+Version 0.1.3:
+	New features:
+	- Added the %xterm_mouse directive to indicate that a terminal speaks the
+	  XTerm mouse protocol.
+
+	Bug fixes:
+	- The Eterm definition was broken for the up and right keys.
+
 Version 0.1.2:
 	Bug fixes:
-	- correct return type for t3_key_get_version
-	- build system update to support DESTDIR
+	- Correct return type for t3_key_get_version
+	- Build system update to support DESTDIR
 
 Version 0.1.1:
 	Initial release
