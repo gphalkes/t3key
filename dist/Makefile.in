@@ -32,7 +32,7 @@ includedir=$(prefix)/include
 pkgconfigdir=$(libdir)/pkgconfig
 LOCALEDIR=$(prefix)/share/locale
 
-all: lib t3keyc t3learnkeys libt3key.pc
+all: lib t3keyc t3learnkeys
 
 lib:
 	@$(MAKE) -f mk/libt3key
@@ -50,21 +50,12 @@ clean:
 	@$(MAKE) -f mk/libt3key clean
 	@$(MAKE) -f mk/t3keyc clean
 	@$(MAKE) -f mk/t3learnkeys clean
-	rm -rf libt3key.pc
 
 dist-clean:
 	@$(MAKE) -f mk/libt3key dist-clean
 	@$(MAKE) -f mk/t3keyc dist-clean
 	@$(MAKE) -f mk/t3learnkeys dist-clean
 	rm -rf Makefile mk/libt3key mk/t3keyc mk/t3learnkeys config.log libt3key.pc
-
-libt3key.pc: libt3key.pc.in
-	@{ echo '/^prefix=/c\' ; echo 'prefix=$(prefix)' ; } > .sedscript
-	@LIBDIR=$(libdir); if [ "$${LIBDIR#$(prefix)}" != "$${LIBDIR}" ] ; then LIBDIR="\$${prefix}$${LIBDIR#$(prefix)}" ; fi ; \
-		{ echo '/^libdir=/c\' ; echo "libdir=$${LIBDIR}" ; } >> .sedscript
-	@INCLUDEDIR=$(includedir); if [ "$${INCLUDEDIR#$(prefix)}" != "$${INCLUDEDIR}" ] ; then INCLUDEDIR="\$${prefix}$${INCLUDEDIR#$(prefix)}" ; fi ; \
-		{ echo '/^includedir=/c\' ; echo "includedir=$${INCLUDEDIR}" ; } >> .sedscript
-	sed -f .sedscript $< > $@
 
 # Macros to make DESTDIR support more readable
 _bindir=$(DESTDIR)$(bindir)

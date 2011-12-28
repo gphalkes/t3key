@@ -122,6 +122,7 @@ dist-clean:
 EOF
 	fi
 
+	unset CURSES_LIBS CURSES_FLAGS
 	clean_c
 	cat > .config.c <<EOF
 #include <stdio.h>
@@ -141,18 +142,25 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 EOF
-	if test_compile "curses header file" ; then
-		if test_link "curses library in -lcurses" "TESTLIBS=-lcurses" ; then
-			CURSESLIBS="-lcurses"
+	if pkgconfig tinfo CURSES test_link PKGCONFIG_REQUIRES_PRIVATE; then
+		:
+	elif pkgconfig ncurses CURSES test_link PKGCONFIG_REQUIRES_PRIVATE; then
+		:
+	elif test_compile "curses header file" ; then
+		if test_link "terminfo access functions in -ltinfo" "TESTLIBS=-ltinfo" ; then
+			CURSES_LIBS="-ltinfo"
+		elif test_link "curses library in -lcurses" "TESTLIBS=-lcurses" ; then
+			CURSES_LIBS="-lcurses"
 		else
 			if test_link "ncurses library in -lncurses" "TESTLIBS=-lncurses" ; then
-				CURSESLIBS="-lncurses"
+				CURSES_LIBS="-lncurses"
 			else
-				error "!! Can not find curses library. The curses library is required to compile libt3window."
+				error "!! Can not find curses/tinfo library. The curses/tinfo library is required to compile libt3window."
 			fi
 		fi
+		PKGCONFIG_LIBS_PRIVATE="${PKGCONFIG_LIBS_PRIVATE} ${CURSES_LIBS}"
 	else
-		error "!! Can not find curses library. The curses library is required to compile libt3window."
+		error "!! Can not find curses/tinfo library. The curses/tinfo library is required to compile libt3window."
 	fi
 
 	clean_c
@@ -164,5 +172,12 @@ int main(int argc, char *argv[]) {
 EOF
 	test_link "strdup" && CONFIGFLAGS="${CONFIGFLAGS} -DHAS_STRDUP"
 
-	create_makefile "CONFIGFLAGS=${CONFIGFLAGS}" "CONFIGLIBS=${CONFIGLIBS} ${CURSESLIBS}" "X11_FLAGS=${X11_FLAGS}" "X11_LIBS=${X11_LIBS}"
+	PKGCONFIG_DESC="Terminal key database"
+	PKGCONFIG_VERSION="<VERSION>"
+	PKGCONFIG_URL="http://os.ghalkes.nl/t3/libt3key.html"
+	PKGCONFIG_CFLAGS="-I${includedir}/t3/key"
+	PKGCONFIG_LIBS="-lt3key"
+
+	gen_pkgconfig libt3key
+	create_makefile "CONFIGFLAGS=${CONFIGFLAGS} ${CURSES_FLAGS}" "CONFIGLIBS=${CONFIGLIBS} ${CURSES_LIBS}" "X11_FLAGS=${X11_FLAGS}" "X11_LIBS=${X11_LIBS}"
 }
