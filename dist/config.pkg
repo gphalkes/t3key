@@ -175,7 +175,7 @@ EOF
 	PKGCONFIG_DESC="Terminal key database"
 	PKGCONFIG_VERSION="<VERSION>"
 	PKGCONFIG_URL="http://os.ghalkes.nl/t3/libt3key.html"
-	PKGCONFIG_CFLAGS="-I${includedir}/t3/key"
+	PKGCONFIG_CFLAGS="-I\${includedir}/t3/key"
 	PKGCONFIG_LIBS="-lt3key"
 
 	gen_pkgconfig libt3key
