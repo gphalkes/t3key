@@ -28,9 +28,51 @@
 #include <term.h>
 #include <search.h>
 
+/* #define USE_XLIB */
+
 #ifndef NO_AUTOLEARN
+#ifdef USE_XLIB
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#else
+#include <xcb/xcb.h>
+/* Defines copied from X11/keysymdefs.h */
+#define XK_BackSpace                     0xff08  /* Back space, back char */
+#define XK_Tab                           0xff09
+#define XK_Linefeed                      0xff0a  /* Linefeed, LF */
+#define XK_Delete                        0xffff  /* Delete, rubout */
+#define XK_Insert                        0xff63  /* Insert, insert here */
+#define XK_KP_Home                       0xff95
+#define XK_KP_Left                       0xff96
+#define XK_KP_Up                         0xff97
+#define XK_KP_Right                      0xff98
+#define XK_KP_Down                       0xff99
+#define XK_KP_Page_Up                    0xff9a
+#define XK_KP_Page_Down                  0xff9b
+#define XK_KP_End                        0xff9c
+#define XK_KP_Begin                      0xff9d
+#define XK_KP_Insert                     0xff9e
+#define XK_KP_Delete                     0xff9f
+#define XK_KP_Multiply                   0xffaa
+#define XK_KP_Add                        0xffab
+#define XK_KP_Subtract                   0xffad
+#define XK_KP_Divide                     0xffaf
+#define XK_KP_Enter                      0xff8d  /* Enter */
+#define XK_Home                          0xff50
+#define XK_Left                          0xff51  /* Move left, left arrow */
+#define XK_Up                            0xff52  /* Move up, up arrow */
+#define XK_Right                         0xff53  /* Move right, right arrow */
+#define XK_Down                          0xff54  /* Move down, down arrow */
+#define XK_Page_Up                       0xff55
+#define XK_Page_Down                     0xff56
+#define XK_End                           0xff57  /* EOL */
+#define XK_a                             0x0061
+#define XK_F1                            0xffbe
+
+#define ControlMask XCB_KEY_BUT_MASK_CONTROL
+#define ShiftMask XCB_KEY_BUT_MASK_SHIFT
+#define Mod1Mask XCB_KEY_BUT_MASK_MOD_1
+#endif
 #define X_KEY_SYM(_x) _x
 #else
 #define X_KEY_SYM(_x) 0
@@ -140,10 +182,132 @@ static size_t blocked_keys_fill;
 static struct termios saved;
 static fd_set inset;
 static int maxfkeys = -1;
+
+static void fatal(const char *fmt, ...);
 #ifndef NO_AUTOLEARN
-static Display *display;
-static Window root, focus_window;
 static int reprogram_code = -1;
+
+#ifdef USE_XLIB
+static void fill_key_event(Display *display, Window focus_window, XKeyEvent *event, int type, KeyCode keycode, unsigned state) {
+	event->type = type;
+	event->serial = 0;
+	event->send_event = 0;
+	event->display = display;
+	event->window = focus_window;
+	event->subwindow = None;
+	event->root = DefaultRootWindow(display);
+	event->time = CurrentTime;
+	event->x = 1;
+	event->y = 1;
+	event->x_root = 1;
+	event->y_root = 1;
+	event->state = state;
+	event->keycode = keycode;
+	event->same_screen = True;
+}
+#else
+typedef xcb_connection_t Display;
+typedef xcb_window_t Window;
+typedef xcb_keysym_t KeySym;
+typedef xcb_keycode_t KeyCode;
+typedef xcb_generic_event_t XEvent;
+typedef xcb_key_press_event_t XKeyEvent;
+
+#define NoSymbol XCB_NO_SYMBOL
+#define KeyPressMask XCB_EVENT_MASK_KEY_PRESS
+#define KeyReleaseMask XCB_EVENT_MASK_KEY_RELEASE
+#define KeyPress XCB_KEY_PRESS
+#define KeyRelease XCB_KEY_RELEASE
+
+typedef enum { False, True } Bool;
+
+static Display *XOpenDisplay(const char *name) {
+	return xcb_connect(name, NULL);
+}
+
+static void XCloseDisplay(Display *display) {
+	xcb_disconnect(display);
+}
+
+static KeySym XKeycodeToKeysym(Display *display, KeyCode keycode, int index) {
+	xcb_get_keyboard_mapping_cookie_t cookie;
+	xcb_get_keyboard_mapping_reply_t *reply;
+	xcb_keysym_t result = NoSymbol;
+
+	cookie = xcb_get_keyboard_mapping(display, keycode, 1);
+	reply = xcb_get_keyboard_mapping_reply(display, cookie, NULL);
+
+	if (reply == NULL)
+		fatal("Error in X11 communication\n");
+
+	result = xcb_get_keyboard_mapping_keysyms(reply)[index];
+	free(reply);
+	return result;
+}
+
+static void XGetInputFocus(Display *display, Window *focus, int *revert_to_return) {
+	xcb_get_input_focus_cookie_t cookie;
+	xcb_get_input_focus_reply_t *reply;
+
+	cookie = xcb_get_input_focus(display);
+ 	reply = xcb_get_input_focus_reply(display, cookie, NULL);
+
+	if (reply == NULL)
+		fatal("Error in X11 communication\n");
+
+	*focus = reply->focus;
+	*revert_to_return = reply->revert_to;
+	free(reply);
+}
+
+static int XChangeKeyboardMapping(Display *display, int first_keycode, int keysyms_per_keycode,
+		KeySym *keysyms, int num_codes)
+{
+	xcb_void_cookie_t cookie = xcb_change_keyboard_mapping_checked(display, num_codes, first_keycode, keysyms_per_keycode, keysyms);
+	xcb_generic_error_t *error = xcb_request_check(display, cookie);
+	if (error != NULL)
+		fatal("Error in X11 communication\n");
+	return 0;
+}
+
+static void XSendEvent(Display *display, Window w, Bool propagate, long event_mask, XEvent *event_send) {
+	xcb_void_cookie_t cookie = xcb_send_event_checked (display, propagate, w, event_mask, (const char *) event_send);
+	xcb_generic_error_t *error = xcb_request_check(display, cookie);
+	if (error != NULL)
+		fatal("Error in X11 communication\n");
+}
+
+static void XSync(Display *display, bool discard) {
+	xcb_generic_event_t *event;
+
+	if (!discard)
+		fatal("XSync called for unimplemented functionality\n");
+	xcb_flush(display);
+	while ((event = xcb_poll_for_event(display)) != NULL)
+		free(event);
+}
+
+static void fill_key_event(Display *display, Window focus_window, XKeyEvent *event, int type, KeyCode keycode, unsigned state) {
+	event->response_type = type;
+	event->sequence = 0;
+	event->event = focus_window;
+	event->child = XCB_WINDOW_NONE;
+	event->root = xcb_setup_roots_iterator(xcb_get_setup(display)).data->root;
+	event->time = XCB_TIME_CURRENT_TIME;
+	event->event_x = 1;
+	event->event_y = 1;
+	event->root_x = 1;
+	event->root_y = 1;
+	event->state = state;
+	event->detail = keycode;
+	event->same_screen = 1;
+
+}
+#endif
+
+static Display *display;
+static Window focus_window;
+
 #endif
 static sequence_t *head = NULL;
 static FILE *output;
@@ -198,7 +362,6 @@ static bool initX11(void) {
 
 	if ((display = XOpenDisplay(NULL)) == NULL)
 		return false;
-	root = XDefaultRootWindow(display);
 
 	/* Find a key code to reprogram with all the different possible keys. This is
 	   required because not all keys that we want to test are available on all keyboards
@@ -208,59 +371,34 @@ static bool initX11(void) {
 		if (XKeycodeToKeysym(display, reprogram_code, 0) == NoSymbol)
 			break;
 
+	if (reprogram_code == -1) {
+		option_auto_learn = false;
+		fprintf(stderr, "Auto-learn disabled because no reprogrammable keys were found\n");
+		XCloseDisplay(display);
+		return false;
+	}
+
 	XGetInputFocus(display, &focus_window, &revert_to_return);
 	return true;
 }
 
 static void send_event(KeySym keysym, unsigned state) {
-	XEvent event;
-	unsigned int keycode;
+	XKeyEvent event;
 
 	/* If an unused key is available, reprogram that for sending the key stroke to
 	   the terminal. This will allow us to use keys which are not available on the
 	   user's keyboard. */
-	if (reprogram_code == -1 || XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1) != 0)
-		keycode = XKeysymToKeycode(display, keysym);
-	else
-		keycode = reprogram_code;
+	if (XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1) != 0)
+		fatal("Could not reprogram key\n");
 
-	event.xkey.type = KeyPress;
-	event.xkey.serial = 0;
-	event.xkey.send_event = 0;
-	event.xkey.display = display;
-	event.xkey.window = focus_window;
-	event.xkey.subwindow = None;
-	event.xkey.root = root;
-	event.xkey.time = CurrentTime;
-	event.xkey.x = 1;
-	event.xkey.y = 1;
-	event.xkey.x_root = 1;
-	event.xkey.y_root = 1;
-	event.xkey.state = state;
-	event.xkey.keycode = keycode;
-	event.xkey.same_screen = True;
+	fill_key_event(display, focus_window, &event, KeyPress, reprogram_code, state);
 
-	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, &event);
+	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, (XEvent *) &event);
 
-	event.xkey.type = KeyRelease;
-	event.xkey.serial = 0;
-	event.xkey.send_event = 0;
-	event.xkey.display = display;
-	event.xkey.window = focus_window;
-	event.xkey.subwindow = None;
-	event.xkey.root = root;
-	event.xkey.time = CurrentTime;
-	event.xkey.x = 1;
-	event.xkey.y = 1;
-	event.xkey.x_root = 1;
-	event.xkey.y_root = 1;
-	event.xkey.state = state;
-	event.xkey.keycode = keycode;
-	event.xkey.same_screen = True;
+	fill_key_event(display, focus_window, &event, KeyRelease, reprogram_code, state);
 
-	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, &event);
-	while (XPending(display))
-		XNextEvent(display, &event);
+	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, (XEvent *) &event);
+	XSync(display, True);
 }
 #endif
 

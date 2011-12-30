@@ -16,7 +16,7 @@
 CFLAGS=-O2
 
 # Configuration flags and libraries. Include flags here to compile against the
-# (n)curses library
+# libtinfo or (n)curses library
 # If your system does not provide strdup, remove -DHAS_STRDUP
 CONFIGFLAGS=-DHAS_STRDUP
 CONFIGLIBS=
