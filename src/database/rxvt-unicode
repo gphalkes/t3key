@@ -5,10 +5,6 @@
 nokx {
 %enter = rmkx
 %include _kx_nokx
-up = "\e[A"
-left = "\e[D"
-down = "\e[B"
-right = "\e[C"
 # kp_home = home
 # kp_up = up
 # kp_page_up = page_up
@@ -29,10 +25,6 @@ right = "\e[C"
 # kp_page_down+c = page_down+c
 # kp_insert+c = insert+c
 # kp_delete+c = delete+c
-up+m = "\e\e[A"
-left+m = "\e\e[D"
-down+m = "\e\e[B"
-right+m = "\e\e[C"
 kp_div+m = "\e/"
 kp_mul+m = "\e*"
 kp_minus+m = "\e-"
@@ -133,10 +125,6 @@ kx {
 %enter = smkx
 %leave = rmkx
 %include _kx_nokx
-up = "\eOA"
-left = "\eOD"
-down = "\eOB"
-right = "\eOC"
 kp_div = "\eOo"
 kp_mul = "\eOj"
 kp_minus = "\eOm"
@@ -169,10 +157,6 @@ kp_enter = "\eOM"
 # kp_insert+c = kp_insert
 # kp_delete+c = kp_delete
 # kp_enter+c = kp_enter
-up+m = "\e\eOA"
-left+m = "\e\eOD"
-down+m = "\e\eOB"
-right+m = "\e\eOC"
 kp_div+m = "\e\eOo"
 kp_mul+m = "\e\eOj"
 kp_minus+m = "\e\eOm"
@@ -255,6 +239,16 @@ kp_enter+ms = "\e\012"
 # kp_insert+cms = insert+cms
 # kp_delete+cms = delete+cms
 # kp_enter+cms = kp_enter+ms
+
+# Older rxvt-unicode uses the following:
+up = "\eOA" %noticheck
+left = "\eOD" %noticheck
+down = "\eOB" %noticheck
+right = "\eOC" %noticheck
+up+m = "\e\eOA"
+left+m = "\e\eOD"
+down+m = "\e\eOB"
+right+m = "\e\eOC"
 }
 
 _kx_nokx {
@@ -264,6 +258,10 @@ page_up = "\e[5~"
 delete = "\e[3~"
 end = "\e[8~"
 page_down = "\e[6~"
+up = "\e[A"
+left = "\e[D"
+down = "\e[B"
+right = "\e[C"
 backspace = "\177"
 f1 = "\e[11~"
 f2 = "\e[12~"
@@ -352,6 +350,10 @@ page_up+m = "\e\e[5~"
 delete+m = "\e\e[3~"
 end+m = "\e\e[8~"
 page_down+m = "\e\e[6~"
+up+m = "\e\e[A"
+left+m = "\e\e[D"
+down+m = "\e\e[B"
+right+m = "\e\e[C"
 tab+m = "\e\011"
 backspace+m = "\e\177"
 f1+m = "\e\e[11~"
