@@ -26,70 +26,23 @@
 #include <errno.h>
 #include <search.h>
 
-/* #define USE_XLIB */
-
 #ifndef NO_AUTOLEARN
-#ifdef USE_XLIB
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
-#include <X11/extensions/XInput.h>
-#else
-#include <xcb/xcb.h>
-/* Defines copied from X11/keysymdefs.h */
-#define XK_BackSpace                     0xff08  /* Back space, back char */
-#define XK_Tab                           0xff09
-#define XK_Linefeed                      0xff0a  /* Linefeed, LF */
-#define XK_Delete                        0xffff  /* Delete, rubout */
-#define XK_Insert                        0xff63  /* Insert, insert here */
-#define XK_KP_Home                       0xff95
-#define XK_KP_Left                       0xff96
-#define XK_KP_Up                         0xff97
-#define XK_KP_Right                      0xff98
-#define XK_KP_Down                       0xff99
-#define XK_KP_Page_Up                    0xff9a
-#define XK_KP_Page_Down                  0xff9b
-#define XK_KP_End                        0xff9c
-#define XK_KP_Begin                      0xff9d
-#define XK_KP_Insert                     0xff9e
-#define XK_KP_Delete                     0xff9f
-#define XK_KP_Multiply                   0xffaa
-#define XK_KP_Add                        0xffab
-#define XK_KP_Subtract                   0xffad
-#define XK_KP_Divide                     0xffaf
-#define XK_KP_Enter                      0xff8d  /* Enter */
-#define XK_Home                          0xff50
-#define XK_Left                          0xff51  /* Move left, left arrow */
-#define XK_Up                            0xff52  /* Move up, up arrow */
-#define XK_Right                         0xff53  /* Move right, right arrow */
-#define XK_Down                          0xff54  /* Move down, down arrow */
-#define XK_Page_Up                       0xff55
-#define XK_Page_Down                     0xff56
-#define XK_End                           0xff57  /* EOL */
-#define XK_a                             0x0061
-#define XK_F1                            0xffbe
-
-#define ControlMask XCB_KEY_BUT_MASK_CONTROL
-#define ShiftMask XCB_KEY_BUT_MASK_SHIFT
-#define Mod1Mask XCB_KEY_BUT_MASK_MOD_1
-#endif
-#define X_KEY_SYM(_x) _x
+#include "x11.h"
 #else
 #define X_KEY_SYM(_x) 0
 #endif
 
 /* These must be below the X11 includes, because they define names that cause
    errors in the X11 XInput header file. */
+/* Curses headers have bool type. */
 #include <curses.h>
 #include <term.h>
-
 
 #include "optionMacros.h"
 
 #define MAX_SEQUENCE 50
 #define ESC 27
 #define KEY_TIMEOUT 10
-
-/* #define TESTING */
 
 /* FIXME: test modifier-letter as well */
 
@@ -178,7 +131,8 @@ struct map_list_t {
 	map_t *map;
 };
 
-static bool option_auto_learn;
+/* Use int, so we can use it safely in x11.c, which does not have the curses bool type. */
+int option_auto_learn;
 static bool option_no_abort_auto;
 static const char *option_output;
 static char **blocked_keys;
@@ -188,165 +142,18 @@ static struct termios saved;
 static fd_set inset;
 static int maxfkeys = -1;
 
-static void fatal(const char *fmt, ...);
 #ifndef NO_AUTOLEARN
-static int reprogram_code = -1;
-
-#ifdef USE_XLIB
-static void fill_key_event(Display *display, Window focus_window, XKeyEvent *event, int type, KeyCode keycode, unsigned state) {
-	event->type = type;
-	event->serial = 0;
-	event->send_event = 0;
-	event->display = display;
-	event->window = focus_window;
-	event->subwindow = None;
-	event->root = DefaultRootWindow(display);
-	event->time = CurrentTime;
-	event->x = 1;
-	event->y = 1;
-	event->x_root = 1;
-	event->y_root = 1;
-	event->state = state;
-	event->keycode = keycode;
-	event->same_screen = True;
-}
-#else
-typedef xcb_connection_t Display;
-typedef xcb_window_t Window;
-typedef xcb_keysym_t KeySym;
-typedef xcb_keycode_t KeyCode;
-typedef xcb_generic_event_t XEvent;
-typedef xcb_key_press_event_t XKeyEvent;
-
-#define NoSymbol XCB_NO_SYMBOL
-#define KeyPressMask XCB_EVENT_MASK_KEY_PRESS
-#define KeyReleaseMask XCB_EVENT_MASK_KEY_RELEASE
-#define KeyPress XCB_KEY_PRESS
-#define KeyRelease XCB_KEY_RELEASE
-#define PointerRoot XCB_INPUT_FOCUS_POINTER_ROOT
-#define FollowKeyboard XCB_INPUT_FOCUS_FOLLOW_KEYBOARD
-
-#define DefaultRootWindow(display) (xcb_setup_roots_iterator(xcb_get_setup(display)).data->root)
-
-typedef enum { False, True } Bool;
-
-static Display *XOpenDisplay(const char *name) {
-	return xcb_connect(name, NULL);
-}
-
-static void XCloseDisplay(Display *display) {
-	xcb_disconnect(display);
-}
-
-static KeySym XKeycodeToKeysym(Display *display, KeyCode keycode, int index) {
-	xcb_get_keyboard_mapping_cookie_t cookie;
-	xcb_get_keyboard_mapping_reply_t *reply;
-	xcb_keysym_t result = NoSymbol;
-
-	cookie = xcb_get_keyboard_mapping(display, keycode, 1);
-	reply = xcb_get_keyboard_mapping_reply(display, cookie, NULL);
-
-	if (reply == NULL)
-		fatal("Error in X11 communication\n");
-
-	result = xcb_get_keyboard_mapping_keysyms(reply)[index];
-	free(reply);
-	return result;
-}
-
-static void XGetInputFocus(Display *display, Window *focus, int *revert_to_return) {
-	xcb_get_input_focus_cookie_t cookie;
-	xcb_get_input_focus_reply_t *reply;
-
-	cookie = xcb_get_input_focus(display);
- 	reply = xcb_get_input_focus_reply(display, cookie, NULL);
-
-	if (reply == NULL)
-		fatal("Error in X11 communication\n");
-
-	*focus = reply->focus;
-	*revert_to_return = reply->revert_to;
-	free(reply);
-}
-
-static int XChangeKeyboardMapping(Display *display, int first_keycode, int keysyms_per_keycode,
-		KeySym *keysyms, int num_codes)
-{
-	xcb_void_cookie_t cookie = xcb_change_keyboard_mapping_checked(display, num_codes, first_keycode, keysyms_per_keycode, keysyms);
-	xcb_generic_error_t *error = xcb_request_check(display, cookie);
-	if (error != NULL)
-		fatal("Error in X11 communication\n");
-	return 0;
-}
-
-static void XSendEvent(Display *display, Window w, Bool propagate, long event_mask, XEvent *event_send) {
-	xcb_void_cookie_t cookie = xcb_send_event_checked (display, propagate, w, event_mask, (const char *) event_send);
-	xcb_generic_error_t *error = xcb_request_check(display, cookie);
-	if (error != NULL)
-		fatal("Error in X11 communication\n");
-}
-
-static void XSync(Display *display, bool discard) {
-	xcb_generic_event_t *event;
-
-	if (!discard)
-		fatal("XSync called for unimplemented functionality\n");
-	xcb_flush(display);
-	while ((event = xcb_poll_for_event(display)) != NULL)
-		free(event);
-}
-
-static void XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return,
-		int *root_x_return, int *root_y_return, int *win_x_return, int *win_y_return, unsigned int *mask_return)
-{
-	xcb_query_pointer_cookie_t cookie = xcb_query_pointer(display, w);
-	xcb_query_pointer_reply_t *reply = xcb_query_pointer_reply(display, cookie, NULL);
-
-	if (reply == NULL)
-		fatal("Error in X11 communication\n");
-
-	*root_return = reply->root;
-	*child_return = reply->child;
-	*root_x_return = reply->root_x;
-	*root_y_return = reply->root_y;
-	*win_x_return = reply->win_x;
-	*win_y_return = reply->win_y;
-	*mask_return = reply->mask;
-	free(reply);
-}
-
-static void fill_key_event(Display *display, Window focus_window, XKeyEvent *event, int type, KeyCode keycode, unsigned state) {
-	event->response_type = type;
-	event->sequence = 0;
-	event->event = focus_window;
-	event->child = XCB_WINDOW_NONE;
-	event->root = DefaultRootWindow(display);
-	event->time = XCB_TIME_CURRENT_TIME;
-	event->event_x = 1;
-	event->event_y = 1;
-	event->root_x = 1;
-	event->root_y = 1;
-	event->state = state;
-	event->detail = keycode;
-	event->same_screen = 1;
-
-}
-#endif
-
-static Display *display;
-static Window focus_window;
-
+int reprogram_code = -1;
 #endif
 static sequence_t *head = NULL;
 static FILE *output;
-
 
 
 /** Alert the user of a fatal error and quit.
     @param fmt The format string for the message. See fprintf(3) for details.
     @param ... The arguments for printing.
 */
-static void fatal(const char *fmt, ...) {
+void fatal(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
@@ -383,62 +190,6 @@ static void restore_terminal(void) {
 		printf("%s", rmkx);
 	tcsetattr(STDOUT_FILENO, TCSADRAIN, &saved);
 }
-
-#ifndef NO_AUTOLEARN
-static bool initX11(void) {
-	int revert_to_return;
-
-	if ((display = XOpenDisplay(NULL)) == NULL)
-		return false;
-
-	/* Find a key code to reprogram with all the different possible keys. This is
-	   required because not all keys that we want to test are available on all keyboards
-	   (e.g. the function keys up to F36). If we find a key that is not used, we
-	   can temporarily reprogram that key to the key we need for each key stroke. */
-	for (reprogram_code = 255; reprogram_code >= 0; reprogram_code--)
-		if (XKeycodeToKeysym(display, reprogram_code, 0) == NoSymbol)
-			break;
-
-	if (reprogram_code == -1)
-		fatal("Can not use auto-learn because no reprogrammable keys were found\n");
-
-	XGetInputFocus(display, &focus_window, &revert_to_return);
-
-	if (focus_window == PointerRoot) {
-		Window root, child;
-		int root_x, root_y, win_x, win_y;
-		unsigned int mask;
-		XQueryPointer(display, DefaultRootWindow(display), &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
-		focus_window = child;
-	}
-
-	if (focus_window == PointerRoot || focus_window == FollowKeyboard) {
-		option_auto_learn = false;
-		fatal("Auto-learn disabled because the current focus window could not be determined\n");
-		XCloseDisplay(display);
-	}
-	return true;
-}
-
-static void send_event(KeySym keysym, unsigned state) {
-	XKeyEvent event;
-
-	/* If an unused key is available, reprogram that for sending the key stroke to
-	   the terminal. This will allow us to use keys which are not available on the
-	   user's keyboard. */
-	if (XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1) != 0)
-		fatal("Could not reprogram key\n");
-
-	fill_key_event(display, focus_window, &event, KeyPress, reprogram_code, state);
-
-	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, (XEvent *) &event);
-
-	fill_key_event(display, focus_window, &event, KeyRelease, reprogram_code, state);
-
-	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, (XEvent *) &event);
-	XSync(display, True);
-}
-#endif
 
 static void init_terminal(void) {
 	char *env;

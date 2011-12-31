@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SOURCES.t3learnkeys := t3learnkeys.c
+SOURCES.t3learnkeys := t3learnkeys.c x11.c
 LDLIBS.t3learnkeys := -lcurses
 
 TARGETS := t3learnkeys
@@ -23,7 +23,7 @@ include ../../../makesys/rules.mk
 #================================================#
 CFLAGS += -I..
 CFLAGS += -DHAS_SELECT_H
-#~ CFLAGS += -DNO_AUTOLEARN
+CFLAGS += -DNO_AUTOLEARN
 
 #~ CFLAGS += -DUSE_XLIB
 #~ CFLAGS += `pkg-config --cflags x11`
