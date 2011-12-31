@@ -17,7 +17,6 @@
 #ifdef USE_XLIB
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
-#include <X11/extensions/XInput.h>
 #else
 #include <xcb/xcb.h>
 /* Defines copied from X11/keysymdefs.h */
@@ -71,7 +70,6 @@ typedef enum { False, True } Bool;
 #define KeyPress XCB_KEY_PRESS
 #define KeyRelease XCB_KEY_RELEASE
 #define PointerRoot XCB_INPUT_FOCUS_POINTER_ROOT
-#define FollowKeyboard XCB_INPUT_FOCUS_FOLLOW_KEYBOARD
 
 #define DefaultRootWindow(display) (xcb_setup_roots_iterator(xcb_get_setup(display)).data->root)
 

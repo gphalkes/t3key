@@ -173,7 +173,7 @@ Bool initX11(void) {
 		focus_window = child;
 	}
 
-	if (focus_window == PointerRoot || focus_window == FollowKeyboard) {
+	if (focus_window == PointerRoot) {
 		option_auto_learn = False;
 		fatal("Auto-learn disabled because the current focus window could not be determined\n");
 		XCloseDisplay(display);

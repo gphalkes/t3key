@@ -70,6 +70,6 @@ dist-clean: clean
 
 src/libt3key.la: $(OBJECTS_LIBT3KEY)
 	$(SILENTLDLT) $(LIBTOOL) $(SILENCELT) --mode=link --tag=CC $(CC) -shared -version-info <VERSIONINFO> \
-		$(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_LIBT3KEY) $(LDLIBS) $(GETTEXTLIBS)
+		$(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_LIBT3KEY) $(LDLIBS) $(GETTEXTLIBS) \
 		$(CONFIGLIBS) -rpath $(libdir)
 
