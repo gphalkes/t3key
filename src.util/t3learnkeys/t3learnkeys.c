@@ -24,8 +24,6 @@
 #endif
 #include <unistd.h>
 #include <errno.h>
-#include <curses.h>
-#include <term.h>
 #include <search.h>
 
 /* #define USE_XLIB */
@@ -34,6 +32,7 @@
 #ifdef USE_XLIB
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#include <X11/extensions/XInput.h>
 #else
 #include <xcb/xcb.h>
 /* Defines copied from X11/keysymdefs.h */
@@ -77,6 +76,12 @@
 #else
 #define X_KEY_SYM(_x) 0
 #endif
+
+/* These must be below the X11 includes, because they define names that cause
+   errors in the X11 XInput header file. */
+#include <curses.h>
+#include <term.h>
+
 
 #include "optionMacros.h"
 
@@ -218,6 +223,10 @@ typedef xcb_key_press_event_t XKeyEvent;
 #define KeyReleaseMask XCB_EVENT_MASK_KEY_RELEASE
 #define KeyPress XCB_KEY_PRESS
 #define KeyRelease XCB_KEY_RELEASE
+#define PointerRoot XCB_INPUT_FOCUS_POINTER_ROOT
+#define FollowKeyboard XCB_INPUT_FOCUS_FOLLOW_KEYBOARD
+
+#define DefaultRootWindow(display) (xcb_setup_roots_iterator(xcb_get_setup(display)).data->root)
 
 typedef enum { False, True } Bool;
 
@@ -287,12 +296,31 @@ static void XSync(Display *display, bool discard) {
 		free(event);
 }
 
+static void XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return,
+		int *root_x_return, int *root_y_return, int *win_x_return, int *win_y_return, unsigned int *mask_return)
+{
+	xcb_query_pointer_cookie_t cookie = xcb_query_pointer(display, w);
+	xcb_query_pointer_reply_t *reply = xcb_query_pointer_reply(display, cookie, NULL);
+
+	if (reply == NULL)
+		fatal("Error in X11 communication\n");
+
+	*root_return = reply->root;
+	*child_return = reply->child;
+	*root_x_return = reply->root_x;
+	*root_y_return = reply->root_y;
+	*win_x_return = reply->win_x;
+	*win_y_return = reply->win_y;
+	*mask_return = reply->mask;
+	free(reply);
+}
+
 static void fill_key_event(Display *display, Window focus_window, XKeyEvent *event, int type, KeyCode keycode, unsigned state) {
 	event->response_type = type;
 	event->sequence = 0;
 	event->event = focus_window;
 	event->child = XCB_WINDOW_NONE;
-	event->root = xcb_setup_roots_iterator(xcb_get_setup(display)).data->root;
+	event->root = DefaultRootWindow(display);
 	event->time = XCB_TIME_CURRENT_TIME;
 	event->event_x = 1;
 	event->event_y = 1;
@@ -371,14 +399,24 @@ static bool initX11(void) {
 		if (XKeycodeToKeysym(display, reprogram_code, 0) == NoSymbol)
 			break;
 
-	if (reprogram_code == -1) {
-		option_auto_learn = false;
-		fprintf(stderr, "Auto-learn disabled because no reprogrammable keys were found\n");
-		XCloseDisplay(display);
-		return false;
-	}
+	if (reprogram_code == -1)
+		fatal("Can not use auto-learn because no reprogrammable keys were found\n");
 
 	XGetInputFocus(display, &focus_window, &revert_to_return);
+
+	if (focus_window == PointerRoot) {
+		Window root, child;
+		int root_x, root_y, win_x, win_y;
+		unsigned int mask;
+		XQueryPointer(display, DefaultRootWindow(display), &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
+		focus_window = child;
+	}
+
+	if (focus_window == PointerRoot || focus_window == FollowKeyboard) {
+		option_auto_learn = false;
+		fatal("Auto-learn disabled because the current focus window could not be determined\n");
+		XCloseDisplay(display);
+	}
 	return true;
 }
 
