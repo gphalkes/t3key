@@ -109,10 +109,23 @@ EOF
 			test_select "select in <unistd.h>" "sys/time.h" "sys/types.h" "unistd.h" || error "!! Can not find required select function. Try configuring with --without-t3learnkeys."
 		fi
 
-		basic_x11 || {
+		clean_c
+		cat > .config.c <<EOF
+#include <stdlib.h>
+#include <xcb/xcb.h>
+
+int main(int argc, char *argv[]) {
+	xcb_connection_t *c = xcb_connect(NULL, NULL);
+}
+EOF
+		if pkgconfig xcb X11 test_link ; then
+			:
+		elif basic_x11 ; then
+			X11_FLAGS="${X11_FLAGS} -DUSE_XLIB"
+		else
 			check_message_result "!! Could not find X11 library. t3learnkeys will not provide the --auto-learn option."
 			X11_FLAGS="-DNO_AUTOLEARN"
-		}
+		fi
 	else
 		MAKEFILES="Makefile mk/libt3key mk/t3keyc"
 		cat > mk/t3learnkeys <<EOF
@@ -179,5 +192,7 @@ EOF
 	PKGCONFIG_LIBS="-lt3key"
 
 	gen_pkgconfig libt3key
-	create_makefile "CONFIGFLAGS=${CONFIGFLAGS} ${CURSES_FLAGS}" "CONFIGLIBS=${CONFIGLIBS} ${CURSES_LIBS}" "X11_FLAGS=${X11_FLAGS}" "X11_LIBS=${X11_LIBS}"
+	create_makefile "CONFIGFLAGS=${CONFIGFLAGS} ${CURSES_FLAGS}" \
+		"CONFIGLIBS=${CONFIGLIBS} ${CURSES_LIBS}" "X11_FLAGS=${X11_FLAGS}" \
+		"X11_LIBS=${X11_LIBS}"
 }

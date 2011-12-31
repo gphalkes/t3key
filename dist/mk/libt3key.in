@@ -64,8 +64,12 @@ clean:
 dist-clean: clean
 
 .c.lo:
-	$(SILENTCCLT) $(LIBTOOL) $(SILENCELT) --mode=compile --tag=CC $(CC) -shared $(CFLAGS) -Isrc $(CONFIGFLAGS) $(GETTEXTFLAGS) -DT3_KEY_BUILD_DSO -DLOCALEDIR=\"$(LOCALEDIR)\" -DDB_DIRECTORY=\"$(datadir)/libt3key<LIBVERSION>\" -c -o $@ $<
+	$(SILENTCCLT) $(LIBTOOL) $(SILENCELT) --mode=compile --tag=CC $(CC) -shared $(CFLAGS) -Isrc \
+		$(CONFIGFLAGS) $(GETTEXTFLAGS) -DT3_KEY_BUILD_DSO -DLOCALEDIR=\"$(LOCALEDIR)\" \
+		-DDB_DIRECTORY=\"$(datadir)/libt3key<LIBVERSION>\" -c -o $@ $<
 
 src/libt3key.la: $(OBJECTS_LIBT3KEY)
-	$(SILENTLDLT) $(LIBTOOL) $(SILENCELT) --mode=link --tag=CC $(CC) -shared -version-info <VERSIONINFO> $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_LIBT3KEY) $(LDLIBS) $(GETTEXTLIBS) $(CONFIGLIBS) -rpath $(libdir)
+	$(SILENTLDLT) $(LIBTOOL) $(SILENCELT) --mode=link --tag=CC $(CC) -shared -version-info <VERSIONINFO> \
+		$(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_LIBT3KEY) $(LDLIBS) $(GETTEXTLIBS)
+		$(CONFIGLIBS) -rpath $(libdir)
 

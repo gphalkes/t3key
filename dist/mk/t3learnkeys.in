@@ -15,15 +15,16 @@
 # C-compiler flags
 CFLAGS=-O2
 
-# Configuration flags and libraries. Include flags here to compile against the
-# libtinfo or (n)curses library
+# Configuration flags and libraries. Add -DNO_AUTOLEARN if you do not wish to
+# compile the auto-learn option which requires XCB or Xlib. Include flags here
+# to compile against the libtinfo or (n)curses library
 CONFIGFLAGS=
-CONFIGLIBS=-lcurses
+CONFIGLIBS=
 
-# Flags and libraries to compile against libX11. Use -DNO_AUTOLEARN in X11_FLAGS
-# if X11 is not available
+# Flags and libraries to compile against XCB or Xlib. To compile against Xlib,
+# also add -DUSE_XLIB
 X11_FLAGS=
-X11_LIBS=-lX11
+X11_LIBS=
 
 # Installation prefix
 prefix=/usr/local

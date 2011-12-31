@@ -16,9 +16,9 @@
 CFLAGS=-O2
 
 # Configuration flags and libraries. Include flags here to compile against the
-# (n)curses library
+# (n)curses library.
 CONFIGFLAGS=
-CONFIGLIBS=-lcurses
+CONFIGLIBS=
 
 # Installation prefix
 prefix=/usr/local

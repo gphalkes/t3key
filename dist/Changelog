@@ -1,5 +1,9 @@
 Version 0.1.4:
-	<Build system changes only>
+	New features:
+	- Allow building with XCB instead of Xlib.
+
+	Bug fixes:
+	- Updated rxvt-unicode definition.
 
 Version 0.1.3:
 	New features:
