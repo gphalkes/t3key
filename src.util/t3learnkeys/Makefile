@@ -23,7 +23,7 @@ include ../../../makesys/rules.mk
 #================================================#
 CFLAGS += -I..
 CFLAGS += -DHAS_SELECT_H
-CFLAGS += -DNO_AUTOLEARN
+#~ CFLAGS += -DNO_AUTOLEARN
 
 #~ CFLAGS += -DUSE_XLIB
 #~ CFLAGS += `pkg-config --cflags x11`

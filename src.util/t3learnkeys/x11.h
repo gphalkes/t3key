@@ -52,9 +52,16 @@
 #define XK_a                             0x0061
 #define XK_F1                            0xffbe
 
-#define ControlMask XCB_KEY_BUT_MASK_CONTROL
-#define ShiftMask XCB_KEY_BUT_MASK_SHIFT
-#define Mod1Mask XCB_KEY_BUT_MASK_MOD_1
+#define XK_Shift_L                       0xffe1  /* Left shift */
+#define XK_Control_L                     0xffe3  /* Left control */
+/*FIXME: figure out which of these we need */
+#define XK_Meta_L                        0xffe7  /* Left meta */
+#define XK_Alt_L                         0xffe9  /* Left alt */
+
+
+#define ControlMask XCB_MOD_MASK_CONTROL
+#define ShiftMask XCB_MOD_MASK_SHIFT
+#define Mod1Mask XCB_MOD_MASK_1
 
 typedef xcb_connection_t Display;
 typedef xcb_window_t Window;

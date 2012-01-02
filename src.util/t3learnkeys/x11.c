@@ -21,7 +21,7 @@ void fatal(const char *fmt, ...);
 
 Display *display;
 Window focus_window;
-extern int reprogram_code;
+extern int reprogram_code[4];
 extern int option_auto_learn;
 
 #ifdef USE_XLIB
@@ -148,6 +148,9 @@ static void fill_key_event(Display *display, Window focus_window, XKeyEvent *eve
 
 Bool initX11(void) {
 	int revert_to_return;
+	int keycode;
+	int count = 0;
+	KeySym keysym;
 
 	if ((display = XOpenDisplay(NULL)) == NULL)
 		return False;
@@ -156,12 +159,27 @@ Bool initX11(void) {
 	   required because not all keys that we want to test are available on all keyboards
 	   (e.g. the function keys up to F36). If we find a key that is not used, we
 	   can temporarily reprogram that key to the key we need for each key stroke. */
-	for (reprogram_code = 255; reprogram_code >= 0; reprogram_code--)
-		if (XKeycodeToKeysym(display, reprogram_code, 0) == NoSymbol)
-			break;
+	for (keycode = 255; keycode >= 0; keycode--) {
+		if (XKeycodeToKeysym(display, keycode, 0) == NoSymbol) {
+			reprogram_code[count++] = keycode;
+			if (count == 4)
+				break;
+		}
+	}
 
-	if (reprogram_code == -1)
-		fatal("Can not use auto-learn because no reprogrammable keys were found\n");
+	if (count != 4)
+		fatal("Can not use auto-learn because not enough reprogrammable keys were found\n");
+
+	keysym = XK_Shift_L;
+	if (XChangeKeyboardMapping(display, reprogram_code[0], 1, &keysym, 1) != 0)
+		fatal("Could not reprogram key\n");
+	keysym = XK_Control_L;
+	if (XChangeKeyboardMapping(display, reprogram_code[1], 1, &keysym, 1) != 0)
+		fatal("Could not reprogram key\n");
+	keysym = XK_Meta_L;
+	if (XChangeKeyboardMapping(display, reprogram_code[2], 1, &keysym, 1) != 0)
+		fatal("Could not reprogram key\n");
+
 
 	XGetInputFocus(display, &focus_window, &revert_to_return);
 
@@ -181,22 +199,54 @@ Bool initX11(void) {
 	return True;
 }
 
-void send_event(KeySym keysym, unsigned state) {
+static void send_key(int reprogram_idx, unsigned int state, Bool press) {
 	XKeyEvent event;
 
-	/* If an unused key is available, reprogram that for sending the key stroke to
-	   the terminal. This will allow us to use keys which are not available on the
-	   user's keyboard. */
-	if (XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1) != 0)
+	fill_key_event(display, focus_window, &event, press ? KeyPress : KeyRelease, reprogram_code[reprogram_idx], state);
+
+	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, (XEvent *) &event);
+}
+
+void send_event(KeySym keysym, unsigned int state) {
+	unsigned int current_state = 0;
+
+	if (state & ShiftMask) {
+		send_key(0, current_state, True);
+		current_state |= ShiftMask;
+	}
+
+	if (state & ControlMask) {
+		send_key(1, current_state, True);
+		current_state |= ControlMask;
+	}
+
+	if (state & Mod1Mask) {
+		send_key(2, current_state, True);
+		current_state |= Mod1Mask;
+	}
+
+	if (XChangeKeyboardMapping(display, reprogram_code[3], 1, &keysym, 1) != 0)
 		fatal("Could not reprogram key\n");
 
-	fill_key_event(display, focus_window, &event, KeyPress, reprogram_code, state);
+	send_key(3, state, True);
+	XSync(display, True);
+	send_key(3, state, False);
 
-	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, (XEvent *) &event);
+	if (state & Mod1Mask) {
+		send_key(2, current_state, False);
+		current_state &= ~Mod1Mask;
+	}
 
-	fill_key_event(display, focus_window, &event, KeyRelease, reprogram_code, state);
+	if (state & ControlMask) {
+		send_key(1, current_state, False);
+		current_state &= ~ControlMask;
+	}
 
-	XSendEvent(display, focus_window, True, KeyPressMask | KeyReleaseMask, (XEvent *) &event);
+	if (state & ShiftMask) {
+		send_key(0, current_state, False);
+		current_state &= ~ShiftMask;
+	}
+
 	XSync(display, True);
 }
 #endif /* -NO_AUTOLEARN */

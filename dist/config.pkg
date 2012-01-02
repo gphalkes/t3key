@@ -115,7 +115,11 @@ EOF
 #include <xcb/xcb.h>
 
 int main(int argc, char *argv[]) {
+	int value;
 	xcb_connection_t *c = xcb_connect(NULL, NULL);
+	value = XCB_MOD_MASK_CONTROL;
+	value = XCB_MOD_MASK_SHIFT;
+	value = XCB_MOD_MASK_1;
 }
 EOF
 		if pkgconfig xcb X11 test_link ; then
@@ -168,12 +172,12 @@ EOF
 			if test_link "ncurses library in -lncurses" "TESTLIBS=-lncurses" ; then
 				CURSES_LIBS="-lncurses"
 			else
-				error "!! Can not find curses/tinfo library. The curses/tinfo library is required to compile libt3window."
+				error "!! Can not find curses/tinfo library. The curses/tinfo library is required to compile libt3key."
 			fi
 		fi
 		PKGCONFIG_LIBS_PRIVATE="${PKGCONFIG_LIBS_PRIVATE} ${CURSES_LIBS}"
 	else
-		error "!! Can not find curses/tinfo library. The curses/tinfo library is required to compile libt3window."
+		error "!! Can not find curses/tinfo library. The curses/tinfo library is required to compile libt3key."
 	fi
 
 	clean_c

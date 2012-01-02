@@ -143,7 +143,7 @@ static fd_set inset;
 static int maxfkeys = -1;
 
 #ifndef NO_AUTOLEARN
-int reprogram_code = -1;
+int reprogram_code[4];
 #endif
 static sequence_t *head = NULL;
 static FILE *output;
@@ -281,7 +281,7 @@ static sequence_t *get_sequence(void) {
 	int c, idx = 0;
 
 	do {
-		c = get_keychar(option_auto_learn ? 50 : -1);
+		c = get_keychar(option_auto_learn ? 150 : -1);
 		if (option_auto_learn && c < 0)
 			return NULL;
 
@@ -749,6 +749,19 @@ PARSE_FUNCTION(parse_args)
 	END_OPTIONS
 END_FUNCTION
 
+#ifndef NO_AUTOLEARN
+static void cleanup_keys(void) {
+	if (option_auto_learn && reprogram_code[0] != -1) {
+		/* Clear out the mapping we made. */
+		KeySym keysym = NoSymbol;
+		int i;
+		for (i = 0; i < 4; i++)
+			XChangeKeyboardMapping(display, reprogram_code[i], 1, &keysym, 1);
+		XCloseDisplay(display);
+	}
+}
+#endif
+
 
 int main(int argc, char *argv[]) {
 	char *smkx = NULL, *rmkx = NULL;
@@ -766,6 +779,7 @@ int main(int argc, char *argv[]) {
 #ifndef NO_AUTOLEARN
 	if (option_auto_learn && !initX11())
 		fatal("Failed to initialize X11 connection. Try running without -a/--auto-learn.\n");
+	atexit(cleanup_keys);
 #endif
 
 	if (option_auto_learn) {
@@ -899,13 +913,5 @@ int main(int argc, char *argv[]) {
 	fflush(output);
 	fclose(output);
 
-#ifndef NO_AUTOLEARN
-	if (option_auto_learn && reprogram_code != -1) {
-		/* Clear out the mapping we made. */
-		KeySym keysym = NoSymbol;
-		XChangeKeyboardMapping(display, reprogram_code, 1, &keysym, 1);
-		XCloseDisplay(display);
-	}
-#endif
 	return EXIT_SUCCESS;
 }
