@@ -1,3 +1,16 @@
+# Copyright (C) 2012 G.P. Halkes
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 3, as
+# published by the Free Software Foundation.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 types {
 	map {
 		type = "section"
@@ -15,12 +28,12 @@ types {
 
 	use {
 		type = "string"
-		%constraint = "/maps/[%]"
+		%constraint = "{undefined map in 'use'} /maps/[%]"
 	}
 
 	shiftfn-int {
 		type = "int"
-		%constraint = "% > 0 & % < 256"
+		%constraint = "{'shiftfn' values must be between 1 and 255} % > 0 & % < 256"
 	}
 }
 
@@ -31,7 +44,7 @@ allowed-keys {
 	shiftfn {
 		type = "list"
 		item-type = "shiftfn-int"
-		%constraint = "# = 3"
+		%constraint = "{'shiftfn' expects a list of 3 integers} # = 3"
 	}
 	xterm_mouse { type = "bool" }
 
@@ -45,9 +58,9 @@ allowed-keys {
 		item-type = "map"
 	}
 }
-%constraint = "format = 1"
-%constraint = "best & maps"
-%constraint = "/maps/[best]"
+%constraint = "{format must be one} format = 1"
+%constraint = "{both 'best' key and 'maps' section must be present} best & maps"
+%constraint = "{'best' must name an existing map} /maps/[best]"
 
 # Further checks which can not be implemented with constraints:
 # - only the first occurence of a sequence is used

@@ -193,7 +193,8 @@ static t3_config_t *load_map_config(const char *term, int *error) {
 	const char *path[3] = { NULL, DB_DIRECTORY, NULL };
 	char *home_env;
 	t3_config_error_t config_error;
-	t3_config_opts_t opts;
+/* For now, the include mechanism is disabled. */
+/* 	t3_config_opts_t opts; */
 	t3_config_t *map_config = NULL;
 	t3_config_schema_t *schema = NULL;
 	FILE *input = NULL;
@@ -212,12 +213,14 @@ static t3_config_t *load_map_config(const char *term, int *error) {
 
 	if ((input = t3_config_open_from_path(path[0] == NULL ? path + 1 : path, term, T3_CONFIG_CLEAN_NAME)) == NULL)
 		RETURN_ERROR(T3_ERR_ERRNO);
-
+/*
 	opts.flags = T3_CONFIG_INCLUDE_DFLT;
 	opts.include_callback.dflt.flags = T3_CONFIG_CLEAN_NAME;
 	opts.include_callback.dflt.path = path + 1;
 
 	if ((map_config = t3_config_read_file(input, &config_error, &opts)) == NULL)
+*/
+	if ((map_config = t3_config_read_file(input, &config_error, NULL)) == NULL)
 		RETURN_ERROR(config_error.error);
 
 	if ((schema = t3_config_read_schema_buffer(map_schema, sizeof(map_schema), &config_error, NULL)) == NULL)

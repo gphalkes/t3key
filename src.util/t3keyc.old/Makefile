@@ -1,4 +1,4 @@
-# Copyright (C) 2012 G.P. Halkes
+# Copyright (C) 2010 G.P. Halkes
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3, as
 # published by the Free Software Foundation.
@@ -11,7 +11,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SOURCES.t3keyc := t3keyc.c
+SOURCES.t3keyc := t3keyc.c grammar.g lex.l
+LDLIBS.t3keyc := -lcurses
+CFLAGS.lex := -Wno-shadow -Wno-switch-default -Wno-unused
+
+DEPS.grammar.g := lex.l t3keyc.c
 
 TARGETS := t3keyc
 
@@ -20,21 +24,14 @@ TARGETS := t3keyc
 #================================================#
 include ../../../makesys/rules.mk
 #================================================#
-CFLAGS += -I. -I../../src -I.objects -I.. -I../../src/.objects
-
-LDFLAGS += -Lt3config/.libs
-LDLIBS += -lcurses
-LDLIBS += -lt3config
-
-links:
-	@[ -L t3config ] || ln -s ../../../config/src t3config
+CFLAGS += -I. -I../../src -I.objects -I..
+FLFLAGS += --never-interactive --nounistd
 
 .objects/mappings.c: ../../src/key.c
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`
 	$(_VERBOSE_GEN) { echo "/* Generated from src/key.c */" ; sed -r '1,\%/\*START MAPPINGS\*/%d;\%/\*END MAPPINGS\*/%,$$d' $< ; } > $@
 
 .objects/t3keyc.o: .objects/mappings.c
-.objects/t3keyc.o: ../../src/.objects/map.bytes
 
-../../src/.objects/map.bytes: ../../src/map.schema
-	$(MAKE) -C ../../src .objects/map.bytes
+.PHONY: library
+

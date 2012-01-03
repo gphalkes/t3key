@@ -1,3 +1,4 @@
+format = 1
 best = "nokx"
 
 shiftfn = ( 1, 10, 11 )

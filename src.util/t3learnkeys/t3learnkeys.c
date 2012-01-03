@@ -135,6 +135,7 @@ struct map_list_t {
 int option_auto_learn;
 static bool option_no_abort_auto;
 static const char *option_output;
+static int option_no_duplicates;
 static char **blocked_keys;
 static size_t blocked_keys_fill;
 
@@ -431,8 +432,10 @@ static void write_keys(sequence_t *keys) {
 
 	for (current = keys; current != NULL; current = current->next) {
 		if (current->duplicate != NULL) {
-			fprintf(output, "\t\t# %s%s = %s%s\n", current->keynames->identifier, current->modifiers->identifier,
-				current->duplicate->keynames->identifier, current->duplicate->modifiers->identifier);
+			if (!option_no_duplicates) {
+				fprintf(output, "\t\t# %s%s = %s%s\n", current->keynames->identifier, current->modifiers->identifier,
+					current->duplicate->keynames->identifier, current->duplicate->modifiers->identifier);
+			}
 		} else {
 			fprintf(output, "\t\t%s%s = \"%s\"\n", current->keynames->identifier, current->modifiers->identifier,
 				current->seq);
@@ -548,7 +551,7 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
 		map_list_t *collected;
 		for (collected = maps->collected_from; collected != NULL; collected = collected->next) {
 			if (collected->map == mode) {
-				fprintf(output, "\t\tuse = \"");
+				fprintf(output, "\t\t%%use = \"");
 				for (collected = maps->collected_from; collected != NULL; collected = collected->next)
 					fprintf(output, "_%s", collected->map->name);
 				fprintf(output, "\"\n");
@@ -731,6 +734,7 @@ PARSE_FUNCTION(parse_args)
 				"  -A,--dont-abort-auto-learn  Do abort on C-c when auto-learning\n"
 #endif
 				"  -b<keys>,--block-keys=<keys>  Do not ask for keys described in <keys>\n"
+				"  -d,--no-duplicates          Do not print comments for duplicates\n"
 				"  -o<name>,--output=<name>    Write output to <name> (default: $TERM)\n"
 			);
 			exit(EXIT_SUCCESS);

@@ -81,10 +81,12 @@ install: all
 	$(INSTALL) -d $(_bindir)
 	$(INSTALL) -s src.util/t3keyc/t3keyc $(_bindir)
 	$(INSTALL) -d $(_datadir)/libt3key<LIBVERSION>
-	find src/database -type f | while read FILE ; do install -m0644 "$$FILE" $(_datadir)/libt3key<LIBVERSION> ; done
+	find src/database -type f | while read FILE ; do install -m0644 "$$FILE" $(_datadir)/libt3key<LIBVERSION> ; \
+		$(_bindir)/t3keyc -l  $(_datadir)/libt3key<LIBVERSION>/"$${FILE##*/}" done
 	$(INSTALL) -d $(_mandir)/man1
 	$(INSTALL) -m0644 man/t3keyc.1 $(_mandir)/man1
-	if [ -f src.util/t3learnkeys/t3learnkeys ] ; then $(INSTALL) -s src.util/t3learnkeys/t3learnkeys $(_bindir) ; $(INSTALL) -m0644 man/t3learnkeys.1 $(_mandir)/man1 ; fi
+	if [ -f src.util/t3learnkeys/t3learnkeys ] ; then $(INSTALL) -s src.util/t3learnkeys/t3learnkeys $(_bindir) ; \
+		$(INSTALL) -m0644 man/t3learnkeys.1 $(_mandir)/man1 ; fi
 
 uninstall:
 	$(LIBTOOL) --mode=uninstall rm $(_libdir)/libt3key.la
