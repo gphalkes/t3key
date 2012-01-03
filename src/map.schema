@@ -1,0 +1,61 @@
+types {
+	map {
+		type = "section"
+		allowed-keys {
+			use { type = "list"; item-type = "use" }
+			noticheck {
+				type = "list";
+				item-type = "string";
+			}
+		}
+		# For enter and leave, strings starting with \ are assumed to be
+		# literals. Otherwise they are assumed to be terminfo capnames
+		item-type = "string"
+	}
+
+	use {
+		type = "string"
+		%constraint = "/maps/[%]"
+	}
+
+	shiftfn-int {
+		type = "int"
+		%constraint = "% > 0 & % < 256"
+	}
+}
+
+allowed-keys {
+	format { type = "int" }
+	best { type = "use" }
+	aka { type = "list"; item-type = "string" }
+	shiftfn {
+		type = "list"
+		item-type = "shiftfn-int"
+		%constraint = "# = 3"
+	}
+	xterm_mouse { type = "bool" }
+
+	maps {
+		type = "section"
+		item-type = "map"
+	}
+
+	add {
+		type = "list"
+		item-type = "map"
+	}
+}
+%constraint = "format = 1"
+%constraint = "best & maps"
+%constraint = "/maps/[best]"
+
+# Further checks which can not be implemented with constraints:
+# - only the first occurence of a sequence is used
+
+# Example key addition (this would be in the user's home directory)
+# %include = "xterm"
+# %add {
+#		add-to = "%best" # without this key, it will add to any map loaded
+#		home-s = "\eOA"
+#		end-s = \eOE"
+# }

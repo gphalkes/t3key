@@ -120,6 +120,8 @@ int main(int argc, char *argv[]) {
 	value = XCB_MOD_MASK_CONTROL;
 	value = XCB_MOD_MASK_SHIFT;
 	value = XCB_MOD_MASK_1;
+	value = XCB_TIME_CURRENT_TIME;
+	value = XCB_WINDOW_NONE;
 }
 EOF
 		if pkgconfig xcb X11 test_link ; then

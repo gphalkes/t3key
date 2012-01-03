@@ -45,4 +45,5 @@ sed -r -i "s%<OBJECTS_T3LEARNKEYS>%${OBJECTS_T3LEARNKEYS}%g" ${TOPDIR}/mk/t3lear
 # Modify parser output to look for files in current directory iso .objects
 sed -r -i 's%\.objects/%%g' ${TOPDIR}/src.util/t3keyc/grammar.c
 
+echo "WARNING: need to add validation of the descriptions to the mkdist script!!!"
 create_tar

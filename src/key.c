@@ -14,11 +14,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <curses.h>
 #include <errno.h>
-#include <stdint.h>
-#include <arpa/inet.h>
+#include <limits.h>
+#include <curses.h>
 #include <term.h>
+#include <t3config/config.h>
 
 #ifdef USE_GETTEXT
 #include <libintl.h>
@@ -38,9 +38,9 @@
 
 #include "shareddefs.h"
 
+#define ARRAY_LENGTH(x) (sizeof(x) / sizeof(x[0]))
 #define RETURN_ERROR(_e) do { if (error != NULL) *error = _e; goto return_error; } while (0)
-#define CLEANUP() do { free(best_map); free(current_map); fclose(input); } while (0)
-#define CLEANUP_RETURN_ERROR(_e) do { CLEANUP(); RETURN_ERROR(_e); } while (0)
+
 #define ENSURE(_x) do { int _error = (_x); \
 	if (_error == T3_ERR_SUCCESS) \
 		break; \
@@ -48,20 +48,16 @@
 		*error = _error; \
 	goto return_error; \
 } while (0)
-#define EOF_OR_ERROR(_file) (feof(_file) ? T3_ERR_TRUNCATED_DB : T3_ERR_READ_ERROR)
 
-static int check_magic_and_version(FILE *input);
-static int skip_string(FILE *input);
-static int read_string(FILE *input, char **string, size_t *length_ptr);
+static t3_key_node_t *load_ti_keys(const char *term, int *error);
 /* FIXME: make a function specific for each type (there seems to be only one anyway. */
 static int new_node(void **result, size_t size);
 #define NEW_NODE(_x) new_node((void **) (_x), sizeof(**(_x)))
-static t3_key_node_t *load_ti_keys(const char *term, int *error);
 
 #ifdef HAS_STRDUP
-#define strdup_impl strdup
+#define _t3_key_strdup strdup
 #else
-static char *strdup_impl(const char *str) {
+static char *_t3_key_strdup(const char *str) {
 	char *result;
 	size_t len = strlen(str) + 1;
 
@@ -72,221 +68,306 @@ static char *strdup_impl(const char *str) {
 }
 #endif
 
-static char *make_name(const char *directory, const char *term) {
-	size_t name_length, term_length;
-	char *name;
+#define is_asciidigit(x) ((x) >= '0' && (x) <= '9')
+#define is_asciixdigit(x) (is_asciidigit(x) || ((x) >= 'a' && (x) <= 'f') || ((x) >= 'A' && (x) <= 'F'))
+#define to_asciilower(x) (((x) >= 'A' && (x) <= 'F') ? (x) - 'A' + 'a' : (x))
 
-	term_length = strlen(term);
-	name_length = strlen(directory) + 3 + term_length + 1;
-	if ((name = malloc(name_length)) == NULL)
-		return NULL;
+static const char map_schema[] = {
+#include "map.bytes"
+};
 
-	strcpy(name, directory);
-	strcat(name, "/");
-	strncat(name, term, 1);
-	strcat(name, "/");
-	strncat(name, term, term_length);
-	name[name_length - 1] = 0;
-	return name;
+/** Convert a string from the input format to an internally usable string.
+	@param string A @a Token with the string to be converted.
+	@return The length of the resulting string.
+
+	The use of this function processes escape characters. The converted
+	characters are written in the original string.
+*/
+static size_t parse_escapes(char *string) {
+	size_t max_read_position = strlen(string);
+	size_t read_position = 0, write_position = 0;
+	size_t i;
+
+	while(read_position < max_read_position) {
+		if (string[read_position] == '\\') {
+			read_position++;
+
+			if (read_position == max_read_position)
+				return 0;
+
+			switch(string[read_position++]) {
+				case 'E':
+				case 'e':
+					string[write_position++] = '\033';
+					break;
+				case 'n':
+					string[write_position++] = '\n';
+					break;
+				case 'r':
+					string[write_position++] = '\r';
+					break;
+				case '\'':
+					string[write_position++] = '\'';
+					break;
+				case '\\':
+					string[write_position++] = '\\';
+					break;
+				case 't':
+					string[write_position++] = '\t';
+					break;
+				case 'b':
+					string[write_position++] = '\b';
+					break;
+				case 'f':
+					string[write_position++] = '\f';
+					break;
+				case 'a':
+					string[write_position++] = '\a';
+					break;
+				case 'v':
+					string[write_position++] = '\v';
+					break;
+				case '?':
+					string[write_position++] = '\?';
+					break;
+				case '"':
+					string[write_position++] = '"';
+					break;
+				case 'x': {
+					/* Hexadecimal escapes */
+					unsigned int value = 0;
+					/* Read at most two characters, or as many as are valid. */
+					for (i = 0; i < 2 && (read_position + i) < max_read_position &&
+							is_asciixdigit(string[read_position + i]); i++)
+					{
+						value <<= 4;
+						if (is_asciidigit(string[read_position + i]))
+							value += (int) (string[read_position + i] - '0');
+						else
+							value += (int) (to_asciilower(string[read_position + i]) - 'a') + 10;
+						if (value > UCHAR_MAX)
+							return 0;
+					}
+					read_position += i;
+
+					if (i == 0)
+						return 0;
+
+					string[write_position++] = (char) value;
+					break;
+				}
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7': {
+					/* Octal escapes */
+					int value = (int)(string[read_position - 1] - '0');
+					size_t max_idx = string[read_position - 1] < '4' ? 2 : 1;
+					for (i = 0; i < max_idx && read_position + i < max_read_position &&
+							string[read_position + i] >= '0' && string[read_position + i] <= '7'; i++)
+						value = value * 8 + (int)(string[read_position + i] - '0');
+
+					read_position += i;
+
+					string[write_position++] = (char) value;
+					break;
+				}
+				default:
+					string[write_position++] = string[read_position - 1];
+					break;
+			}
+		} else {
+			string[write_position++] = string[read_position++];
+		}
+	}
+	/* Terminate string. */
+	string[write_position] = 0;
+	return write_position;
 }
 
-/** Open database.
-    @param term The terminal name to use or @c NULL for contents of @c TERM.
-    @param error The location to store an error.
-    @return A pointer to the @c FILE for the database, or @c NULL or error.
-*/
-static FILE *open_database(const char *term, int *error) {
-	char *name, *db_directory_env, *home_env;
+static t3_config_t *load_map_config(const char *term, int *error) {
+	const char *path[3] = { NULL, DB_DIRECTORY, NULL };
+	char *home_env;
+	t3_config_error_t config_error;
+	t3_config_opts_t opts;
+	t3_config_t *map_config = NULL;
+	t3_config_schema_t *schema = NULL;
 	FILE *input = NULL;
 
-	if (term == NULL) {
-		term = getenv("TERM");
-		if (term == NULL)
-			RETURN_ERROR(T3_ERR_NO_TERM);
-	}
-
+	/* Setup path. */
 	home_env = getenv("HOME");
 	if (home_env != NULL) {
-		if ((name = malloc(strlen(home_env) + strlen(".libt3key") + 2)) == NULL)
+		char *tmp;
+		if ((tmp = malloc(strlen(home_env) + strlen(".libt3key") + 2)) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
-		strcpy(name, home_env);
-		strcat(name, "/");
-		strcat(name, ".libt3key");
-		home_env = name;
-
-		if ((name = make_name(home_env, term)) == NULL) {
-			free(home_env);
-			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
-		}
-		free(home_env);
-
-		if ((input = fopen(name, "rb")) != NULL) {
-			free(name);
-			return input;
-		}
-		free(name);
+		strcpy(tmp, home_env);
+		strcat(tmp, "/");
+		strcat(tmp, ".libt3key");
+		path[0] = home_env = tmp;
 	}
 
-	db_directory_env = getenv("LIBT3KEY_DATABASE_DIR");
-	if (db_directory_env != NULL) {
-		if ((name = make_name(db_directory_env, term)) == NULL)
-			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+	if ((input = t3_config_open_from_path(path[0] == NULL ? path + 1 : path, term, T3_CONFIG_CLEAN_NAME)) == NULL)
+		RETURN_ERROR(T3_ERR_ERRNO);
 
-		if ((input = fopen(name, "rb")) != NULL) {
-			free(name);
-			return input;
-		}
-		free(name);
-	}
+	opts.flags = T3_CONFIG_INCLUDE_DFLT;
+	opts.include_callback.dflt.flags = T3_CONFIG_CLEAN_NAME;
+	opts.include_callback.dflt.path = path + 1;
 
-	if ((name = make_name(DB_DIRECTORY, term)) == NULL)
-		RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+	if ((map_config = t3_config_read_file(input, &config_error, &opts)) == NULL)
+		RETURN_ERROR(config_error.error);
 
-	if ((input = fopen(name, "rb")) == NULL) {
-		free(name);
-		return NULL;
-	}
-	free(name);
+	if ((schema = t3_config_read_schema_buffer(map_schema, sizeof(map_schema), &config_error, NULL)) == NULL)
+		RETURN_ERROR(config_error.error);
 
-	ENSURE(check_magic_and_version(input));
-	return input;
+	if (!t3_config_validate(map_config, schema, &config_error, 0))
+		RETURN_ERROR(config_error.error);
 
+	free(home_env);
+	fclose(input);
+	t3_config_delete_schema(schema);
+
+	return map_config;
 return_error:
 	if (input != NULL)
 		fclose(input);
+	free(home_env);
+	t3_config_delete(map_config);
+	t3_config_delete_schema(schema);
 	return NULL;
 }
 
-t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *error) {
-	char *current_map = NULL, *best_map = NULL;
-	t3_key_node_t *list = NULL, **next_node = &list;
-	int this_map = 0;
-	FILE *input;
-	uint16_t node;
+static int convert_map(t3_config_t *map_config, t3_config_t *ptr, t3_key_node_t **next, t3_bool outer) {
+	for (ptr = t3_config_get(ptr, NULL); ptr != NULL; ptr = t3_config_get_next(ptr)) {
+		const char *name = t3_config_get_name(ptr);
+		if (strcmp(name, "use") == 0) {
+			t3_config_t *use;
+			/* Prevent infinte recursion and double inclusion by unlinking the map
+			   from the list. */
+			int result;
 
-	if ((input = open_database(term, error)) == NULL) {
-		if (errno != ENOENT)
-			RETURN_ERROR(T3_ERR_ERRNO);
-		return load_ti_keys(term, error);
-	}
+			for (use = t3_config_get(ptr, NULL); use != NULL; use = t3_config_get_next(use)) {
+				t3_config_t *use_map = t3_config_unlink(t3_config_get(map_config, "maps"), t3_config_get_string(use));
 
-	while (fread(&node, 2, 1, input) == 1) {
-		switch (ntohs(node)) {
-			case NODE_BEST:
-				if (current_map != NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
+				if (use_map == NULL)
+					continue;
+				result = convert_map(map_config, use_map, next, t3_false);
+				t3_config_delete(use_map);
+				if (result != T3_ERR_SUCCESS)
+					return result;
+				/* Update next pointer, because loading the sub-map will have extended
+				   the list. */
+				while (*next != NULL)
+					next = &(*next)->next;
+			}
+		} else if (strcmp(name, "noticheck") != 0) {
+			if ((*next = malloc(sizeof(t3_key_node_t))) == NULL)
+				return t3_false;
+			(*next)->string = NULL;
+			(*next)->next = NULL;
+			if (((*next)->key = _t3_key_strdup(name)) == NULL)
+				return T3_ERR_OUT_OF_MEMORY;
 
-				if (best_map != NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
+			if ((strcmp(name, "enter") == 0 || strcmp(name, "leave") == 0) && t3_config_get_string(ptr)[0] != '\\') {
+				/* Get terminfo string indicated by string. */
+				const char *ti_string;
 
-				ENSURE(read_string(input, &best_map, NULL));
-				break;
-			case NODE_MAP_START:
-				if (best_map == NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
+				if (!outer)
+					return T3_ERR_INVALID_FORMAT;
 
-				if (this_map) {
-					CLEANUP();
-					return list;
-				}
-
-				if (current_map != NULL)
-					free(current_map);
-				ENSURE(read_string(input, &current_map, NULL));
-
-				this_map = (map_name != NULL && strcmp(current_map, map_name) == 0) ||
-						(map_name == NULL && strcmp(current_map, best_map) == 0);
-				break;
-			case NODE_KEY_VALUE:
-				if (current_map == NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
-
-				if (!this_map) {
-					ENSURE(skip_string(input));
-					ENSURE(skip_string(input));
-					break;
-				}
-
-				ENSURE(NEW_NODE(next_node));
-				ENSURE(read_string(input, &(*next_node)->key, NULL));
-				ENSURE(read_string(input, &(*next_node)->string, &(*next_node)->string_length));
-				next_node = &(*next_node)->next;
-				break;
-			case NODE_KEY_TERMINFO: {
-				char *tikey, *tiresult;
-
-				if (current_map == NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
-
-				if (!this_map) {
-					ENSURE(skip_string(input));
-					ENSURE(skip_string(input));
-					break;
-				}
-
-				ENSURE(NEW_NODE(next_node));
-				ENSURE(read_string(input, &(*next_node)->key, NULL));
-				ENSURE(read_string(input, &tikey, NULL));
-
-				tiresult = tigetstr(tikey);
-				if (tiresult == (char *)-1 || tiresult == (char *)0) {
-					free(tikey);
-					/* only abort when the key is %enter or %leave */
-					if ((*next_node)->key[0] == '%')
-						CLEANUP_RETURN_ERROR(T3_ERR_TERMINFO_UNKNOWN);
-					free((*next_node)->key);
-					free(*next_node);
-					*next_node = NULL;
+				ti_string = tigetstr(t3_config_get_string(ptr));
+				if (ti_string == (char *) 0 || ti_string == (char *) -1) {
+					free((*next)->key);
+					free(*next);
+					*next = NULL;
 					continue;
 				}
-				free(tikey);
-				(*next_node)->string = strdup_impl(tiresult);
-				(*next_node)->string_length = strlen(tiresult);
-				if ((*next_node)->string == NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
-
-				next_node = &(*next_node)->next;
-				break;
+				if (((*next)->string = _t3_key_strdup(ti_string)) == NULL)
+					return T3_ERR_OUT_OF_MEMORY;
+				(*next)->string_length = strlen((*next)->string);
+			} else {
+				char *minus;
+				(*next)->string = t3_config_take_string(ptr);
+				(*next)->string_length = parse_escapes((*next)->string);
+				if ((*next)->string_length == 0)
+					return T3_ERR_INVALID_FORMAT;
+				if ((minus = strchr((*next)->key, '-')) != NULL)
+					*minus = '+';
 			}
-			case NODE_NAME:
-			case NODE_AKA:
-				ENSURE(skip_string(input));
-				break;
-			case NODE_SHIFTFN:
-				ENSURE(NEW_NODE(next_node));
-				if (((*next_node)->key = strdup_impl("%shiftfn")) == NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
-				(*next_node)->string_length = 3;
-				if (((*next_node)->string = malloc(3)) == NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
-				if (fread((*next_node)->string, 1, 3, input) != 3)
-					CLEANUP_RETURN_ERROR(T3_ERR_READ_ERROR);
-				next_node = &(*next_node)->next;
-				break;
-			case NODE_XTERM_MOUSE:
-				ENSURE(NEW_NODE(next_node));
-				if (((*next_node)->key = strdup_impl("%xterm_mouse")) == NULL)
-					CLEANUP_RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
-				(*next_node)->string_length = 0;
-				(*next_node)->string = NULL;
-				next_node = &(*next_node)->next;
-				break;
- 			case NODE_END_OF_FILE:
-				if (list == NULL && error != NULL)
-					*error = T3_ERR_NOMAP;
-
-				CLEANUP();
-				return list;
-			default:
-				CLEANUP_RETURN_ERROR(T3_ERR_INVALID_FORMAT);
+			next = &(*next)->next;
 		}
 	}
+	return T3_ERR_SUCCESS;
+}
 
-	if (error != NULL)
-		*error = EOF_OR_ERROR(input);
+
+t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *error) {
+	t3_config_t *map_config = NULL, *ptr;
+	t3_key_node_t *list = NULL, *node = NULL;
+	int result;
+
+	if ((map_config = load_map_config(term, &result)) == NULL) {
+		if (result == T3_ERR_ERRNO && errno == ENOENT)
+			return load_ti_keys(term, error);
+		RETURN_ERROR(result);
+	}
+
+	if (map_name != NULL)
+		ptr = t3_config_unlink(t3_config_get(map_config, "maps"), map_name);
+	else
+		ptr = t3_config_unlink(t3_config_get(map_config, "maps"), t3_config_get_string(t3_config_get(map_config, "best")));
+
+	if (ptr == NULL)
+		RETURN_ERROR(T3_ERR_NOMAP);
+
+	result = convert_map(map_config, ptr, &list, t3_true);
+	t3_config_delete(ptr);
+	if (result != T3_ERR_SUCCESS)
+		RETURN_ERROR(result);
+
+	if ((ptr = t3_config_get(map_config, "shiftfn")) != NULL) {
+		if ((node = malloc(sizeof(t3_key_node_t))) == NULL)
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+		node->string = NULL;
+		node->next = NULL;
+		if ((node->key = _t3_key_strdup("shiftfn")) == NULL)
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+		if ((node->string = malloc(3)) == NULL)
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+		node->string_length = 3;
+		ptr = t3_config_get(ptr, NULL);
+		node->string[0] = t3_config_get_int(ptr);
+		ptr = t3_config_get_next(ptr);
+		node->string[1] = t3_config_get_int(ptr);
+		ptr = t3_config_get_next(ptr);
+		node->string[2] = t3_config_get_int(ptr);
+		node->next = list;
+		list = node;
+		node = NULL;
+	}
+
+	if (t3_config_get_bool(t3_config_get(map_config, "xterm_mouse"))) {
+		if ((node = malloc(sizeof(t3_key_node_t))) == NULL)
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+		node->string = NULL;
+		node->string_length = 0;
+		node->next = NULL;
+		if ((node->key = _t3_key_strdup("xterm_mouse")) == NULL)
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+		node->next = list;
+		list = node;
+		node = NULL;
+	}
+	t3_config_delete(map_config);
+	return list;
 
 return_error:
+	t3_key_free_map(node);
 	t3_key_free_map(list);
+	t3_config_delete(map_config);
 	return NULL;
 }
 
@@ -300,74 +381,6 @@ void t3_key_free_map(t3_key_node_t *list) {
 		free(prev->string);
 		free(prev);
 	}
-}
-
-static int check_magic_and_version(FILE *input) {
-	char magic[4];
-	uint32_t version;
-
-	if (fread(magic, 1, 4, input) != 4)
-		return EOF_OR_ERROR(input);
-
-	if (memcmp(magic, "T3KY", 4) != 0)
-		return T3_ERR_INVALID_FORMAT;
-
-	if (fread(&version, 4, 1, input) != 1)
-		return EOF_OR_ERROR(input);
-
-	if (ntohl(version) > MAX_VERSION)
-		return T3_ERR_WRONG_VERSION;
-
-	return T3_ERR_SUCCESS;
-}
-
-static int do_seek(FILE *input, uint16_t length) {
-	char discard_buffer[256];
-
-	/* Don't use fseek, because it will call lseek internally, which is not
-	   necessary and causes a context switch. Because seeking will be a frequent
-	   operation, this should be avoided. Furthermore, it is very likely that the
-	   whole file is already buffered anyway, as it is very small.
-
-	   As most strings will be shorter than 256 bytes anyway, we
-	   don't use a 65536 bytes buffer. Using such a large buffer on the stack
-	   is not desirable. */
-	while (length > 0) {
-		uint16_t read_now = length > 256 ? 256 : length;
-		if (fread(discard_buffer, 1, read_now, input) != read_now)
-			return EOF_OR_ERROR(input);
-		length -= read_now;
-	}
-	return T3_ERR_SUCCESS;
-}
-
-static int skip_string(FILE *input) {
-	uint16_t length;
-
-	if (fread(&length, 2, 1, input) != 1)
-		return EOF_OR_ERROR(input);
-
-	return do_seek(input, ntohs(length));
-}
-
-static int read_string(FILE *input, char **string, size_t *length_ptr) {
-	uint16_t length;
-
-	if (fread(&length, 2, 1, input) != 1)
-		return EOF_OR_ERROR(input);
-
-	length = ntohs(length);
-	if (length_ptr != NULL)
-		*length_ptr = length;
-
-	if ((*string = malloc(length + 1)) == NULL)
-		return T3_ERR_OUT_OF_MEMORY;
-
-	if (fread(*string, 1, length, input) != length)
-		return T3_ERR_READ_ERROR;
-
-	(*string)[length] = 0;
-	return T3_ERR_SUCCESS;
 }
 
 static int new_node(void **result, size_t size) {
@@ -389,13 +402,13 @@ static int make_node_from_ti(t3_key_node_t **next_node, const char *tikey, const
 	if ((error = NEW_NODE(next_node)) != T3_ERR_SUCCESS)
 		return error;
 
-	if (((*next_node)->key = strdup_impl(key)) == NULL) {
+	if (((*next_node)->key = _t3_key_strdup(key)) == NULL) {
 		free(*next_node);
 		*next_node = NULL;
 		return T3_ERR_OUT_OF_MEMORY;
 	}
 
-	if (((*next_node)->string = strdup_impl(tiresult)) == NULL) {
+	if (((*next_node)->string = _t3_key_strdup(tiresult)) == NULL) {
 		free((*next_node)->string);
 		free(*next_node);
 		*next_node = NULL;
@@ -471,7 +484,7 @@ static t3_key_node_t *load_ti_keys(const char *term, int *error) {
 	if (*next_node != NULL)
 		next_node = &(*next_node)->next;
 
-	for (i = 0; i < sizeof(keymapping)/sizeof(keymapping[0]); i++) {
+	for (i = 0; i < ARRAY_LENGTH(keymapping); i++) {
 		ENSURE(make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key));
 		if (*next_node != NULL)
 			next_node = &(*next_node)->next;
@@ -491,49 +504,32 @@ return_error:
 	return NULL;
 }
 
-
 t3_key_string_list_t *t3_key_get_map_names(const char *term, int *error) {
-	t3_key_string_list_t *list = NULL, **next_node = &list;
-	FILE *input;
-	uint16_t node;
+	t3_config_t *map_config = NULL, *ptr;
+	t3_key_string_list_t *list = NULL, *item;
 
-	if ((input = open_database(term, error)) == NULL)
+	if ((map_config = load_map_config(term, error)) == NULL)
 		return NULL;
 
-	while (fread(&node, 2, 1, input) == 1) {
-		switch (ntohs(node)) {
-			case NODE_BEST:
-				ENSURE(skip_string(input));
-				break;
-			case NODE_MAP_START:
-				ENSURE(NEW_NODE(next_node));
-				ENSURE(read_string(input, &(*next_node)->string, NULL));
-				next_node = &(*next_node)->next;
-				break;
-			case NODE_KEY_VALUE:
-			case NODE_KEY_TERMINFO:
-				ENSURE(skip_string(input));
-				ENSURE(skip_string(input));
-				break;
-			case NODE_NAME:
-			case NODE_AKA:
-				ENSURE(skip_string(input));
-				break;
- 			case NODE_END_OF_FILE:
-				return list;
-			default:
-				RETURN_ERROR(T3_ERR_INVALID_FORMAT);
+	for (ptr = t3_config_get(t3_config_get(map_config, "maps"), NULL); ptr != NULL; ptr = t3_config_get_next(ptr)) {
+		if (t3_config_get_name(ptr)[0] == '_')
+			continue;
+		if ((item = malloc(sizeof(t3_key_string_list_t))) == NULL)
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+
+		if ((item->string = _t3_key_strdup(t3_config_get_name(ptr))) == NULL) {
+			free(item);
+			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		}
+		item->next = list;
+		list = item;
 	}
-
-	if (error != NULL)
-		*error = EOF_OR_ERROR(input);
-
+	t3_config_delete(map_config);
+	return list;
 return_error:
-	t3_key_free_names(list);
+	t3_config_delete(map_config);
 	return NULL;
 }
-
 
 void t3_key_free_names(t3_key_string_list_t *list) {
 	t3_key_string_list_t *prev;
@@ -546,24 +542,18 @@ void t3_key_free_names(t3_key_string_list_t *list) {
 }
 
 char *t3_key_get_best_map_name(const char *term, int *error) {
-	FILE *input;
-	char *best_map;
-	uint16_t node;
-
-	if ((input = open_database(term, error)) == NULL)
+	t3_config_t *map_config = NULL;
+	char *best = NULL;
+	if ((map_config = load_map_config(term, error)) == NULL)
 		return NULL;
 
-	if (fread(&node, 2, 1, input) != 1)
-		RETURN_ERROR(T3_ERR_READ_ERROR);
-	else if (node != NODE_BEST)
-		RETURN_ERROR(T3_ERR_INVALID_FORMAT);
+	if ((best = _t3_key_strdup(t3_config_get_string(t3_config_get(map_config, "best")))) == NULL) {
+		if (error != NULL)
+			*error = T3_ERR_OUT_OF_MEMORY;
+	}
 
-	ENSURE(read_string(input, &best_map, NULL));
-	return best_map;
-
-return_error:
-	fclose(input);
-	return NULL;
+	t3_config_delete(map_config);
+	return best;
 }
 
 t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name) {
@@ -588,7 +578,7 @@ long t3_key_get_version(void) {
 const char *t3_key_strerror(int error) {
 	switch (error) {
 		default:
-			return t3_key_strerror_base(error);
+			return t3_config_strerror(error);
 
 		case T3_ERR_INVALID_FORMAT:
 			return _("invalid key-database file format");
