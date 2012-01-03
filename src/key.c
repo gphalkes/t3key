@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 G.P. Halkes
+/* Copyright (C) 2011-2012 G.P. Halkes
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 3, as
    published by the Free Software Foundation.
@@ -413,9 +413,9 @@ static int make_node_from_ti(t3_key_node_t **next_node, const char *tikey, const
 typedef struct {
 	const char *tikey;
 	const char *key;
-} Mapping;
+} mapping_t;
 
-static const Mapping keymapping[] = {
+static const mapping_t keymapping[] = {
 	{ "kich1", "insert" },
 	{ "kdch1", "delete" },
 	{ "khome", "home" },

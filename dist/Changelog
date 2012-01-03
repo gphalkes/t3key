@@ -1,3 +1,13 @@
+Version 0.1.5:
+	New features:
+	- Added a description for PuTTY (only used when PuTTY is configured to set
+	  TERM to putty).
+
+	Bug fixes:
+	- Added check for required XCB constants, to prevent build failures.
+	- Added sending of modifier key press/release events to t3learnkeys to
+	  make it work with wine.
+
 Version 0.1.4:
 	New features:
 	- Allow building with XCB instead of Xlib.
