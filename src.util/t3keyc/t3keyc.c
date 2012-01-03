@@ -27,13 +27,15 @@ static const char map_schema[] = {
 };
 
 static bool option_link;
+static bool option_trace_circular;
 static const char *input;
 
 /* Print usage message/help. */
 static void print_usage(void) {
 	printf("Usage: t3keyc [<OPTIONS>] <INPUT>\n"
+		"  -h, --help                       Print this help message\n"
 		"  -l, --link                       Create symbolic links for aliases\n"
-		"  -h, --help                       Print this help message\n");
+		"  -t, --trace-circular-use         Trace circular 'use' inclusion\n");
 	exit(EXIT_SUCCESS);
 }
 
@@ -50,14 +52,25 @@ void fatal(const char *fmt, ...) {
 	exit(EXIT_FAILURE);
 }
 
+static void *safe_malloc(size_t size) {
+	void *ptr;
+
+	if ((ptr = malloc(size)) == NULL)
+		fatal("Out of memory\n");
+	return ptr;
+}
+
 /* Parse command line options */
 static PARSE_FUNCTION(parse_options)
 	OPTIONS
+		OPTION('h', "help", NO_ARG)
+			print_usage();
+		END_OPTION
 		OPTION('l', "link", NO_ARG)
 			option_link = true;
 		END_OPTION
-		OPTION('h', "help", NO_ARG)
-			print_usage();
+		OPTION('t', "trace-circular-use", NO_ARG)
+			option_trace_circular = true;
 		END_OPTION
 		DOUBLE_DASH
 			NO_MORE_OPTIONS;
@@ -69,12 +82,69 @@ static PARSE_FUNCTION(parse_options)
 		input = optcurrent;
 	END_OPTIONS
 
+	if (option_link && option_trace_circular)
+		fatal("-l/--link only valid without other options\n");
+
 	if (input == NULL)
 		fatal("No input\n");
 END_FUNCTION
 
 
+typedef struct map_list_t {
+	t3_config_t *map;
+	struct map_list_t *next;
+} map_list_t;
 
+static map_list_t *head;
+
+static void check_circular_use_rec(t3_config_t *map_config, t3_config_t *map) {
+	t3_config_t *use_name, *use_map;
+	map_list_t *tmp, *ptr;
+
+	tmp = safe_malloc(sizeof(map_list_t));
+	tmp->map = map;
+	tmp->next = head;
+	head = tmp;
+
+	for (use_name = t3_config_get(t3_config_get(map, "use"), NULL); use_name != NULL; use_name = t3_config_get_next(use_name)) {
+		use_map = t3_config_get(t3_config_get(map_config, "maps"), t3_config_get_string(use_name));
+		for (ptr = head; ptr != NULL; ptr = ptr->next) {
+			if (ptr->map == use_map) {
+				//FIXME: get file and line number info
+				fprintf(stderr, "%s:%d: circular inclusion of map '%s'\n", input, 0, t3_config_get_name(use_map));
+				if (option_trace_circular) {
+					for (ptr = head; ptr != NULL; ptr = ptr->next) {
+						fprintf(stderr, "  from map '%s'\n", t3_config_get_name(ptr->map));
+						if (ptr->map == use_map)
+							break;
+					}
+				}
+				goto next_use;
+			}
+		}
+		check_circular_use_rec(map_config, use_map);
+next_use:;
+	}
+
+	tmp = head;
+	head = tmp->next;
+	free(tmp);
+}
+
+static void check_circular_use(t3_config_t *map_config) {
+	t3_config_t *map;
+
+	for (map = t3_config_get(t3_config_get(map_config, "maps"), NULL); map != NULL; map = t3_config_get_next(map)) {
+		if (t3_config_get_name(map)[0] != '_')
+			check_circular_use_rec(map_config, map);
+	}
+}
+
+static void check_terminfo(t3_config_t *map_config) {
+}
+
+static void check_duplicates(t3_config_t *map_config) {
+}
 
 int main(int argc, char *argv[]) {
 	t3_config_t *map_config;
@@ -100,6 +170,14 @@ int main(int argc, char *argv[]) {
 	if (!t3_config_validate(map_config, schema, &error, T3_CONFIG_VERBOSE_ERROR))
 		fatal("%s:%d: %s%s%s\n", input, error.line_number, t3_config_strerror(error.error),
 			error.extra == NULL ? "" : ": ", error.extra == NULL ? "" : error.extra);
+
+	if (option_link) {
+		printf("NOT IMPLEMENTED YET\n");
+		exit(1);
+	}
+	check_circular_use(map_config);
+	check_terminfo(map_config);
+	check_duplicates(map_config);
 
 	/* FIXME: checks to implement:
 		- map 'use's are not circular (although that should only trigger a warning)
