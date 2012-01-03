@@ -92,13 +92,13 @@ static name_mapping_t *functionkeys;
 static name_mapping_t modifiers[] = {
 	{ "", "", 0 },
 #ifndef TESTING
-	{ "Control ", "+c", X_KEY_SYM(ControlMask) },
-	{ "Meta ", "+m", X_KEY_SYM(Mod1Mask) },
-	{ "Shift ", "+s", X_KEY_SYM(ShiftMask) },
-	{ "Control+Meta ", "+cm", X_KEY_SYM(ControlMask | Mod1Mask) },
-	{ "Control+Shift ", "+cs", X_KEY_SYM(ControlMask | ShiftMask) },
-	{ "Meta+Shift ", "+ms", X_KEY_SYM(Mod1Mask | ShiftMask) },
-	{ "Control+Meta+Shift ", "+cms", X_KEY_SYM(ControlMask | Mod1Mask | ShiftMask) },
+	{ "Control ", "-c", X_KEY_SYM(ControlMask) },
+	{ "Meta ", "-m", X_KEY_SYM(Mod1Mask) },
+	{ "Shift ", "-s", X_KEY_SYM(ShiftMask) },
+	{ "Control+Meta ", "-cm", X_KEY_SYM(ControlMask | Mod1Mask) },
+	{ "Control+Shift ", "-cs", X_KEY_SYM(ControlMask | ShiftMask) },
+	{ "Meta+Shift ", "-ms", X_KEY_SYM(Mod1Mask | ShiftMask) },
+	{ "Control+Meta+Shift ", "-cms", X_KEY_SYM(ControlMask | Mod1Mask | ShiftMask) },
 #endif
 };
 
@@ -431,10 +431,10 @@ static void write_keys(sequence_t *keys) {
 
 	for (current = keys; current != NULL; current = current->next) {
 		if (current->duplicate != NULL) {
-			fprintf(output, "# %s%s = %s%s\n", current->keynames->identifier, current->modifiers->identifier,
+			fprintf(output, "\t\t# %s%s = %s%s\n", current->keynames->identifier, current->modifiers->identifier,
 				current->duplicate->keynames->identifier, current->duplicate->modifiers->identifier);
 		} else {
-			fprintf(output, "%s%s = \"%s\"\n", current->keynames->identifier, current->modifiers->identifier,
+			fprintf(output, "\t\t%s%s = \"%s\"\n", current->keynames->identifier, current->modifiers->identifier,
 				current->seq);
 		}
 	}
@@ -525,26 +525,22 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
 	   other maps. In that case the collected_from list is a linked list of map
 	   pointers from which it was created. */
 	if (mode->name != NULL) {
-		fprintf(output, "%s {\n", mode->name);
+		fprintf(output, "\t%s {\n", mode->name);
 	} else {
 		map_list_t *ptr;
+		fprintf(output, "\t");
 		for (ptr = mode->collected_from; ptr != NULL; ptr = ptr->next)
 			fprintf(output, "_%s", ptr->map->name);
 		fprintf(output, " {\n");
 	}
 
-	if (mode->esc_seq_enter) {
-		if (mode->esc_seq_enter_name)
-			fprintf(output, "%%enter = %s\n", mode->esc_seq_enter_name);
-		else
-			fprintf(output, "%%enter = \"%s\"\n", get_print_seq(mode->esc_seq_enter));
-	}
-	if (mode->esc_seq_leave) {
-		if (mode->esc_seq_leave_name)
-			fprintf(output, "%%leave = %s\n", mode->esc_seq_leave_name);
-		else
-			fprintf(output, "%%leave = \"%s\"\n", get_print_seq(mode->esc_seq_leave));
-	}
+	if (mode->esc_seq_enter)
+		fprintf(output, "\t\tenter = \"%s\"\n", mode->esc_seq_enter_name ?
+			mode->esc_seq_enter_name : get_print_seq(mode->esc_seq_enter));
+
+	if (mode->esc_seq_leave)
+		fprintf(output, "\t\tleave = \"%s\"\n", mode->esc_seq_leave_name ?
+			mode->esc_seq_leave_name : get_print_seq(mode->esc_seq_leave));
 
 	/* Locate all the maps which contain common pieces collected from this map.
 	   These have to be %include'd in this map. */
@@ -552,10 +548,10 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
 		map_list_t *collected;
 		for (collected = maps->collected_from; collected != NULL; collected = collected->next) {
 			if (collected->map == mode) {
-				fprintf(output, "%%include ");
+				fprintf(output, "\t\tuse = \"");
 				for (collected = maps->collected_from; collected != NULL; collected = collected->next)
 					fprintf(output, "_%s", collected->map->name);
-				fprintf(output, "\n");
+				fprintf(output, "\"\n");
 				break;
 			}
 		}
@@ -566,7 +562,7 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
 	for (current = mode->sequences, last = NULL; current != NULL; last = current, current = current->next)
 		free(last);
 
-	fprintf(output, "}\n\n");
+	fprintf(output, "\t}\n\n");
 }
 
 static sequence_t *reverse_key_list(sequence_t *list) {
@@ -906,10 +902,14 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	fprintf(output, "format = 1\n");
+	fprintf(output, "best = \"nokx\" # Replace this with the actual best map name\n\n");
+	fprintf(output, "maps {\n");
 	/* Write the output maps. */
 	for (mode_ptr = mode_head; mode_ptr != NULL; mode_ptr = mode_ptr->next)
 		write_map(output, mode_ptr, mode_head);
 
+	fprintf(output, "}\n");
 	fflush(output);
 	fclose(output);
 
