@@ -22,6 +22,11 @@
 
 #include "optionMacros.h"
 
+#define ARRAY_LENGTH(x) (sizeof(x) / sizeof(x[0]))
+#define is_asciidigit(x) ((x) >= '0' && (x) <= '9')
+#define is_asciixdigit(x) (is_asciidigit(x) || ((x) >= 'a' && (x) <= 'f') || ((x) >= 'A' && (x) <= 'F'))
+#define to_asciilower(x) (((x) >= 'A' && (x) <= 'F') ? (x) - 'A' + 'a' : (x))
+
 static const char map_schema[] = {
 #include "map.bytes"
 };
@@ -29,6 +34,39 @@ static const char map_schema[] = {
 static bool option_link;
 static bool option_trace_circular;
 static const char *input;
+
+#include "mappings.c"
+
+static const char *valid_names[] = {
+	"insert",
+	"delete",
+	"home",
+	"end",
+	"page_up",
+	"page_down",
+	"up",
+	"left",
+	"down",
+	"right",
+	"kp_home",
+	"kp_up",
+	"kp_page_up",
+	"kp_page_down",
+	"kp_left",
+	"kp_center",
+	"kp_right",
+	"kp_end",
+	"kp_down",
+	"kp_insert",
+	"kp_delete",
+	"kp_enter",
+	"kp_div",
+	"kp_mul",
+	"kp_minus",
+	"kp_plus",
+	"tab",
+	"backspace"
+};
 
 /* Print usage message/help. */
 static void print_usage(void) {
@@ -60,6 +98,10 @@ static void *safe_malloc(size_t size) {
 	return ptr;
 }
 
+static char *safe_strdup(const char *str) {
+	return strcpy(safe_malloc(strlen(str) + 1), str);
+}
+
 /* Parse command line options */
 static PARSE_FUNCTION(parse_options)
 	OPTIONS
@@ -89,61 +131,271 @@ static PARSE_FUNCTION(parse_options)
 		fatal("No input\n");
 END_FUNCTION
 
+/** Convert a string from the input format to an internally usable string.
+	@param string A @a Token with the string to be converted.
+	@return The length of the resulting string.
+
+	The use of this function processes escape characters. The converted
+	characters are written in the original string.
+*/
+static size_t parse_escapes(char *string) {
+	size_t max_read_position = strlen(string);
+	size_t read_position = 0, write_position = 0;
+	size_t i;
+
+	while(read_position < max_read_position) {
+		if (string[read_position] == '\\') {
+			read_position++;
+
+			if (read_position == max_read_position)
+				return 0;
+
+			switch(string[read_position++]) {
+				case 'E':
+				case 'e':
+					string[write_position++] = '\033';
+					break;
+				case 'n':
+					string[write_position++] = '\n';
+					break;
+				case 'r':
+					string[write_position++] = '\r';
+					break;
+				case '\'':
+					string[write_position++] = '\'';
+					break;
+				case '\\':
+					string[write_position++] = '\\';
+					break;
+				case 't':
+					string[write_position++] = '\t';
+					break;
+				case 'b':
+					string[write_position++] = '\b';
+					break;
+				case 'f':
+					string[write_position++] = '\f';
+					break;
+				case 'a':
+					string[write_position++] = '\a';
+					break;
+				case 'v':
+					string[write_position++] = '\v';
+					break;
+				case '?':
+					string[write_position++] = '\?';
+					break;
+				case '"':
+					string[write_position++] = '"';
+					break;
+				case 'x': {
+					/* Hexadecimal escapes */
+					unsigned int value = 0;
+					/* Read at most two characters, or as many as are valid. */
+					for (i = 0; i < 2 && (read_position + i) < max_read_position &&
+							is_asciixdigit(string[read_position + i]); i++)
+					{
+						value <<= 4;
+						if (is_asciidigit(string[read_position + i]))
+							value += (int) (string[read_position + i] - '0');
+						else
+							value += (int) (to_asciilower(string[read_position + i]) - 'a') + 10;
+						if (value > UCHAR_MAX)
+							return 0;
+					}
+					read_position += i;
+
+					if (i == 0)
+						return 0;
+
+					string[write_position++] = (char) value;
+					break;
+				}
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7': {
+					/* Octal escapes */
+					int value = (int)(string[read_position - 1] - '0');
+					size_t max_idx = string[read_position - 1] < '4' ? 2 : 1;
+					for (i = 0; i < max_idx && read_position + i < max_read_position &&
+							string[read_position + i] >= '0' && string[read_position + i] <= '7'; i++)
+						value = value * 8 + (int)(string[read_position + i] - '0');
+
+					read_position += i;
+
+					string[write_position++] = (char) value;
+					break;
+				}
+				default:
+					string[write_position++] = string[read_position - 1];
+					break;
+			}
+		} else {
+			string[write_position++] = string[read_position++];
+		}
+	}
+	/* Terminate string. */
+	string[write_position] = 0;
+	return write_position;
+}
 
 typedef struct map_list_t {
 	t3_config_t *map;
 	struct map_list_t *next;
 } map_list_t;
 
-static map_list_t *head;
+typedef struct sequence_list_t {
+	t3_config_t *config;
+	char *str;
+	size_t str_len;
+	struct sequence_list_t *next;
+} sequence_list_t;
 
-static void check_circular_use_rec(t3_config_t *map_config, t3_config_t *map) {
+static map_list_t *map_head;
+static sequence_list_t *seq_head;
+
+static t3_bool compare_name(const t3_config_t *check, const void *check_value) {
+	const char *str = t3_config_get_string(check);
+	if (str == NULL)
+		return t3_false;
+	return strcmp(check_value, str) == 0;
+}
+
+static void add_sequence(t3_config_t *ptr, t3_config_t *noticheck) {
+	sequence_list_t *seq_ptr;
+	const char *name, *minus;
+	size_t name_len;
+	size_t i;
+	char *str = safe_strdup(t3_config_get_string(ptr));
+	size_t str_len = parse_escapes(str);
+
+	name = t3_config_get_name(ptr);
+	minus = strchr(name, '-');
+	name_len = minus == NULL ? strlen(name) : (size_t) (minus - name);
+	for (i = 0; i < ARRAY_LENGTH(valid_names); i++) {
+		if (strncmp(name, valid_names[i], name_len) == 0 && name_len == strlen(valid_names[i]))
+			break;
+	}
+	if (i != ARRAY_LENGTH(valid_names)) {
+		//FIXME: check function keys
+	}
+
+	for (seq_ptr = seq_head; seq_ptr != NULL; seq_ptr = seq_ptr->next) {
+		//FIXME: get file name information
+		if (seq_ptr->str_len == str_len && memcmp(seq_ptr->str, str, str_len) == 0) {
+			fprintf(stderr, "%s:%d: '%s' has the same sequence as '%s' defined at %s:%d\n",
+				input, t3_config_get_line_number(ptr), t3_config_get_name(ptr),
+				t3_config_get_name(seq_ptr->config), input, t3_config_get_line_number(seq_ptr->config));
+			break;
+		}
+	}
+
+	if (seq_ptr == NULL) {
+		seq_ptr = safe_malloc(sizeof(sequence_list_t));
+		seq_ptr->config = ptr;
+		seq_ptr->str = str;
+		seq_ptr->str_len = str_len;
+		seq_ptr->next = seq_head;
+		seq_head = seq_ptr;
+	}
+	if (t3_config_find(noticheck, compare_name, name, NULL) == NULL) {
+		for (i = 0; i < ARRAY_LENGTH(keymapping); i++) {
+			if (strcmp(name, keymapping[i].key) == 0) {
+				//FIXME: check ti string
+				break;
+			}
+		}
+		if (i != ARRAY_LENGTH(keymapping))
+			return;
+		//FIXME: check function keys (take shiftfn into account)
+	}
+}
+
+static void add_sequences(t3_config_t *map) {
+	t3_config_t *noticheck, *ptr;
+
+	noticheck = t3_config_get(map, "noticheck");
+
+	for (ptr = t3_config_get(map, NULL); ptr != NULL; ptr = t3_config_get_next(ptr)) {
+		const char *name = t3_config_get_name(ptr);
+
+		if (strcmp(name, "use") == 0 || strcmp(name, "noticheck") == 0)
+			continue;
+		if (strcmp(name, "enter") == 0 || strcmp(name, "leave") == 0) {
+			if (t3_config_get_string(ptr)[0] == '\\') {
+				char *str = safe_strdup(t3_config_get_string(ptr));
+				parse_escapes(str);
+				free(str);
+			} else {
+				char *tistr = tigetstr(t3_config_get_string(ptr));
+				if (tistr == (char *) 0 || tistr == (char *) -1) {
+					//FIXME: get file name information
+					fprintf(stderr, "%s:%d: '%s' specifies non-%s terminfo entry '%s'\n",
+						input, t3_config_get_line_number(ptr), t3_config_get_name(ptr),
+						tistr == (char *) 0 ? "existant" : "string", t3_config_get_string(ptr));
+				}
+			}
+		} else {
+			add_sequence(ptr, noticheck);
+		}
+	}
+}
+
+static void check_map_rec(t3_config_t *map_config, t3_config_t *map);
+
+static void check_use(t3_config_t *map_config, t3_config_t *use_map) {
+	map_list_t *ptr;
+	for (ptr = map_head; ptr != NULL; ptr = ptr->next) {
+		if (ptr->map == use_map) {
+			//FIXME: get file name info
+			fprintf(stderr, "%s:%d: circular inclusion of map '%s'\n", input, t3_config_get_line_number(use_map),
+				t3_config_get_name(use_map));
+			if (option_trace_circular) {
+				for (ptr = map_head; ptr != NULL; ptr = ptr->next) {
+					fprintf(stderr, "  from map '%s'\n", t3_config_get_name(ptr->map));
+					if (ptr->map == use_map)
+						break;
+				}
+			}
+			return;
+		}
+	}
+	check_map_rec(map_config, use_map);
+}
+
+static void check_map_rec(t3_config_t *map_config, t3_config_t *map) {
 	t3_config_t *use_name, *use_map;
-	map_list_t *tmp, *ptr;
+	map_list_t *tmp;
 
 	tmp = safe_malloc(sizeof(map_list_t));
 	tmp->map = map;
-	tmp->next = head;
-	head = tmp;
+	tmp->next = map_head;
+	map_head = tmp;
+
+	add_sequences(map);
 
 	for (use_name = t3_config_get(t3_config_get(map, "use"), NULL); use_name != NULL; use_name = t3_config_get_next(use_name)) {
 		use_map = t3_config_get(t3_config_get(map_config, "maps"), t3_config_get_string(use_name));
-		for (ptr = head; ptr != NULL; ptr = ptr->next) {
-			if (ptr->map == use_map) {
-				//FIXME: get file and line number info
-				fprintf(stderr, "%s:%d: circular inclusion of map '%s'\n", input, 0, t3_config_get_name(use_map));
-				if (option_trace_circular) {
-					for (ptr = head; ptr != NULL; ptr = ptr->next) {
-						fprintf(stderr, "  from map '%s'\n", t3_config_get_name(ptr->map));
-						if (ptr->map == use_map)
-							break;
-					}
-				}
-				goto next_use;
-			}
-		}
-		check_circular_use_rec(map_config, use_map);
-next_use:;
+		check_use(map_config, use_map);
 	}
 
-	tmp = head;
-	head = tmp->next;
+	tmp = map_head;
+	map_head = tmp->next;
 	free(tmp);
 }
 
-static void check_circular_use(t3_config_t *map_config) {
+static void check_maps(t3_config_t *map_config) {
 	t3_config_t *map;
 
 	for (map = t3_config_get(t3_config_get(map_config, "maps"), NULL); map != NULL; map = t3_config_get_next(map)) {
 		if (t3_config_get_name(map)[0] != '_')
-			check_circular_use_rec(map_config, map);
+			check_map_rec(map_config, map);
 	}
-}
-
-static void check_terminfo(t3_config_t *map_config) {
-}
-
-static void check_duplicates(t3_config_t *map_config) {
 }
 
 int main(int argc, char *argv[]) {
@@ -175,9 +427,7 @@ int main(int argc, char *argv[]) {
 		printf("NOT IMPLEMENTED YET\n");
 		exit(1);
 	}
-	check_circular_use(map_config);
-	check_terminfo(map_config);
-	check_duplicates(map_config);
+	check_maps(map_config);
 
 	/* FIXME: checks to implement:
 		- map 'use's are not circular (although that should only trigger a warning)

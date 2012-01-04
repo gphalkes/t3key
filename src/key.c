@@ -292,13 +292,10 @@ static int convert_map(t3_config_t *map_config, t3_config_t *ptr, t3_key_node_t 
 					return T3_ERR_OUT_OF_MEMORY;
 				(*next)->string_length = strlen((*next)->string);
 			} else {
-				char *minus;
 				(*next)->string = t3_config_take_string(ptr);
 				(*next)->string_length = parse_escapes((*next)->string);
 				if ((*next)->string_length == 0)
 					return T3_ERR_INVALID_FORMAT;
-				if ((minus = strchr((*next)->key, '-')) != NULL)
-					*minus = '+';
 			}
 			next = &(*next)->next;
 		}
@@ -449,18 +446,18 @@ static const mapping_t keymapping[] = {
 	{ "kc3", "kp_page_down" },
 	{ "kbs", "backspace" },
 
-	{ "kIC", "insert+s" },
-	{ "kDC", "delete+s" },
-	{ "kHOM", "home+s" },
-	{ "kEND", "end+s" },
-	{ "kPRV", "page_up+s" },
-	{ "kNXT", "page_down+s" },
-	{ "kLFT", "left+s" },
-	{ "kRIT", "right+s" },
-	{ "kcbt", "tab+s" },
+	{ "kIC", "insert-s" },
+	{ "kDC", "delete-s" },
+	{ "kHOM", "home-s" },
+	{ "kEND", "end-s" },
+	{ "kPRV", "page_up-s" },
+	{ "kNXT", "page_down-s" },
+	{ "kLFT", "left-s" },
+	{ "kRIT", "right-s" },
+	{ "kcbt", "tab-s" },
 	{ "kent", "enter" },
-	{ "kind", "down+s" },
-	{ "kri", "up+s" }
+	{ "kind", "down-s" },
+	{ "kri", "up-s" }
 };
 /*END MAPPINGS*/
 
