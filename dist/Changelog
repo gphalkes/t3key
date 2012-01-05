@@ -1,3 +1,9 @@
+Version 0.2.0:
+	New features:
+	- Changed library to use libt3config as storage back-end, which
+	  necessitates a change from % prefix to _ as prefix for non-key items, and
+	  from + to - as separater between keys and modifiers.
+
 Version 0.1.5:
 	New features:
 	- Added a description for PuTTY (only used when PuTTY is configured to set

@@ -74,6 +74,18 @@ int main(int argc, char *argv[]) {
 EOF
 	test_link "required functions" || error "!! Some required functionality is not available. See config.log for details."
 
+	clean_c
+	cat > .config.c <<EOF
+#include <t3config/config.h>
+
+int main(int argc, char *argv[]) {
+	t3_config_get_version();
+	return 0;
+}
+EOF
+	pkgconfig libt3config/0.2.3 LIBT3CONFIG test_link PKGCONFIG_REQUIRES || \
+		error "!! Can not find libt3config. libt3config is required to compile libt3key."
+
 	if [ yes = "${with_t3learnkeys}" ] ; then
 		clean_c
 		cat > .config.c << EOF

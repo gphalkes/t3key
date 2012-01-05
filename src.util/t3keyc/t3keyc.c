@@ -78,7 +78,7 @@ static void print_usage(void) {
 	printf("Usage: t3keyc [<OPTIONS>] <INPUT>\n"
 		"  -h, --help                       Print this help message\n"
 		"  -l, --link                       Create symbolic links for aliases\n"
-		"  -t, --trace-circular-use         Trace circular 'use' inclusion\n"
+		"  -t, --trace-circular-use         Trace circular '_use' inclusion\n"
 		"  -v, --verbose                    Verbose output\n");
 	exit(EXIT_SUCCESS);
 }

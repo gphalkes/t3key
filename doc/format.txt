@@ -1,40 +1,52 @@
-libt3key Text Format
-====================
+libt3key Format
+===============
 
 Preliminaries
 -------------
 
-Strings are stored as text delimted by double quotes, and with backslash
-escaping. Keys start with either a letter (upper- or lowercase) or an
-underscore. Second and later key characters can be a letter, a number or an
-underscore. Modifiers are appended to keys by adding an at sign (+) followed
-by one or more of the letters c, m and s (in that order, for control, meta
-and shift respectively).
+The file format syntax is defined by libt3config. Strings are stored as text
+delimted by double or single quotes, with quote duplication to include literal
+quotes and with backslash escaping to include special characters. Keys start
+with either a letter (lowercase) or an underscore. Second and later key
+characters can be a letter, a number or an underscore. Modifiers are appended
+to keys by adding a minus sign (-) followed by one or more of the letters c, m
+and s (in that order, for control, meta and shift respectively).
 
 Any characters after a hash (#) character that is not part of a string up to
 the end of the line are considered comments and are ignored.
+
+For more information on how to define lists and other items in the input,
+please refer to the libt3config documentation.
 
 Maps
 ----
 
 A map is defined by a key followed by an open brace, a set of key-value pair
 and finaly a closing brace. The key-value pairs in the map are specified as
-key = value. The permissable keys consist of the special keys %include, %enter
-and %leave, and the names for the different keys on the keyboard (as specified
+key = value. The permissable keys consist of the special keys _use, _enter
+and _leave, and the names for the different keys on the keyboard (as specified
 in a later section).
 
-The %include special key can be used to include the key-value pairs of the
-named map into the current map. The value for %include should be the name of a
-key, without quotes. %enter and %leave keys will be ignored in the included
-map. Maps whose name begins with and underscore will be omitted from the
-output and can be used to define shared mappings without making directly
-accessible maps.
+Maps may only be defined in the maps section. For example:
 
-The %enter key defines the string to send to the terminal to switch the
-terminal to the mode for which this map defines the keys. The %leave key
-defines the string to reset the terminal to its original state. For the %enter
-and %leave keys, the value can be either a (unquoted) terminfo name or a
-string.
+maps {
+    kx {
+        home = "\e[O"
+    }
+}
+
+
+The _use special key can be used to include the key-value pairs of the named
+map into the current map. The value for _use should be a list of map quoted
+names. _enter and _leave keys may not be present in the included map. Maps
+whose name begins with and underscore are internal maps, and should only be
+used for inclusion in other maps
+
+The _enter key defines the string to send to the terminal to switch the
+terminal to the mode for which this map defines the keys. The _leave key
+defines the string to reset the terminal to its original state. For the _enter
+and _leave keys, the value can be either a terminfo name or a string literal
+starting with a backslash.
 
 Normal keys should have a string as their value. If a non-keypad and a keypad
 key share both function and string, only the non-keypad key should be included.
@@ -42,25 +54,25 @@ key share both function and string, only the non-keypad key should be included.
 Best map
 --------
 
-The "best map", as indicated by the %best key, should indicate the map that
+The "best map", as indicated by the best key, should indicate the map that
 gives access to the most useful set of key mappings. What "most useful" means
 is unfortunately not easy to define. Being able to distinghuish between as
 many combinations of keys and modifiers is of course desirable, but not always
 the only consideration.
 
-The value associated with the %best key is the unquoted name of a map defined
+The value associated with the best key is the quoted name of a map defined
 in the file. The %best key should be defined outside any map and is mandatory.
 
 Also Known As
 -------------
 
-Many maps are shared by different terminals. By including a %aka key, these
+Many maps are shared by different terminals. By including a aka list, these
 shared maps can be included under different names. The practical implementation
-is that a (symbolic) link will be created from the original name to the name
-specified in the %aka key.
+is that a (symbolic) link will be created from the original name to each name
+specified in the aka list.
 
-The value associated with an %aka key should be a string containing an
-additional name under which this map should be known.
+The values in an aka list should be additional names under which this map
+should be known.
 
 Shift FN
 --------
@@ -68,15 +80,15 @@ Shift FN
 Some terminals map (a limited range of) shifted function keys to higher
 numbered functions keys. For example, pressing shift-F1 in rxvt produces the
 same escape sequence as pressing F11. Because not all terminals do this, or use
-the same mapping, this information can be specified through the %shiftfn key.
+the same mapping, this information can be specified through the shiftfn key.
 
-The %shiftfn key expects a string with three comma separated numbers. The first
+The shiftfn key expects a list with three comma separated numbers. The first
 number represents the base of the mapped range. This is usually 1. The second
 number represents the end of the mapped range. Common values for this are 10
 and 12. The third number represents the mapping of the first function key as
-indicated by the first number. For example, the string "1,10,11" indicates that
-pressing shift-F1 will be mapped to F11, shift-F2 will be mapped to F12, up to
-shift-F10, which will be mapped to F20.
+indicated by the first number. For example, the list ( 1, 10, 11 ) indicates
+that pressing shift-F1 will be mapped to F11, shift-F2 will be mapped to F12,
+up to shift-F10, which will be mapped to F20.
 
 The reason to include this information is to indicate to client programs that
 the terminal does not produce separate escape sequences for the indicated range
@@ -98,7 +110,7 @@ subset. There are three different things that a terminal emulator may support:
 - Full reporting (i.e. buttons and motion all the time), enabled by ESC [?1003h
 - Extended coordinate mode for the previous modes, enabled by ESC [?1005h
 
-If any of these is supported, you can add %xterm_mouse to the description of
+If any of these is supported, you can add xterm_mouse to the description of
 the terminal emulator.
 
 When enabling the mouse modes from a client program (provided the terminal

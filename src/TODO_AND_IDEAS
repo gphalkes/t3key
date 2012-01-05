@@ -1,12 +1,5 @@
 TODO
 ====
-- make t3keyc a check program, rather than a compiler
-- update make install because the new database is simply files in a directory
-	- add symlinks (perhaps add an option to t3keyc)
-- update text_format.txt and remove binary_format.txt
-
-
-
 - we could store the fact that some keys with meta are simply esc-<key>. This
   also holds for combinations (key+cms = esc key+cs). The reason for doing so
   is that then we may be able to say whether a particular key is available by
