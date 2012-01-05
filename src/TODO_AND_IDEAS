@@ -19,12 +19,8 @@ TODO
   otherwise the program using libckey can't figure out what to do and results
   may depend on the comparison order.
 
-- use libt3config and drop the binary format. This makes it easier to see what
-  is going on, and allows users to easily modify the files to accomodate their
-  own needs.
 - implement "partial maps" to override other existing maps. This can be used to
   add or overwrite keys by a user. For example, one could add the putty keys
   for easy access, or change the linux console map and add those keys by
   simply putting them in ~/.t3key/
-- drop the sub-directories in the database
 

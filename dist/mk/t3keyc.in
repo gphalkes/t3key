@@ -16,7 +16,7 @@
 CFLAGS=-O2
 
 # Configuration flags and libraries. Include flags here to compile against the
-# (n)curses library.
+# libt3config and libtinfo or (n)curses library.
 CONFIGFLAGS=
 CONFIGLIBS=
 

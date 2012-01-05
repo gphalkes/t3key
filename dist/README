@@ -22,10 +22,10 @@ file COPYING for details.
 Prerequisites and installation
 ==============================
 
-libt3key requires GNU libtool to be compiled. Furthermore, it requires the
-(n)curses library, or ncurses's libtinfo for access to the terminfo database.
-The t3learnkeys program may be compiled with X11 support, in which case either
-the XCB or Xlib libraries and headers are also required.
+libt3key requires GNU libtool to be compiled. Furthermore, it requires
+libt3config and the (n)curses library, or ncurses's libtinfo for access to the
+terminfo database. The t3learnkeys program may be compiled with X11 support, in
+which case either the XCB or Xlib libraries and headers are also required.
 
 There are two ways in which to compile libt3key:
 
