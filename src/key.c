@@ -246,7 +246,7 @@ return_error:
 static int convert_map(t3_config_t *map_config, t3_config_t *ptr, t3_key_node_t **next, t3_bool outer) {
 	for (ptr = t3_config_get(ptr, NULL); ptr != NULL; ptr = t3_config_get_next(ptr)) {
 		const char *name = t3_config_get_name(ptr);
-		if (strcmp(name, "use") == 0) {
+		if (strcmp(name, "_use") == 0) {
 			t3_config_t *use;
 			/* Prevent infinte recursion and double inclusion by unlinking the map
 			   from the list. */
@@ -266,25 +266,17 @@ static int convert_map(t3_config_t *map_config, t3_config_t *ptr, t3_key_node_t 
 				while (*next != NULL)
 					next = &(*next)->next;
 			}
-		} else if (strcmp(name, "noticheck") != 0 && strcmp(name, "ticheck") == 0) {
-			bool enter_or_leave = false;
+		} else if (name[0] != '_' || strcmp(name, "_enter") == 0 || strcmp(name, "_leave") == 0) {
 			if ((*next = malloc(sizeof(t3_key_node_t))) == NULL)
 				return t3_false;
 			(*next)->string = NULL;
 			(*next)->next = NULL;
 
-			if (strcmp(name, "enter") == 0) {
-				name = "%enter";
-				enter_or_leave = true;
-			} else if (strcmp(name, "leave") == 0) {
-				name = "%leave";
-				enter_or_leave = true;
-			}
-
 			if (((*next)->key = _t3_key_strdup(name)) == NULL)
 				return T3_ERR_OUT_OF_MEMORY;
 
-			if (enter_or_leave && t3_config_get_string(ptr)[0] != '\\') {
+			/* Only for _enter and _leave, the name starts with _. */
+			if (name[0] == '_' && t3_config_get_string(ptr)[0] != '\\') {
 				/* Get terminfo string indicated by string. */
 				const char *ti_string;
 
@@ -343,7 +335,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		node->string = NULL;
 		node->next = NULL;
-		if ((node->key = _t3_key_strdup("%shiftfn")) == NULL)
+		if ((node->key = _t3_key_strdup("_shiftfn")) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		if ((node->string = malloc(3)) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
@@ -365,7 +357,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 		node->string = NULL;
 		node->string_length = 0;
 		node->next = NULL;
-		if ((node->key = _t3_key_strdup("%xterm_mouse")) == NULL)
+		if ((node->key = _t3_key_strdup("_xterm_mouse")) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		node->next = list;
 		list = node;
@@ -487,10 +479,10 @@ static t3_key_node_t *load_ti_keys(const char *term, int *error) {
 		RETURN_ERROR(T3_ERR_UNKNOWN);
 	}
 
-	ENSURE(make_node_from_ti(next_node, "smkx", "%enter"));
+	ENSURE(make_node_from_ti(next_node, "smkx", "_enter"));
 	if (*next_node != NULL)
 		next_node = &(*next_node)->next;
-	ENSURE(make_node_from_ti(next_node, "rmkx", "%leave"));
+	ENSURE(make_node_from_ti(next_node, "rmkx", "_leave"));
 	if (*next_node != NULL)
 		next_node = &(*next_node)->next;
 

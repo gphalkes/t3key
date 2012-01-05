@@ -15,12 +15,12 @@ types {
 	map {
 		type = "section"
 		allowed-keys {
-			use { type = "list"; item-type = "use" }
-			noticheck {
+			_use { type = "list"; item-type = "use" }
+			_noticheck {
 				type = "list";
 				item-type = "string";
 			}
-			ticheck { type = "bool" }
+			_ticheck { type = "bool" }
 		}
 		# For enter and leave, strings starting with \ are assumed to be
 		# literals. Otherwise they are assumed to be terminfo capnames

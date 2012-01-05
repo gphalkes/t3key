@@ -9,8 +9,8 @@ xterm_mouse = true
 
 maps {
 	nokx {
-		enter = "rmkx"
-		%use = "_kx_nokx"
+		_enter = "rmkx"
+		%_use = "_kx_nokx"
 		#~ kp_div-m = "\e/"
 		#~ kp_mul-m = "\e*"
 		#~ kp_minus-m = "\e-"
@@ -51,9 +51,9 @@ maps {
 	}
 
 	kx {
-		enter = "smkx"
-		leave = "rmkx"
-		%use = "_kx_nokx"
+		_enter = "smkx"
+		_leave = "rmkx"
+		%_use = "_kx_nokx"
 		kp_div = "\eOo"
 		kp_mul = "\eOj"
 		kp_minus = "\eOm"
@@ -104,7 +104,7 @@ maps {
 		left-m = "\e\eOD"
 		down-m = "\e\eOB"
 		right-m = "\e\eOC"
-		noticheck = ( "up", "left", "down", "right" )
+		_noticheck = ( "up", "left", "down", "right" )
 	}
 
 	_kx_nokx {

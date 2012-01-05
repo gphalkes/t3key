@@ -395,14 +395,12 @@ static void add_sequence(t3_config_t *ptr, t3_config_t *noticheck) {
 static void add_sequences(t3_config_t *map) {
 	t3_config_t *noticheck, *ptr;
 
-	noticheck = t3_config_get(map, "noticheck");
+	noticheck = t3_config_get(map, "_noticheck");
 
 	for (ptr = t3_config_get(map, NULL); ptr != NULL; ptr = t3_config_get_next(ptr)) {
 		const char *name = t3_config_get_name(ptr);
 
-		if (strcmp(name, "use") == 0 || strcmp(name, "noticheck") == 0 || strcmp(name, "ticheck") == 0)
-			continue;
-		if (strcmp(name, "enter") == 0 || strcmp(name, "leave") == 0) {
+		if (strcmp(name, "_enter") == 0 || strcmp(name, "_leave") == 0) {
 			if (t3_config_get_string(ptr)[0] == '\\') {
 				char *str = safe_strdup(t3_config_get_string(ptr));
 				parse_escapes(str);
@@ -416,7 +414,7 @@ static void add_sequences(t3_config_t *map) {
 						tistr == (char *) 0 ? "existant" : "string", t3_config_get_string(ptr));
 				}
 			}
-		} else {
+		} else if (name[0] != '_') {
 			add_sequence(ptr, noticheck);
 		}
 	}
@@ -455,16 +453,16 @@ static void check_map_rec(t3_config_t *map_config, t3_config_t *map, bool outer)
 	map_head = tmp;
 
 	if (!outer) {
-		if ((enter_leave = t3_config_get(map, "enter")) != NULL)
+		if ((enter_leave = t3_config_get(map, "_enter")) != NULL)
 			fprintf(stderr, "%s:%d: 'enter' should only be used in top-level maps\n",
 				input, t3_config_get_line_number(enter_leave));
-		if ((enter_leave = t3_config_get(map, "leave")) != NULL)
+		if ((enter_leave = t3_config_get(map, "_leave")) != NULL)
 			fprintf(stderr, "%s:%d: 'leave' should only be used in top-level maps\n",
 				input, t3_config_get_line_number(enter_leave));
 	} else {
-		if (((enter_leave = t3_config_get(map, "enter")) == NULL ||
+		if (((enter_leave = t3_config_get(map, "_enter")) == NULL ||
 				strcmp(t3_config_get_string(enter_leave), "smkx") != 0) &&
-				!t3_config_get_bool(t3_config_get(map, "ticheck")))
+				!t3_config_get_bool(t3_config_get(map, "_ticheck")))
 		{
 			option_check_terminfo = false;
 		}
@@ -472,7 +470,7 @@ static void check_map_rec(t3_config_t *map_config, t3_config_t *map, bool outer)
 
 	add_sequences(map);
 
-	for (use_name = t3_config_get(t3_config_get(map, "use"), NULL); use_name != NULL; use_name = t3_config_get_next(use_name)) {
+	for (use_name = t3_config_get(t3_config_get(map, "_use"), NULL); use_name != NULL; use_name = t3_config_get_next(use_name)) {
 		use_map = t3_config_get(t3_config_get(map_config, "maps"), t3_config_get_string(use_name));
 		check_use(map_config, use_map);
 	}
@@ -550,15 +548,15 @@ int main(int argc, char *argv[]) {
 			error.extra == NULL ? "" : ": ", error.extra == NULL ? "" : error.extra);
 	t3_config_delete_schema(schema);
 
-	if (option_link) {
-		create_symlinks(map_config, term_name);
-		exit(EXIT_SUCCESS);
-	}
-
 	if ((term_name = strrchr(input, '/')) == NULL)
 		term_name = input;
 	else
 		term_name++;
+
+	if (option_link) {
+		create_symlinks(map_config, term_name);
+		exit(EXIT_SUCCESS);
+	}
 
 	if (setupterm(term_name, 1, &err) == ERR) {
 		fprintf(stderr, "Could not find terminfo for %s\n", term_name);

@@ -15,8 +15,8 @@ xterm_mouse = true
 
 maps {
 	nokx {
-		enter = "rmkx"
-		%use = "_kx_nokx"
+		_enter = "rmkx"
+		%_use = "_kx_nokx"
 		home = "\e[H"
 		end = "\e[F"
 		up = "\e[A"
@@ -45,13 +45,13 @@ maps {
 		kp_center-cms = "\e[1;8E"
 		kp_page_down-cms = "\e[6;8~"
 		kp_insert-cms = "\e[2;8~"
-		%use = "_sun_fn_keys_nokx"
+		%_use = "_sun_fn_keys_nokx"
 	}
 
 	kx {
-		enter = "smkx"
-		leave = "rmkx"
-		%use = "_kx_nokx"
+		_enter = "smkx"
+		_leave = "rmkx"
+		%_use = "_kx_nokx"
 		# Also in shared map for termcap keys
 		# home = "\eOH"
 		# end = "\eOF"
@@ -65,8 +65,8 @@ maps {
 		kp_plus = "\eOk"
 		kp_center = "\eOE"
 		kp_enter = "\eOM"
-		%use = "_sun_fn_keys_kx"
-		%use = "_vt220_kx"
+		%_use = "_sun_fn_keys_kx"
+		%_use = "_vt220_kx"
 	}
 
 	_kx_nokx {
@@ -88,7 +88,7 @@ maps {
 		f11 = "\e[23~"
 		f12 = "\e[24~"
 		# Terminfo uses Shift-F1 etc. for f13 and beyond. So don't check against ti
-		noticheck = ( "f13", "f14", "f15", "f16", "f17", "f18", "f19", "f20", "f21",
+		_noticheck = ( "f13", "f14", "f15", "f16", "f17", "f18", "f19", "f20", "f21",
 			"f22", "f23", "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",
 			"f32", "f33", "f34", "f35" )
 		f13 = "\e[25~"
@@ -425,18 +425,18 @@ maps {
 		f34-cms = "\e[55;8~"
 		f35-cms = "\e[56;8~"
 
-		%use = "_old_fn_keys_nokx_kx"
-		%use = "_termcap_fn_keys_nokx_kx"
-		%use = "_sun_fn_keys_nokx_kx"
-		%use = "_vt220_kx_nokx"
-		%use = "_konsole_extra"
-		%use = "_gnome_terminal_extra"
+		%_use = "_old_fn_keys_nokx_kx"
+		%_use = "_termcap_fn_keys_nokx_kx"
+		%_use = "_sun_fn_keys_nokx_kx"
+		%_use = "_vt220_kx_nokx"
+		%_use = "_konsole_extra"
+		%_use = "_gnome_terminal_extra"
 	}
 
 
 	_old_fn_keys_nokx_kx {
 		# Terminfo includes only the current definitions for f1-f4
-		noticheck = ( "f1", "f2", "f3", "f4" )
+		_noticheck = ( "f1", "f2", "f3", "f4" )
 		f1 = "\e[11~"
 		f2 = "\e[12~"
 		f3 = "\e[13~"
@@ -590,7 +590,7 @@ maps {
 	}
 
 	_sun_fn_keys_nokx_kx {
-		noticheck = ( "insert", "home", "page_up", "delete", "end", "page_down",
+		_noticheck = ( "insert", "home", "page_up", "delete", "end", "page_down",
 			"kp_center", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9",
 			"f10", "f11", "f12", "f13", "f14", "f15", "f16", "f17", "f18", "f19",
 			"f20", "f21", "f22", "f23", "f24", "f25", "f26", "f28", "f30", "f32",
@@ -910,7 +910,7 @@ maps {
 		kp_page_up = "\eOy"
 		kp_plus = "\eOl"
 		kp_left = "\eOt"
-		noticheck = ( "kp_center" )
+		_noticheck = ( "kp_center" )
 		kp_center = "\eOu"
 		kp_right = "\eOv"
 		kp_end = "\eOq"
@@ -921,7 +921,7 @@ maps {
 	}
 
 	_vt220_kx_nokx {
-		noticheck = ( "home", "end" )
+		_noticheck = ( "home", "end" )
 		home = "\e[1~"
 		end = "\e[4~"
 		# Also in _old_fn_keys_nokx_kx

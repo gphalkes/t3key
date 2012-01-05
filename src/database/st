@@ -28,11 +28,10 @@ maps {
 		f11 = "\e[23~"
 		f12 = "\e[24~"
 		kp_div-cm = "\e\037"
-		%use = "_old_keys"
+		%_use = "_old_keys"
 	}
 
 	_old_keys {
-		noticheck = ( "backspace" )
 		backspace = "\010"
 	}
 }

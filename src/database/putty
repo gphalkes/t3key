@@ -5,7 +5,7 @@ xterm_mouse = true
 
 maps {
 	nokx {
-		%use = "_kx_nokx"
+		%_use = "_kx_nokx"
 		up = "\e[A"
 		left = "\e[D"
 		down = "\e[B"
@@ -21,9 +21,9 @@ maps {
 	}
 
 	kx {
-		enter = "\e[?1h\e="
-		leave = "\e[?1l\e>"
-		%use = "_kx_nokx"
+		_enter = "\e[?1h\e="
+		_leave = "\e[?1l\e>"
+		%_use = "_kx_nokx"
 		up = "\eOA"
 		left = "\eOD"
 		down = "\eOB"

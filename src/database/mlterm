@@ -5,8 +5,8 @@ xterm_mouse = yes
 
 maps {
 	nokx {
-		enter = "rmkx"
-		%use = "_kx_nokx"
+		_enter = "rmkx"
+		%_use = "_kx_nokx"
 		up = "\e[A"
 		left = "\e[D"
 		down = "\e[B"
@@ -53,9 +53,9 @@ maps {
 	}
 
 	kx {
-		enter = "smkx"
-		leave = "rmkx"
-		%use = "_kx_nokx"
+		_enter = "smkx"
+		_leave = "rmkx"
+		%_use = "_kx_nokx"
 		up = "\eOA"
 		left = "\eOD"
 		down = "\eOB"
@@ -211,7 +211,7 @@ maps {
 	}
 
 	_kx_nokx {
-		noticheck = ( "f13", "f14", "f15", "f16", "f17", "f18", "f19", "f20",
+		_noticheck = ( "f13", "f14", "f15", "f16", "f17", "f18", "f19", "f20",
 			"f21", "f22", "f23", "f24", "f25", "f26", "f27", "f28", "f29", "f30",
 			"f31", "f32", "f33", "f34", "f35" )
 

@@ -3,8 +3,8 @@ best = "kx"
 
 maps {
 	nokx {
-		enter = "rmkx"
-		%use = "_kx_nokx"
+		_enter = "rmkx"
+		%_use = "_kx_nokx"
 		up = "\e[A"
 		left = "\e[D"
 		down = "\e[B"
@@ -13,9 +13,9 @@ maps {
 	}
 
 	kx {
-		enter = "smkx"
-		leave = "rmkx"
-		%use = "_kx_nokx"
+		_enter = "smkx"
+		_leave = "rmkx"
+		%_use = "_kx_nokx"
 		up = "\eOA"
 		left = "\eOD"
 		down = "\eOB"
@@ -29,7 +29,7 @@ maps {
 	}
 
 	_kx_nokx {
-		noticheck = ( "backspace" )
+		_noticheck = ( "backspace" )
 		insert = "\e[2~"
 		home = "\e[1~"
 		page_up = "\e[5~"
