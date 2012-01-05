@@ -266,15 +266,25 @@ static int convert_map(t3_config_t *map_config, t3_config_t *ptr, t3_key_node_t 
 				while (*next != NULL)
 					next = &(*next)->next;
 			}
-		} else if (strcmp(name, "noticheck") != 0) {
+		} else if (strcmp(name, "noticheck") != 0 && strcmp(name, "ticheck") == 0) {
+			bool enter_or_leave = false;
 			if ((*next = malloc(sizeof(t3_key_node_t))) == NULL)
 				return t3_false;
 			(*next)->string = NULL;
 			(*next)->next = NULL;
+
+			if (strcmp(name, "enter") == 0) {
+				name = "%enter";
+				enter_or_leave = true;
+			} else if (strcmp(name, "leave") == 0) {
+				name = "%leave";
+				enter_or_leave = true;
+			}
+
 			if (((*next)->key = _t3_key_strdup(name)) == NULL)
 				return T3_ERR_OUT_OF_MEMORY;
 
-			if ((strcmp(name, "enter") == 0 || strcmp(name, "leave") == 0) && t3_config_get_string(ptr)[0] != '\\') {
+			if (enter_or_leave && t3_config_get_string(ptr)[0] != '\\') {
 				/* Get terminfo string indicated by string. */
 				const char *ti_string;
 
@@ -333,7 +343,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		node->string = NULL;
 		node->next = NULL;
-		if ((node->key = _t3_key_strdup("shiftfn")) == NULL)
+		if ((node->key = _t3_key_strdup("%shiftfn")) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		if ((node->string = malloc(3)) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
@@ -355,7 +365,7 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 		node->string = NULL;
 		node->string_length = 0;
 		node->next = NULL;
-		if ((node->key = _t3_key_strdup("xterm_mouse")) == NULL)
+		if ((node->key = _t3_key_strdup("%xterm_mouse")) == NULL)
 			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
 		node->next = list;
 		list = node;

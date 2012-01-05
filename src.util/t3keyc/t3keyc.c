@@ -24,6 +24,7 @@
 
 #include "optionMacros.h"
 
+
 #define ARRAY_LENGTH(x) (sizeof(x) / sizeof(x[0]))
 #define is_asciidigit(x) ((x) >= '0' && (x) <= '9')
 #define is_asciixdigit(x) (is_asciidigit(x) || ((x) >= 'a' && (x) <= 'f') || ((x) >= 'A' && (x) <= 'F'))
@@ -358,6 +359,7 @@ static void add_sequence(t3_config_t *ptr, t3_config_t *noticheck) {
 		seq_ptr->next = seq_head;
 		seq_head = seq_ptr;
 	}
+
 	if (option_check_terminfo && !invalid_name && t3_config_find(noticheck, compare_name, name, NULL) == NULL) {
 		const char *tistr;
 		for (i = 0; i < ARRAY_LENGTH(keymapping); i++) {
@@ -398,7 +400,7 @@ static void add_sequences(t3_config_t *map) {
 	for (ptr = t3_config_get(map, NULL); ptr != NULL; ptr = t3_config_get_next(ptr)) {
 		const char *name = t3_config_get_name(ptr);
 
-		if (strcmp(name, "use") == 0 || strcmp(name, "noticheck") == 0)
+		if (strcmp(name, "use") == 0 || strcmp(name, "noticheck") == 0 || strcmp(name, "ticheck") == 0)
 			continue;
 		if (strcmp(name, "enter") == 0 || strcmp(name, "leave") == 0) {
 			if (t3_config_get_string(ptr)[0] == '\\') {
@@ -420,7 +422,7 @@ static void add_sequences(t3_config_t *map) {
 	}
 }
 
-static void check_map_rec(t3_config_t *map_config, t3_config_t *map);
+static void check_map_rec(t3_config_t *map_config, t3_config_t *map, bool outer);
 
 static void check_use(t3_config_t *map_config, t3_config_t *use_map) {
 	map_list_t *ptr;
@@ -439,17 +441,34 @@ static void check_use(t3_config_t *map_config, t3_config_t *use_map) {
 			return;
 		}
 	}
-	check_map_rec(map_config, use_map);
+	check_map_rec(map_config, use_map, false);
 }
 
-static void check_map_rec(t3_config_t *map_config, t3_config_t *map) {
-	t3_config_t *use_name, *use_map;
+static void check_map_rec(t3_config_t *map_config, t3_config_t *map, bool outer) {
+	t3_config_t *use_name, *use_map, *enter_leave;
 	map_list_t *tmp;
+	bool saved_option_check_terminfo = option_check_terminfo;
 
 	tmp = safe_malloc(sizeof(map_list_t));
 	tmp->map = map;
 	tmp->next = map_head;
 	map_head = tmp;
+
+	if (!outer) {
+		if ((enter_leave = t3_config_get(map, "enter")) != NULL)
+			fprintf(stderr, "%s:%d: 'enter' should only be used in top-level maps\n",
+				input, t3_config_get_line_number(enter_leave));
+		if ((enter_leave = t3_config_get(map, "leave")) != NULL)
+			fprintf(stderr, "%s:%d: 'leave' should only be used in top-level maps\n",
+				input, t3_config_get_line_number(enter_leave));
+	} else {
+		if (((enter_leave = t3_config_get(map, "enter")) == NULL ||
+				strcmp(t3_config_get_string(enter_leave), "smkx") != 0) &&
+				!t3_config_get_bool(t3_config_get(map, "ticheck")))
+		{
+			option_check_terminfo = false;
+		}
+	}
 
 	add_sequences(map);
 
@@ -461,14 +480,20 @@ static void check_map_rec(t3_config_t *map_config, t3_config_t *map) {
 	tmp = map_head;
 	map_head = tmp->next;
 	free(tmp);
+
+	if (outer)
+		option_check_terminfo = saved_option_check_terminfo;
 }
 
 static void check_maps(t3_config_t *map_config) {
 	t3_config_t *map;
 
 	for (map = t3_config_get(t3_config_get(map_config, "maps"), NULL); map != NULL; map = t3_config_get_next(map)) {
-		if (t3_config_get_name(map)[0] != '_')
-			check_map_rec(map_config, map);
+		if (t3_config_get_name(map)[0] == '_')
+			continue;
+
+		check_map_rec(map_config, map, true);
+
 		while (seq_head != NULL) {
 			sequence_list_t *tmp = seq_head;
 			seq_head = tmp->next;
@@ -525,21 +550,22 @@ int main(int argc, char *argv[]) {
 			error.extra == NULL ? "" : ": ", error.extra == NULL ? "" : error.extra);
 	t3_config_delete_schema(schema);
 
-	if ((term_name = strrchr(input, '/')) == NULL)
-		term_name = input;
-	else
-		term_name++;
-
 	if (option_link) {
 		create_symlinks(map_config, term_name);
 		exit(EXIT_SUCCESS);
 	}
+
+	if ((term_name = strrchr(input, '/')) == NULL)
+		term_name = input;
+	else
+		term_name++;
 
 	if (setupterm(term_name, 1, &err) == ERR) {
 		fprintf(stderr, "Could not find terminfo for %s\n", term_name);
 		option_check_terminfo = false;
 	}
 	check_maps(map_config);
+
 	t3_config_delete(map_config);
 	return EXIT_SUCCESS;
 }

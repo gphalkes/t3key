@@ -14,7 +14,7 @@
 SOURCES.libt3key.la := key.c key_shared.c
 
 LTTARGETS := libt3key.la
-
+EXTRATARGETS := updatedblinks
 #================================================#
 # NO RULES SHOULD BE DEFINED BEFORE THIS INCLUDE #
 #================================================#
@@ -43,4 +43,7 @@ links:
 	@[ -L t3key ] || ln -s . t3key
 	@[ -L t3config ] || ln -s ../../config/src t3config
 
-.PHONY: updatedb utils links
+updatedblinks: utils
+	@for i in database/* ; do LD_LIBRARY_PATH=t3config/.libs ../src.util/t3keyc/t3keyc -l $$i ; done
+
+.PHONY: updatedblinks utils links
