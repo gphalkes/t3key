@@ -28,7 +28,8 @@ CFLAGS += -DHAS_STRDUP
 CFLAGS.key := -I.objects
 
 LDLIBS += -lcurses
-LDLIBS += -Lt3config/.libs -lt3config
+LDLIBS += -lt3config
+LDFLAGS += -Lt3config/.libs
 
 key.c: .objects/map.bytes
 

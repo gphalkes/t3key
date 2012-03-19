@@ -17,7 +17,10 @@ src.util/t3learnkeys/t3learnkeys
 src.util/t3keyc/t3keyc
 src.tools/test
 src/libt3key.la
-src/database/?/*
 dist/tmp
+
+src/database/rxvt-256color
+src/database/xterm-256color
+src/database/xterm-color
 
 .backupfilter.hg

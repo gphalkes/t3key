@@ -191,7 +191,7 @@ static size_t parse_escapes(char *string) {
 
 static t3_config_t *load_map_config(const char *term, int *error) {
 	const char *path[3] = { NULL, DB_DIRECTORY, NULL };
-	char *home_env;
+	char *xdg_path = NULL;
 	t3_config_error_t config_error;
 /* For now, the include mechanism is disabled. */
 /* 	t3_config_opts_t opts; */
@@ -200,17 +200,7 @@ static t3_config_t *load_map_config(const char *term, int *error) {
 	FILE *input = NULL;
 
 	/* Setup path. */
-	home_env = getenv("HOME");
-	if (home_env != NULL) {
-		char *tmp;
-		if ((tmp = malloc(strlen(home_env) + strlen(".libt3key") + 2)) == NULL)
-			RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
-		strcpy(tmp, home_env);
-		strcat(tmp, "/");
-		strcat(tmp, ".libt3key");
-		path[0] = home_env = tmp;
-	}
-
+	path[0] = xdg_path = t3_config_xdg_get_path(T3_CONFIG_XDG_DATA_HOME, "libt3key", 0);
 	if ((input = t3_config_open_from_path(path[0] == NULL ? path + 1 : path, term, T3_CONFIG_CLEAN_NAME)) == NULL)
 		RETURN_ERROR(T3_ERR_ERRNO);
 /*
@@ -229,7 +219,7 @@ static t3_config_t *load_map_config(const char *term, int *error) {
 	if (!t3_config_validate(map_config, schema, &config_error, 0))
 		RETURN_ERROR(config_error.error);
 
-	free(home_env);
+	free(xdg_path);
 	fclose(input);
 	t3_config_delete_schema(schema);
 
@@ -237,7 +227,7 @@ static t3_config_t *load_map_config(const char *term, int *error) {
 return_error:
 	if (input != NULL)
 		fclose(input);
-	free(home_env);
+	free(xdg_path);
 	t3_config_delete(map_config);
 	t3_config_delete_schema(schema);
 	return NULL;
