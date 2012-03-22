@@ -52,23 +52,10 @@ EOF
 config() {
 	clean_c
 	cat > .config.c << EOF
-#include <arpa/inet.h>
-#include <stdint.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 int main(int argc, char *argv[]) {
-	uint16_t foo = ntohs(1);
-	uint32_t bar = ntohl(1);
-	int result;
-	char buf[1024];
-
-	foo = htons(1);
-
-	result = mkdir("/foo", 0755);
-	result = (int) readlink("/foo", buf, sizeof(buf));
-	result = symlink("/foo", "/bar");
+	symlink("/foo", "/bar");
 	return 0;
 }
 EOF
@@ -83,7 +70,7 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 EOF
-	pkgconfig libt3config/0.2.3 LIBT3CONFIG test_link PKGCONFIG_REQUIRES || \
+	pkgconfig libt3config/0.2.5 LIBT3CONFIG test_link PKGCONFIG_REQUIRES || \
 		error "!! Can not find libt3config. libt3config is required to compile libt3key."
 
 	if [ yes = "${with_t3learnkeys}" ] ; then

@@ -52,12 +52,10 @@ $ make all
 $ make install
 (assumes working install program)
 
-libt3key and the t3keyc utility use the following non-ANSI functions: ntohs,
-ntohl, htons, mkdir, readlink, and symlink. Furhtermore they use uint16_t and
-uint32_t from the C99 stdint.h header. The (optional but recommended)
-t3learnkeys program uses the following non-ANSI functions: select, usleep,
-isatty, read, lfind, tcgetattr, tcsetattr and snprintf. All these should be
-available on a recent Un*x system.
+The t3keyc utility uses the following non-ANSI functions: symlink. Furhtermore
+The (optional but recommended) t3learnkeys program uses the following non-ANSI
+functions: select, usleep, isatty, read, lfind, tcgetattr, tcsetattr and
+snprintf. All these should be available on a recent Un*x system.
 
 The Makefiles in the distribution should work on all POSIX compatible make's.
 They have been tested using both GNU make and BSD make.

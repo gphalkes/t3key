@@ -40,6 +40,11 @@ in the output.
 .IP "\fB\-o\fP <\fBoutput\fP>, \fB\-\-output\fP=<\fBoutput\fP>"
 Write the output to <\fBoutput\fP>, instead of using the value of the TERM
 environment variable as output file name.
+.IP "\fB\-s\fP, \fB\-\-show-only\fP"
+Only show the sequences produced by pressing keys. When using this mode, the
+\fBt3learnkeys\fP program will not write any files. This mode is primarily
+intended to find out the sequences sent by specific keys, rather than learning
+an entire set of keys.
 .PP
 .SH BUGS
 
@@ -51,7 +56,7 @@ reporting bugs, please include a minimal example that demonstrates the problem.
 G.P. Halkes <libt3key@ghalkes.nl>
 .SH COPYRIGHT
 
-Copyright \(co 2011 G.P. Halkes
+Copyright \(co 2011-2012 G.P. Halkes
 .br
 libt3key is licensed under the GNU General Public License version 3.
 .br

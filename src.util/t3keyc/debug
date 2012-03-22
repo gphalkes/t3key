@@ -1,0 +1,3 @@
+#!/bin/bash
+
+LD_LIBRARY_PATH=t3config/.libs nemiver ./t3keyc "$@"
