@@ -1,0 +1,50 @@
+# The following is a map with supplemental key mappings for the linux console.
+# Using these mappings will allow distinction between key presses for several
+# keys with and without control and shift modifiers.
+
+# These mappings can be loaded with the loadkeys(1) program. Simply run
+#   loadkeys supplemental.map
+# as root to add these mappings to your console. To make the changes permanent
+# with respect to reboots, you can either create a new map consisting of an
+# existing map and the following additions [prefered solution], or ensure the
+# loadkeys command is executed every reboot. Check the documentation for your
+# distribution on how to do this.
+
+# Right
+control keycode 106 = F100
+shift keycode 106 = F101
+control shift keycode 106 = F102
+# Left
+control keycode 105 = F103
+shift keycode 105 = F104
+control shift keycode 105 = F105
+# Up
+shift keycode 103 = F106
+# Down
+shift keycode 108 = F107
+# Home
+control keycode 102 = F108
+shift keycode 102 = F109
+control shift keycode 102 = F110
+# End
+control keycode 107 = F111
+shift keycode 107 = F112
+control shift keycode 107 = F113
+# Tab
+shift keycode 15 = F114
+
+string F100 = "\033[1;C"
+string F101 = "\033[2;C"
+string F102 = "\033[3;C"
+string F103 = "\033[1;D"
+string F104 = "\033[2;D"
+string F105 = "\033[3;D"
+string F106 = "\033[1;A"
+string F107 = "\033[1;B"
+string F108 = "\033[1;1~"
+string F109 = "\033[2;1~"
+string F110 = "\033[3;1~"
+string F111 = "\033[1;4~"
+string F112 = "\033[2;4~"
+string F113 = "\033[3;4~"
+string F114 = "\033[Z"

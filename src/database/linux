@@ -1,0 +1,68 @@
+format = 1
+best = "nokx"
+
+shiftfn = (1,12,13)
+
+maps {
+	nokx {
+		insert = "\e[2~"
+		home = "\e[1~"
+		page_up = "\e[5~"
+		delete = "\e[3~"
+		end = "\e[4~"
+		page_down = "\e[6~"
+		up = "\e[A"
+		left = "\e[D"
+		down = "\e[B"
+		right = "\e[C"
+		kp_center = "\e[G"
+		backspace = "\177"
+		f1 = "\e[[A"
+		f2 = "\e[[B"
+		f3 = "\e[[C"
+		f4 = "\e[[D"
+		f5 = "\e[[E"
+		f6 = "\e[17~"
+		f7 = "\e[18~"
+		f8 = "\e[19~"
+		f9 = "\e[20~"
+		f10 = "\e[21~"
+		f11 = "\e[23~"
+		f12 = "\e[24~"
+		f13 = "\e[25~"
+		f14 = "\e[26~"
+		f15 = "\e[28~"
+		f16 = "\e[29~"
+		f17 = "\e[31~"
+		f18 = "\e[32~"
+		f19 = "\e[33~"
+		f20 = "\e[34~"
+		backspace-c = "\010"
+
+		# The supplemental keymaps(5) definitions are included by default,
+		# because normally they won't do anything.
+		%_use = "suppl"
+	}
+
+	suppl {
+		# Additional codes used in conjunction with supplemental keymaps(5)
+		# definitions (see /usr/share/doc/libt3key/supplemental.kmap). On a
+		# normal linux console without the additional mappings, these codes
+		# will never be generated.
+		right-c = "\e[1;C"
+		right-s = "\e[2;C"
+		right-cs = "\e[3;C"
+		left-c = "\e[1;D"
+		left-s = "\e[2;D"
+		left-cs = "\e[3;D"
+		up-s = "\e[1;A"
+		down-s = "\e[1;B"
+		home-c = "\e[1;1~"
+		home-s = "\e[2;1~"
+		home-cs = "\e[3;1~"
+		end-c = "\e[1;4~"
+		end-s = "\e[2;4~"
+		end-cs = "\e[3;4~"
+		tab-s = "\e[Z"
+	}
+}

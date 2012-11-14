@@ -50,7 +50,7 @@
 } while (0)
 
 static t3_key_node_t *load_ti_keys(const char *term, int *error);
-/* FIXME: make a function specific for each type (there seems to be only one anyway. */
+/* FIXME: make a function specific for each type (there seems to be only one anyway). */
 static int new_node(void **result, size_t size);
 #define NEW_NODE(_x) new_node((void **) (_x), sizeof(**(_x)))
 
