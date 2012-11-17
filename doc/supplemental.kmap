@@ -3,12 +3,17 @@
 # keys with and without control and shift modifiers.
 
 # These mappings can be loaded with the loadkeys(1) program. Simply run
-#   loadkeys supplemental.map
-# as root to add these mappings to your console. To make the changes permanent
-# with respect to reboots, you can either create a new map consisting of an
-# existing map and the following additions [prefered solution], or ensure the
-# loadkeys command is executed every reboot. Check the documentation for your
-# distribution on how to do this.
+#   loadkeys supplemental.kmap
+# as root to add these mappings to your console. How to make these changes
+# permanent depends on your distribution. There are also two ways to make these
+# changes permanent: create a keymap which contains this file, or add a job
+# which is run on startup and executes the above loadkeys command.
+
+# Debian (or Debian based such as Ubuntu):
+#   Add the contents of this file to /etc/console-setup/remap.inc and run
+#   "dpkg-reconfigure -u keyboard-configuration" as root. Adding the mappings
+#   to the remap.inc file will ensure that the mappings are activated, even if
+#   another keyboard layout is chosen at a later time.
 
 # Right
 control keycode 106 = F100
@@ -39,8 +44,8 @@ string F102 = "\033[3;C"
 string F103 = "\033[1;D"
 string F104 = "\033[2;D"
 string F105 = "\033[3;D"
-string F106 = "\033[1;A"
-string F107 = "\033[1;B"
+string F106 = "\033[2;A"
+string F107 = "\033[2;B"
 string F108 = "\033[1;1~"
 string F109 = "\033[2;1~"
 string F110 = "\033[3;1~"

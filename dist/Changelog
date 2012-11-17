@@ -1,3 +1,9 @@
+Version 0.2.2:
+    Miscellaneous:
+	- Add information on how to make the linux console send different sequences
+	  for navigation keys with certain modifiers, and include a key map for
+	  the linux console which includes these sequences.
+
 Version 0.2.1:
 	New features:
 	- Switch to XDG Base Directory Specification locations for per-user
