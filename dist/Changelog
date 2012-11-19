@@ -1,3 +1,7 @@
+Version 0.2.3:
+	Miscellaneous:
+	- Add omitted file in 0.2.2 release.
+
 Version 0.2.2:
     Miscellaneous:
 	- Add information on how to make the linux console send different sequences
