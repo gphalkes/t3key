@@ -1,3 +1,8 @@
+Version 0.2.4:
+	Bug fixes:
+	- Check for - instead of + when parsing blocked keys, thereby using the
+	  same names as the generated configuration file.
+
 Version 0.2.3:
 	Miscellaneous:
 	- Add omitted file in 0.2.2 release.

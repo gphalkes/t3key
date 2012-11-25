@@ -360,7 +360,7 @@ static int check_key(name_mapping_t *key_desc, const char **key_name) {
 		return 0;
 
 	/* ... and if not, check if it is one of the identifiers as used in the output file. */
-	key_modifiers = strpbrk(*key_name, "+");
+	key_modifiers = strpbrk(*key_name, "-");
 	key_name_len = key_modifiers == NULL ? strlen(*key_name) : (size_t) (key_modifiers - *key_name);
 	if (strlen(key_desc[0].identifier) != key_name_len || memcmp(key_desc[0].identifier, *key_name, key_name_len) != 0)
 		return 1;
@@ -732,7 +732,7 @@ PARSE_FUNCTION(parse_args)
 			printf("Usage: t3learnkeys [<options>]\n"
 #ifndef NO_AUTOLEARN
 				"  -a,--auto-learn             Learn by emulating key events for X11 terminals\n"
-				"  -A,--dont-abort-auto-learn  Do abort on C-c when auto-learning\n"
+				"  -A,--dont-abort-auto-learn  Don't abort on C-c when auto-learning\n"
 #endif
 				"  -b<keys>,--block-keys=<keys>  Do not ask for keys described in <keys>\n"
 				"  -d,--no-duplicates          Do not print comments for duplicates\n"
