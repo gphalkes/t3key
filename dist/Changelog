@@ -1,7 +1,11 @@
 Version 0.2.4:
+	New features:
+	- Added definition file for screen.
+
 	Bug fixes:
-	- Check for - instead of + when parsing blocked keys, thereby using the
-	  same names as the generated configuration file.
+	- Check for - instead of + when parsing blocked keys in t3learnkeys,
+	  thereby using the same names as the generated configuration file.
+	- Fix incorrect generation of several entry names in t3learnkeys
 
 Version 0.2.3:
 	Miscellaneous:
