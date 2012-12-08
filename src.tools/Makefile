@@ -22,7 +22,7 @@ TARGETS := test
 #================================================#
 include ../../makesys/rules.mk
 #================================================#
-CFLAGS += -I. -I../src
+CFLAGS += -I. -I../include
 
 .objects/test.o: | library
 

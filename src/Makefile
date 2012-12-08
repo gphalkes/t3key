@@ -29,22 +29,18 @@ CFLAGS.key := -I.objects
 
 LDLIBS += -lcurses
 LDLIBS += -lt3config
-LDFLAGS += -Lt3config/.libs
+LDFLAGS += -L../include/t3config/.libs
 
 key.c: .objects/map.bytes
 
 .objects/%.bytes: %.schema
 	$(GENOBJDIR)
-	$(_VERBOSE_GEN) ./t3config/data2bytes -s -- $< > $@
+	$(_VERBOSE_GEN) ../include/t3config/data2bytes -s -- $< > $@
 
 utils: | libt3key.la
 	@$(MAKE) -C ../src.util $(_VERBOSE_PRINT)
 
-links:
-	@[ -L t3key ] || ln -s . t3key
-	@[ -L t3config ] || ln -s ../../config/src t3config
-
 updatedblinks: utils
-	@for i in database/* ; do LD_LIBRARY_PATH=t3config/.libs ../src.util/t3keyc/t3keyc -l $$i ; done
+	@for i in database/* ; do LD_LIBRARY_PATH=../include/t3config/.libs ../src.util/t3keyc/t3keyc -l $$i ; done
 
 .PHONY: updatedblinks utils links

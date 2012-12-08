@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-EXTENSIONS="c libtool pkgconfig verbose_compile pkgconfig_dep gettext x11"
+EXTENSIONS="c libtool pkgconfig verbose_compile pkgconfig_dep gettext x11 lfs"
 MAKEFILES="Makefile mk/libt3key mk/t3keyc mk/t3learnkeys"
 LTSHARED=1
 DEFAULT_LINGUAS=nl

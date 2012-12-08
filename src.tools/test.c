@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "key.h"
+#include "t3key/key.h"
 
 void write_escaped_string(FILE *out, const char *string, size_t length) {
 	size_t i;
