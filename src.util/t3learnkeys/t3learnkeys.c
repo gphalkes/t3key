@@ -194,7 +194,6 @@ static void restore_terminal(void) {
 }
 
 static void init_terminal(void) {
-	char *env;
 	struct termios new_params;
 	if (!isatty(STDOUT_FILENO))
 		fatal("Stdout is not a terminal\n");
@@ -214,7 +213,6 @@ static void init_terminal(void) {
 	atexit(restore_terminal);
 	FD_ZERO(&inset);
 	FD_SET(STDIN_FILENO, &inset);
-	env = getenv("TERM");
 }
 
 /* Read a char masking interruptions. */

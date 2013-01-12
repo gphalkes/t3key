@@ -1,6 +1,8 @@
 Version 0.2.4:
 	New features:
 	- Added definition file for screen.
+	- Compile with Large File Support if such support is available on the
+	  platform.
 
 	Bug fixes:
 	- Check for - instead of + when parsing blocked keys in t3learnkeys,

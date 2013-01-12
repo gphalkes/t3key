@@ -1,4 +1,4 @@
-/* Copyright (C) 2006-2008,2011-2012 G.P. Halkes
+/* Copyright (C) 2006-2009 G.P. Halkes
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 3, as
    published by the Free Software Foundation.
@@ -29,9 +29,16 @@
 - Option parsing may change the argument vector. If this should not happen,
   define the macro OPTION_STRDUP such that it allocates a copy of the string
   passed to it.
+- The current option (or the non-option argument) is available in the variable
+  optcurrent. Arguments to options are stored in optArg.
 - Printing options should be done by using the "%.*s" format and
   "(int) optlength, optcurrent" arguments or even better, the OPTFMT format
-  macor and OPTPRARG arg.
+  macro and OPTPRARG arg.
+- Checking the current option can be delegated to a child parser. This can be
+  defined by using CHILD_PARSE_FUNCTION (forward declaraction by
+  CHILD_PARSE_FUNCTION_DECL). To attempt checking with the child parser, use
+  the macro CALL_CHILD. If the child parser handles the option, no further
+  option checks will be done.
 
 A simple example argument parser is shown below:
 
@@ -59,7 +66,7 @@ END_FUNCTION
 
 #ifndef OPTION_STRDUP
 #define OPTION_STRDUP(_x) (_x)
-#define OPTION_FREE(_x) (void) 0
+#define OPTION_FREE(_x) (void) optptr
 #else
 #define OPTION_FREE(_x) free(_x)
 #endif
@@ -77,12 +84,12 @@ END_FUNCTION
 	int optargind; \
 	int optnomore = 0;
 
-/** Declare a chile option parsing function.
+/** Declare a child option parsing function.
 	@param name The name of the function to define.
 */
 #define CHILD_PARSE_FUNCTION_DECL(name) int name(int argc, char **argv, char *optcurrent, char *optArg, size_t optlength, ArgType opttype, int _optargind);
 
-/** Define a chile option parsing function.
+/** Define a child option parsing function.
 	@param name The name of the function to define.
 */
 #define CHILD_PARSE_FUNCTION(name) int name(int argc, char **argv, char *optcurrent, char *optArg, size_t optlength, ArgType opttype, int _optargind) { \
@@ -102,7 +109,7 @@ END_FUNCTION
 
 /** Indicate the start of option processing.
 
-	This is separte from @a PARSE_FUNCTION so that local variables can be
+	This is separate from @a PARSE_FUNCTION so that local variables can be
 	defined.
 */
 #define OPTIONS \
@@ -120,9 +127,6 @@ END_FUNCTION
 				} else { \
 					optlength = optArg - optcurrent; \
 					optArg++; \
-					if (*optArg == 0) { \
-						fatal(_("Option " OPTFMT " has zero length argument\n"), OPTPRARG); \
-					} \
 				} \
 				opttype = LONG; \
 			} else { \
@@ -153,7 +157,7 @@ END_FUNCTION
 		goto next_opt; \
 	} else if (optcontrol == 2) { \
 		OPTION_FREE(optptr); \
-	} }}
+	} }} goto stop_opt_parse; stop_opt_parse:;
 
 /** Signal the end of the option processing function. */
 #define END_FUNCTION }
@@ -243,6 +247,9 @@ END_FUNCTION
 /** Tell option processor that all further arguments are non-option arguments. */
 #define NO_MORE_OPTIONS do { optnomore = 1; } while(0)
 
+/** Tell option processor to jump out of option processing. */
+#define STOP_OPTION_PROCESSING do { goto stop_opt_parse; } while(0)
+
 /** Check an option argument for an integer value.
 	@param var The variable to store the result in.
 	@param min The minimum allowable value.
@@ -277,7 +284,7 @@ END_FUNCTION
 		fatal(_("Garbage after value for " OPTFMT " option\n"), OPTPRARG); \
 	} \
 	if (errno != 0 || value < min || value > max) { \
-		fatal(_("Value for " OPTFMT " option (%ld) is out of range\n"), OPTPRARG, value); \
+		fatal(_("Value for " OPTFMT " option (%f) is out of range\n"), OPTPRARG, value); \
 	} \
 	var = value; } while(0)
 
