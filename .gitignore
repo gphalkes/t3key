@@ -1,4 +1,3 @@
-syntax: glob
 src/t3config
 src.util/t3keyc/t3config
 src/t3key

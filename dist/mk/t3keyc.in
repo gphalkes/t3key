@@ -32,7 +32,7 @@ all: src.util/t3keyc/t3keyc
 SILENTCC=@echo '[CC]' $< ;
 SILENTLD=@echo '[LD]' $@ ;
 
-OBJECTS_T3KEYC=<OBJECTS_T3KEYC>
+OBJECTS=<OBJECTS>
 
 clean:
 	rm -rf src.util/t3keyc/*.o src.util/t3keyc/t3keyc
@@ -42,6 +42,6 @@ dist-clean: clean
 .c.o:
 	$(SILENTCC) $(CC) $(CFLAGS) -Isrc -Isrc.util $(CONFIGFLAGS) -c -o $@ $<
 
-src.util/t3keyc/t3keyc: $(OBJECTS_T3KEYC)
-	$(SILENTLD) $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_T3KEYC) $(LDLIBS) $(CONFIGLIBS)
+src.util/t3keyc/t3keyc: $(OBJECTS)
+	$(SILENTLD) $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS) $(CONFIGLIBS)
 

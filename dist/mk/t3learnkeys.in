@@ -38,7 +38,7 @@ all: src.util/t3learnkeys/t3learnkeys
 SILENTCC=@echo '[CC]' $< ;
 SILENTLD=@echo '[LD]' $@ ;
 
-OBJECTS_T3LEARNKEYS=<OBJECTS_T3LEARNKEYS>
+OBJECTS=<OBJECTS>
 
 clean:
 	rm -rf src.util/t3learnkeys/*.o src.util/t3learnkeys/t3learnkeys
@@ -48,6 +48,6 @@ dist-clean: clean
 .c.o:
 	$(SILENTCC) $(CC) $(CFLAGS) $(CONFIGFLAGS) $(X11_FLAGS) -Isrc.util -c -o $@ $<
 
-src.util/t3learnkeys/t3learnkeys: $(OBJECTS_T3LEARNKEYS)
-	$(SILENTLD) $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_T3LEARNKEYS) $(LDLIBS) $(CONFIGLIBS) $(X11_LIBS)
+src.util/t3learnkeys/t3learnkeys: $(OBJECTS)
+	$(SILENTLD) $(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS) $(CONFIGLIBS) $(X11_LIBS)
 

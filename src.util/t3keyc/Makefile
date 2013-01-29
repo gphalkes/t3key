@@ -20,14 +20,11 @@ TARGETS := t3keyc
 #================================================#
 include ../../../makesys/rules.mk
 #================================================#
-CFLAGS += -I. -I../../src -I.objects -I.. -I../../src/.objects
+CFLAGS += -I. -I../../src -I../../include -I.objects -I.. -I../../src/.objects
 
-LDFLAGS += -Lt3config/.libs
+LDFLAGS += -L../../include/t3config/.libs
 LDLIBS += -lcurses
 LDLIBS += -lt3config
-
-links:
-	@[ -L t3config ] || ln -s ../../../config/src t3config
 
 .objects/mappings.c: ../../src/key.c
 	@[ -d .objects/`dirname '$<'` ] || mkdir -p .objects/`dirname '$<'`

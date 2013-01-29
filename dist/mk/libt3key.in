@@ -56,7 +56,7 @@ all: src/libt3key.la
 .SUFFIXES: .c .o .lo .la .mo .po
 .SECONDARY: # Tell GNU make not to delete intermediate files
 
-OBJECTS_LIBT3KEY=<OBJECTS_LIBT3KEY>
+OBJECTS=<OBJECTS>
 
 clean:
 	rm -rf src/*.lo src/.libs src/libt3key.la
@@ -68,8 +68,8 @@ dist-clean: clean
 		$(CONFIGFLAGS) $(GETTEXTFLAGS) -DT3_KEY_BUILD_DSO -DLOCALEDIR=\"$(LOCALEDIR)\" \
 		-DDB_DIRECTORY=\"$(datadir)/libt3key<LIBVERSION>\" -c -o $@ $<
 
-src/libt3key.la: $(OBJECTS_LIBT3KEY)
+src/libt3key.la: $(OBJECTS)
 	$(SILENTLDLT) $(LIBTOOL) $(SILENCELT) --mode=link --tag=CC $(CC) -shared -version-info <VERSIONINFO> \
-		$(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS_LIBT3KEY) $(LDLIBS) $(GETTEXTLIBS) \
+		$(CFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS) $(GETTEXTLIBS) \
 		$(CONFIGLIBS) -rpath $(libdir)
 
