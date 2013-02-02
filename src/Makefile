@@ -21,7 +21,7 @@ EXTRATARGETS := updatedblinks
 include ../../makesys/rules.mk
 #================================================#
 T3NAME := key
-include ../../shared/rules.mk
+include ../../t3shared/rules.mk
 
 CFLAGS += -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
 CFLAGS += -DHAS_STRDUP

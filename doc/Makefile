@@ -17,4 +17,4 @@ all: doxygen
 DOXYGENDEFS:=T3_KEY_CONST=const
 
 T3NAME:=key
-include ../../shared/doc-rules.mk
+include ../../t3shared/doc-rules.mk
