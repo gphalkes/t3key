@@ -1,3 +1,10 @@
+Version 0.2.5:
+	New features:
+	- More aliases for color terminals
+
+	Bug fixes:
+	- Correctly detect the different TERM settings for screen.
+
 Version 0.2.4:
 	New features:
 	- Added definition file for screen.

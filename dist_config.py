@@ -49,5 +49,5 @@ def get_replacements(mkdist):
 	]
 
 def finalize(mkdist):
-	os.symlink('.', os.path.join(mkdist.topdir, 't3key'))
+	os.symlink('.', os.path.join(mkdist.topdir, 'src', 't3key'))
 	print("WARNING: need to add validation of the descriptions to the mkdist script!!!")
