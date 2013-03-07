@@ -29,7 +29,7 @@ CFLAGS.key := -I.objects
 
 LDLIBS += -lcurses
 LDLIBS += -lt3config
-LDFLAGS += -L../include/t3config/.libs
+LDFLAGS += $(call L,../include/t3config/.libs)
 
 key.c: .objects/map.bytes
 

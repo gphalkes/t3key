@@ -12,16 +12,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 SOURCES.test := test.c
-LDFLAGS.test := -L../src/.libs
-LDLIBS.test := -lt3key
 
 TARGETS := test
-
 #================================================#
 # NO RULES SHOULD BE DEFINED BEFORE THIS INCLUDE #
 #================================================#
 include ../../makesys/rules.mk
 #================================================#
+LDFLAGS.test := $(call L, ../src/.libs)
+LDLIBS.test := -lt3key
+
 CFLAGS += -I. -I../include
 
 .objects/test.o: | library

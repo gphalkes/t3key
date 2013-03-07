@@ -55,7 +55,8 @@ int main(int argc, char *argv[]) {
 
 	while (node) {
 		printf("%s = ", node->key);
-		write_escaped_string(stdout, node->string, strlen(node->string));
+		if (node->string != NULL)
+			write_escaped_string(stdout, node->string, strlen(node->string));
 		printf("\n");
 		node = node->next;
 	}

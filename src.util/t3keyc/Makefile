@@ -14,7 +14,6 @@
 SOURCES.t3keyc := t3keyc.c
 
 TARGETS := t3keyc
-
 #================================================#
 # NO RULES SHOULD BE DEFINED BEFORE THIS INCLUDE #
 #================================================#
@@ -22,7 +21,7 @@ include ../../../makesys/rules.mk
 #================================================#
 CFLAGS += -I. -I../../src -I../../include -I.objects -I.. -I../../src/.objects
 
-LDFLAGS += -L../../include/t3config/.libs
+LDFLAGS += $(call L, ../../include/t3config/.libs)
 LDLIBS += -lcurses
 LDLIBS += -lt3config
 
