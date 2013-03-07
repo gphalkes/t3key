@@ -54,9 +54,11 @@ int main(int argc, char *argv[]) {
 	printf("%s: %s\n", term, t3_key_strerror(error));
 
 	while (node) {
-		printf("%s = ", node->key);
-		if (node->string != NULL)
-			write_escaped_string(stdout, node->string, strlen(node->string));
+		printf("%s", node->key);
+		if (node->string != NULL) {
+			printf(" = ");
+			write_escaped_string(stdout, node->string, node->string_length);
+		}
 		printf("\n");
 		node = node->next;
 	}
