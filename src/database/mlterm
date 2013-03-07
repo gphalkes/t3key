@@ -1,6 +1,8 @@
 format = 1
 best = "kx"
 
+aka = ( "mlterm-256color" )
+
 xterm_mouse = yes
 
 maps {

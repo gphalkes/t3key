@@ -3,6 +3,10 @@
 format = 1
 best = "kx"
 
+# screen goes by many TERM names. However, these are generated on the fly, so
+# we can not simply add aliases here. Thus there is special code in key.c to
+# recognize screen, and load this definition.
+
 xterm_mouse = true
 
 maps {

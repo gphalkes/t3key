@@ -1,7 +1,7 @@
 format = 1
 
 best = "kx"
-aka = ("xterm-256color", "xterm-color")
+aka = ("xterm-256color", "xterm-color", "xterm-16color", "xterm-88color")
 
 # Xterm itself doesn't need this, but some xterm "compatible" emulators do. The
 # problem is that we can't distinghuish between proper xterm and the emulators.

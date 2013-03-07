@@ -193,23 +193,28 @@ static t3_config_t *load_map_config(const char *term, int *error) {
 	const char *path[3] = { NULL, DB_DIRECTORY, NULL };
 	char *xdg_path = NULL;
 	t3_config_error_t config_error;
-/* For now, the include mechanism is disabled. */
-/* 	t3_config_opts_t opts; */
 	t3_config_t *map_config = NULL;
 	t3_config_schema_t *schema = NULL;
 	FILE *input = NULL;
+	/* Variable to hold an alternate value to use for term, in case of TERM
+	   weirdness (like screen.rxvt). */
+	const char *search_term = NULL;
 
 	/* Setup path. */
 	path[0] = xdg_path = t3_config_xdg_get_path(T3_CONFIG_XDG_DATA_HOME, "libt3key", 0);
-	if ((input = t3_config_open_from_path(path[0] == NULL ? path + 1 : path, term, T3_CONFIG_CLEAN_NAME)) == NULL)
-		RETURN_ERROR(T3_ERR_ERRNO);
-/*
-	opts.flags = T3_CONFIG_INCLUDE_DFLT;
-	opts.include_callback.dflt.flags = T3_CONFIG_CLEAN_NAME;
-	opts.include_callback.dflt.path = path + 1;
 
-	if ((map_config = t3_config_read_file(input, &config_error, &opts)) == NULL)
-*/
+	/* Screen is a nasty beast. It generates its TERM setting on the fly. The main
+	   variation is by terminal. So there is screen.rxvt, screen.Eterm etc.
+	   Furthermore, there are all kinds of variants for colors and options, like
+	   screen-256color and screen-bce. So we simply fall back to loading the
+	   screen definition. */
+	if (strncmp(term, "screen", 6) == 0 && (term[6] == '.' || term[6] == '-'))
+		search_term = "screen";
+
+	if ((input = t3_config_open_from_path(path[0] == NULL ? path + 1 : path,
+			search_term == NULL ? term : search_term, T3_CONFIG_CLEAN_NAME)) == NULL)
+		RETURN_ERROR(T3_ERR_ERRNO);
+
 	if ((map_config = t3_config_read_file(input, &config_error, NULL)) == NULL)
 		RETURN_ERROR(config_error.error);
 
@@ -300,6 +305,12 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 	t3_config_t *map_config = NULL, *ptr;
 	t3_key_node_t *list = NULL, *node = NULL;
 	int result;
+
+	if (term == NULL) {
+		term = getenv("TERM");
+		if (term == NULL)
+			RETURN_ERROR(T3_ERR_NO_TERM);
+	}
 
 	if ((map_config = load_map_config(term, &result)) == NULL) {
 		if (result == T3_ERR_ERRNO && errno == ENOENT)

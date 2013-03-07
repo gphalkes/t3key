@@ -41,6 +41,6 @@ utils: | libt3key.la
 	@$(MAKE) -C ../src.util $(_VERBOSE_PRINT)
 
 updatedblinks: utils
-	@for i in database/* ; do LD_LIBRARY_PATH=../include/t3config/.libs ../src.util/t3keyc/t3keyc -l $$i ; done
+	@for i in database/* ; do ../src.util/t3keyc/t3keyc -l $$i ; done
 
 .PHONY: updatedblinks utils links

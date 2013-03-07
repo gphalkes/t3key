@@ -24,3 +24,11 @@ TODO
   for easy access, or change the linux console map and add those keys by
   simply putting them in ~/.t3key/
 
+- create a screenrc which maps the different known terminal sequences to the
+  XTerm sequences for screen. This can be done through a script or program that
+  reads all the bindings. I'm not sure whether there will be collisions between
+  sequences for different terminals. This will allow screen users to enjoy more
+  of the benefits of tilde.
+
+  Example binding for rxvt to XTerm:
+  bindkey ^[[c stuff ^[[1;2C

@@ -1,6 +1,8 @@
 format = 1
 best = "nokx"
 
+aka = ( "Eterm-256color", "Eterm-88color", "Eterm-color" )
+
 shiftfn = ( 1, 10, 11 )
 xterm_mouse = yes
 

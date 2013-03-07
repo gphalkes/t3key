@@ -1,6 +1,6 @@
 format = 1
 best = "kx"
-aka = ( "rxvt-256color" )
+aka = ( "rxvt-256color", "rxvt-color", "rxvt-88color", "rxvt-16color" )
 
 shiftfn = ( 1, 10, 11 )
 xterm_mouse = true
