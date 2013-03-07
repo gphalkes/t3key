@@ -12,15 +12,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 SOURCES.test := test.c
+SOURCES.generate_screen_bindkey := generate_screen_bindkey.c
 
-TARGETS := test
+TARGETS := test generate_screen_bindkey
 #================================================#
 # NO RULES SHOULD BE DEFINED BEFORE THIS INCLUDE #
 #================================================#
 include ../../makesys/rules.mk
 #================================================#
-LDFLAGS.test := $(call L, ../src/.libs)
-LDLIBS.test := -lt3key
+LDFLAGS := $(call L, ../src/.libs)
+LDLIBS := -lt3key
 
 CFLAGS += -I. -I../include
 

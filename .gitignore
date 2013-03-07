@@ -31,3 +31,4 @@ src/database/mlterm-256color
 src/database/rxvt-16color
 src/database/rxvt-88color
 src/database/rxvt-color
+src.tools/generate_screen_bindkey
