@@ -66,6 +66,7 @@ allowed-keys {
 # Further checks which can not be implemented with constraints:
 # - only the first occurence of a sequence is used
 
+# FIXME: the following is not implemented yet.
 # Example key addition (this would be in the user's home directory)
 # %include = "xterm"
 # %add {

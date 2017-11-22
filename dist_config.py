@@ -5,7 +5,7 @@ srcdirs = [ 'src', 'src.util' ]
 excludesrc = "/(Makefile|TODO.*|SciTE.*|run(\.sh)?|debug|test\.c)$"
 auxsources= [ 'src.util/t3keyc/.objects/*.c', 'src/.objects/map.bytes', 'src/key_api.h', 'src/key_errors.h', 'src/key_shared.c' ]
 extrabuilddirs = [ 'doc' ]
-auxfiles = [ 'doc/API', 'doc/format.txt', 'doc/supplemental.kmap' ]
+auxfiles = [ 'doc/doxygen.conf', 'doc/DoxygenLayout.xml', 'doc/main_doc.h', 'doc/format.txt', 'doc/supplemental.kmap' ]
 
 versioninfo = '1:0:0'
 

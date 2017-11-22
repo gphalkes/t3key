@@ -43,7 +43,7 @@ t3keyc: lib
 t3learnkeys: lib
 	@$(MAKE) -f mk/t3learnkeys
 
-.PHONY: all clean dist-clean install install-moddev lib t3keyc t3learnkeys uninstall
+.PHONY: all clean dist-clean distclean install install-moddev lib t3keyc t3learnkeys uninstall
 .IGNORE: uninstall
 
 clean:
@@ -55,7 +55,9 @@ dist-clean:
 	@$(MAKE) -f mk/libt3key dist-clean
 	@$(MAKE) -f mk/t3keyc dist-clean
 	@$(MAKE) -f mk/t3learnkeys dist-clean
-	rm -rf Makefile mk/libt3key mk/t3keyc mk/t3learnkeys config.log libt3key.pc
+	rm -rf Makefile mk/libt3key mk/t3keyc mk/t3learnkeys config.log libt3key.pc .Makefile* .config*
+
+distclean: dist-clean
 
 # Macros to make DESTDIR support more readable
 _bindir=$(DESTDIR)$(bindir)
@@ -73,8 +75,6 @@ install: all
 	chmod 0644 $(_libdir)/libt3key.la
 	$(INSTALL) -d $(_includedir)/t3/key/t3key
 	$(INSTALL) -m0644 src/key.h src/key_api.h src/key_errors.h $(_includedir)/t3/key/t3key
-	$(INSTALL) -d $(_docdir)/API/search
-	( cd doc ; find API -type f ) | while read X ; do $(INSTALL) -m0644 doc/$${X} $(_docdir)/$${X} ; done
 	$(INSTALL) -m0644 COPYING README Changelog doc/format.txt doc/supplemental.kmap $(_docdir)
 	$(INSTALL) -d $(_pkgconfigdir)
 	$(INSTALL) -m0644 libt3key.pc $(_pkgconfigdir)
