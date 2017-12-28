@@ -75,6 +75,7 @@ install: all
 	chmod 0644 $(_libdir)/libt3key.la
 	$(INSTALL) -d $(_includedir)/t3/key/t3key
 	$(INSTALL) -m0644 src/key.h src/key_api.h src/key_errors.h $(_includedir)/t3/key/t3key
+	$(INSTALL) -d $(_docdir)
 	$(INSTALL) -m0644 COPYING README Changelog doc/format.txt doc/supplemental.kmap $(_docdir)
 	$(INSTALL) -d $(_pkgconfigdir)
 	$(INSTALL) -m0644 libt3key.pc $(_pkgconfigdir)
