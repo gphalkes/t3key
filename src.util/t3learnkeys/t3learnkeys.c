@@ -569,6 +569,10 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
 
 static sequence_t *reverse_key_list(sequence_t *list) {
 	sequence_t *ptr, *current;
+
+	if (list == NULL)
+		return NULL;
+
 	current = list->next;
 	list->next = NULL;
 	while (current != NULL) {

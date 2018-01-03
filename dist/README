@@ -13,10 +13,18 @@ Many programs contain their own databases with this information. This library
 tries to be a database usable by many programs, such that all programs can
 benefit from the information collected.
 
-libt3key is part of the Tilde Terminal Toolkit (T3) [http://os.ghalkes.nl/t3/]
+libt3key is part of the Tilde Terminal Toolkit (T3) [https://os.ghalkes.nl/t3/]
 
 libt3key is licensed under the GNU General Public License version 3. See the
 file COPYING for details.
+
+
+Documentation
+=============
+
+The full documentation for libt3key can be generated using doxygen. The
+documentation for the current version can be found at
+https://os.ghalkes.nl/doc/libt3key.
 
 
 Prerequisites and installation
@@ -65,7 +73,7 @@ Reporting bugs
 ==============
 
 If you think you have found a bug, please check that you are using the latest
-version of libt3key [http://os.ghalkes.nl/t3/libt3key.html]. When
+version of libt3key [https://os.ghalkes.nl/t3/libt3key.html]. When
 reporting bugs, please include a minimal example that demonstrates the problem.
 
 

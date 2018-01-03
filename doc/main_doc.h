@@ -1,6 +1,6 @@
 /** @mainpage
 
-@section Introduction
+@section main-intro Introduction
 
 The libt3key library provides functions for retrieving the character sequences
 used by terminals to represent keys pressed by the user. Although the terminfo

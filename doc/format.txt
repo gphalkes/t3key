@@ -1,4 +1,4 @@
-libt3key Format
+Database Format
 ===============
 
 Preliminaries
@@ -6,11 +6,10 @@ Preliminaries
 
 The file format syntax is defined by libt3config. Strings are stored as text
 delimted by double or single quotes, with quote duplication to include literal
-quotes and with backslash escaping to include special characters. Keys start
-with either a letter (lowercase) or an underscore. Second and later key
-characters can be a letter, a number or an underscore. Modifiers are appended
-to keys by adding a minus sign (-) followed by one or more of the letters c, m
-and s (in that order, for control, meta and shift respectively).
+quotes and with backslash escaping to include special characters. All values are
+stored as key-value pairs. Keys start with either a letter (lowercase) or an
+underscore. Second and later key characters can be a letter, a number or an
+underscore.
 
 Any characters after a hash (#) character that is not part of a string up to
 the end of the line are considered comments and are ignored.
@@ -18,27 +17,30 @@ the end of the line are considered comments and are ignored.
 For more information on how to define lists and other items in the input,
 please refer to the libt3config documentation.
 
+When describing keyboard keys, modifiers are encoded in the key-value key by
+by adding a minus sign (-) followed by one or more of the letters c, m and s
+(in that order, for control, meta and shift respectively).
+
 Maps
 ----
 
-A map is defined by a key followed by an open brace, a set of key-value pair
-and finaly a closing brace. The key-value pairs in the map are specified as
-key = value. The permissable keys consist of the special keys _use, _enter
-and _leave, and the names for the different keys on the keyboard (as specified
-in a later section).
+A map is defined by a key-value key followed by an open brace, a set of
+key-value pairs and finaly a closing brace. The key-value pairs in the map are
+specified as key = value. The permissable keys consist of the special keys _use,
+_enter and _leave, and the names for the different keys on the keyboard (as
+specified in a later section), optionally with modifiers.
 
 Maps may only be defined in the maps section. For example:
 
-maps {
-    kx {
-        home = "\e[O"
-    }
-}
-
+	maps {
+		kx {
+			home = "\e[O"
+		}
+	}
 
 The _use special key can be used to include the key-value pairs of the named
 map into the current map. The value for _use should be a list of map quoted
-names. _enter and _leave keys may not be present in the included map. Maps
+names. _enter and _leave keys need not be present in the included map. Maps
 whose name begins with and underscore are internal maps, and should only be
 used for inclusion in other maps
 
@@ -125,32 +127,32 @@ Valid key names
 The following is a list of valid names for keyboard keys, followed by a short
 description of the key.
 
-insert: Insert
-delete: Delete
-home: Home
-end: End
-page_up: Page Up
-page_down: Page Down
-up: Up
-left: Left
-down: Down
-right: Right
-kp_home: Keypad Home
-kp_up: Keypad Up
-kp_page_up: Keypad Page Up
-kp_page_down: Keypad Page Down
-kp_left: Keypad Left
-kp_center: Keypad Center
-kp_right: Keypad Right
-kp_end: Keypad End
-kp_down: Keypad Down
-kp_insert: Keypad Insert
-kp_delete: Keypad Delete
-kp_enter: Keypad enter
-kp_div: Keypad /
-kp_mul: Keypad *
-kp_minus: Keypad -
-kp_plus: Keypad +
-tab: Tab
-backspace: Backspace
-f<num>: Function key <num>
+- insert: Insert
+- delete: Delete
+- home: Home
+- end: End
+- page_up: Page Up
+- page_down: Page Down
+- up: Up
+- left: Left
+- down: Down
+- right: Right
+- kp_home: Keypad Home
+- kp_up: Keypad Up
+- kp_page_up: Keypad Page Up
+- kp_page_down: Keypad Page Down
+- kp_left: Keypad Left
+- kp_center: Keypad Center
+- kp_right: Keypad Right
+- kp_end: Keypad End
+- kp_down: Keypad Down
+- kp_insert: Keypad Insert
+- kp_delete: Keypad Delete
+- kp_enter: Keypad enter
+- kp_div: Keypad /
+- kp_mul: Keypad *
+- kp_minus: Keypad -
+- kp_plus: Keypad +
+- tab: Tab
+- backspace: Backspace
+- f<num>: Function key <num>

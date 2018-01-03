@@ -1,10 +1,51 @@
 format = 1
-best = "nokx"
+best = "kx"
 
 shiftfn = (1,12,13)
 
 maps {
 	nokx {
+		_enter = "\e>"
+		%_use = "_kx_nokx"
+		kp_center = "\e[G"
+
+		# The supplemental keymaps(5) definitions are included by default,
+		# because normally they won't do anything.
+		%_use = "suppl"
+	}
+
+	kx {
+		# Terminfo is missing the smkx and rmkx entries, so they are included
+		# here explicitly.
+		_enter = "\e="
+		_leave = "\e>"
+		%_use = "_kx_nokx"
+
+		kp_div = "\eOQ"
+		kp_mul = "\eOR"
+		kp_minus = "\eOS"
+		kp_home = "\eOw"
+		kp_up = "\eOx"
+		kp_page_up = "\eOy"
+		kp_plus = "\eOl"
+		kp_left = "\eOt"
+		kp_center = "\eOu"
+		kp_right = "\eOv"
+		kp_end = "\eOq"
+		kp_down = "\eOr"
+		kp_page_down = "\eOs"
+		kp_insert = "\eOp"
+		kp_delete = "\eOn"
+		kp_enter = "\eOM"
+		tab-m = "\e\011"
+		kp_center-s = "\eOG"
+
+		# The supplemental keymaps(5) definitions are included by default,
+		# because normally they won't do anything.
+		%_use = "suppl"
+	}
+
+	_kx_nokx {
 		insert = "\e[2~"
 		home = "\e[1~"
 		page_up = "\e[5~"
@@ -15,7 +56,6 @@ maps {
 		left = "\e[D"
 		down = "\e[B"
 		right = "\e[C"
-		kp_center = "\e[G"
 		backspace = "\177"
 		f1 = "\e[[A"
 		f2 = "\e[[B"
@@ -38,10 +78,8 @@ maps {
 		f19 = "\e[33~"
 		f20 = "\e[34~"
 		backspace-c = "\010"
-
-		# The supplemental keymaps(5) definitions are included by default,
-		# because normally they won't do anything.
-		%_use = "suppl"
+		backspace-m = "\e\177"
+		backspace-cm = "\e\010"
 	}
 
 	suppl {
