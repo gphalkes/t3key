@@ -17,6 +17,11 @@ benefit from the information collected.
 libt3key is part of the <A HREF="http://os.ghalkes.nl/t3/">Tilde Terminal
 Toolkit (T3)</A>.
 
+@section main-database Database format
+
+The database is saved as a set of configuration files. The format is described
+in @ref database-format "Database Format page".
+
 @section sec_use How to Use
 
 Normal use of the library would consist of calling ::t3_key_load_map with

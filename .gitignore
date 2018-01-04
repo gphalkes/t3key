@@ -4,6 +4,8 @@
 /doc/doxygen.conf
 /doc/DoxygenLayout.xml
 /doc/API
+/doc/format.txt
+/doc/format.html
 .objects
 .deps
 .libs
