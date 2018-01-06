@@ -131,14 +131,18 @@ subset. There are three different things that a terminal emulator may support:
 - Button up/down reporting with motion reporting if a button is down, enabled
   by ESC [?1002h
 - Full reporting (i.e. buttons and motion all the time), enabled by ESC [?1003h
-- Extended coordinate mode for the previous modes, enabled by ESC [?1005h
+- Extended coordinate mode for the previous modes. There are three protocols,
+  in order of increasing preference:
+  - UTF-8 mode; enabled by ESC [?1005h (drawback: it requires a UTF-8 terminal)
+  - URXVT mode; enabled by ESC [?1015h (drawback: the button encoding is limited)
+  - SGR mode; enabled by ESC [?1006h
 
 If any of these is supported, you can add <tt>xterm\_mouse = true</tt> to the
 description of the terminal emulator.
 
 When enabling the mouse modes from a client program (provided the terminal
 emulator supports it) the enable strings should be sent, in the above order:
-ESC [?1000h ESC [?1002h ESC [?1005h
+ESC [?1000h ESC [?1002h ESC [?1005h ESC [?1015h ESC [?1006h
 
 This will ensure that the best mode is automatically selected.
 

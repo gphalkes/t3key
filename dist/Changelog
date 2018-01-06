@@ -1,3 +1,8 @@
+Version 0.2.8:
+	- Updates the linux key database with keys for Application Keypad Mode.
+	- Adds fallbacks from terminfo for many keys with modifiers, using the
+	  ncurses extended names.
+
 Version 0.2.7:
 	- Removes pre-generated Doxygen documentation.
 	- Minor updates to Makefile.in for compatibility with Debian packaging.
