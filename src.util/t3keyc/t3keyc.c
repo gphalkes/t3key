@@ -517,7 +517,9 @@ static void create_symlinks(t3_config_t *map_config, const char *term_name) {
 			if (errno != EEXIST || option_verbose)
 				fprintf(stderr, "Could not create symbolic link %s -> %s: %s\n", linkname, term_name, strerror(errno));
 		}
+		free(linkname);
 	}
+	free(dirname);
 }
 
 int main(int argc, char *argv[]) {
