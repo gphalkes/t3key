@@ -31,8 +31,8 @@ extern "C" {
     The second 8 bits represent the minor version.
     The third 8 bits represent the major version.
 
-	At runtime, the value of T3_KEY_VERSION can be retrieved by calling
-	::t3_key_get_version.
+    At runtime, the value of T3_KEY_VERSION can be retrieved by calling
+    ::t3_key_get_version.
 
     @internal
     The value 0 is an invalid value which should be replaced by the script
@@ -53,18 +53,20 @@ typedef struct t3_key_node_t t3_key_node_t;
 
 /** A structure which is part of a singly linked list and contains a single key definition. */
 struct t3_key_node_t {
-	T3_KEY_CONST char *key; /**< The name of the key (with modifiers). */
-	T3_KEY_CONST char *string; /**< The character sequence associated with the key. */
-	T3_KEY_CONST size_t string_length; /**< The length in bytes of t3_key_node_t::string. */
-	T3_KEY_CONST t3_key_node_t *next; /**< Pointer to the next ::t3_key_node_t in the singly-linked list. */
+  T3_KEY_CONST char *key;            /**< The name of the key (with modifiers). */
+  T3_KEY_CONST char *string;         /**< The character sequence associated with the key. */
+  T3_KEY_CONST size_t string_length; /**< The length in bytes of t3_key_node_t::string. */
+  T3_KEY_CONST t3_key_node_t
+      *next; /**< Pointer to the next ::t3_key_node_t in the singly-linked list. */
 };
 
 typedef struct t3_key_string_list_t t3_key_string_list_t;
 
 /** A structure which is part of a singly linked list and contains a single string. */
 struct t3_key_string_list_t {
-	T3_KEY_CONST char *string; /**< A string. */
-	T3_KEY_CONST t3_key_string_list_t *next; /**< Pointer to the next ::t3_key_string_list_t in the singly-linked list. */
+  T3_KEY_CONST char *string; /**< A string. */
+  T3_KEY_CONST t3_key_string_list_t
+      *next; /**< Pointer to the next ::t3_key_string_list_t in the singly-linked list. */
 };
 
 #include "key_errors.h"
@@ -99,7 +101,8 @@ struct t3_key_string_list_t {
     has been initialised by calling one of @c setupterm, @c initscr, @c newterm,
     @c setterm, or the @c t3_term_init function.
 */
-T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *error);
+T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_load_map(const char *term, const char *map_name,
+                                                       int *error);
 
 /** Free a key map.
     @param list The list of keys to free.
@@ -132,15 +135,16 @@ T3_KEY_API void t3_key_free_names(T3_KEY_CONST t3_key_string_list_t *list);
 T3_KEY_API char *t3_key_get_best_map_name(const char *term, int *error);
 
 /** Get a named node from a map.
-	@param map The map to search.
-	@param name The name of the node to search for, or @c NULL to continue the last search.
-	@return The ::t3_key_node_t with the given name, or @c NULL if no such node exists.
+    @param map The map to search.
+    @param name The name of the node to search for, or @c NULL to continue the last search.
+    @return The ::t3_key_node_t with the given name, or @c NULL if no such node exists.
 
     Multiple nodes may exist with the same name. To retrieve all of them, ::t3_key_get_named_node
     may be called multiple times. The second and later calls @b must use the returned value
-	as the @p map parameter, and pass @c NULL as @p name.
+    as the @p map parameter, and pass @c NULL as @p name.
 */
-T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name);
+T3_KEY_API T3_KEY_CONST t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map,
+                                                             const char *name);
 
 /** Get the value of ::T3_KEY_VERSION corresponding to the actual used library.
     @ingroup t3window_other

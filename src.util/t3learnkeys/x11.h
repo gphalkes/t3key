@@ -20,44 +20,43 @@
 #else
 #include <xcb/xcb.h>
 /* Defines copied from X11/keysymdefs.h */
-#define XK_BackSpace                     0xff08  /* Back space, back char */
-#define XK_Tab                           0xff09
-#define XK_Linefeed                      0xff0a  /* Linefeed, LF */
-#define XK_Delete                        0xffff  /* Delete, rubout */
-#define XK_Insert                        0xff63  /* Insert, insert here */
-#define XK_KP_Home                       0xff95
-#define XK_KP_Left                       0xff96
-#define XK_KP_Up                         0xff97
-#define XK_KP_Right                      0xff98
-#define XK_KP_Down                       0xff99
-#define XK_KP_Page_Up                    0xff9a
-#define XK_KP_Page_Down                  0xff9b
-#define XK_KP_End                        0xff9c
-#define XK_KP_Begin                      0xff9d
-#define XK_KP_Insert                     0xff9e
-#define XK_KP_Delete                     0xff9f
-#define XK_KP_Multiply                   0xffaa
-#define XK_KP_Add                        0xffab
-#define XK_KP_Subtract                   0xffad
-#define XK_KP_Divide                     0xffaf
-#define XK_KP_Enter                      0xff8d  /* Enter */
-#define XK_Home                          0xff50
-#define XK_Left                          0xff51  /* Move left, left arrow */
-#define XK_Up                            0xff52  /* Move up, up arrow */
-#define XK_Right                         0xff53  /* Move right, right arrow */
-#define XK_Down                          0xff54  /* Move down, down arrow */
-#define XK_Page_Up                       0xff55
-#define XK_Page_Down                     0xff56
-#define XK_End                           0xff57  /* EOL */
-#define XK_a                             0x0061
-#define XK_F1                            0xffbe
+#define XK_BackSpace 0xff08 /* Back space, back char */
+#define XK_Tab 0xff09
+#define XK_Linefeed 0xff0a /* Linefeed, LF */
+#define XK_Delete 0xffff   /* Delete, rubout */
+#define XK_Insert 0xff63   /* Insert, insert here */
+#define XK_KP_Home 0xff95
+#define XK_KP_Left 0xff96
+#define XK_KP_Up 0xff97
+#define XK_KP_Right 0xff98
+#define XK_KP_Down 0xff99
+#define XK_KP_Page_Up 0xff9a
+#define XK_KP_Page_Down 0xff9b
+#define XK_KP_End 0xff9c
+#define XK_KP_Begin 0xff9d
+#define XK_KP_Insert 0xff9e
+#define XK_KP_Delete 0xff9f
+#define XK_KP_Multiply 0xffaa
+#define XK_KP_Add 0xffab
+#define XK_KP_Subtract 0xffad
+#define XK_KP_Divide 0xffaf
+#define XK_KP_Enter 0xff8d /* Enter */
+#define XK_Home 0xff50
+#define XK_Left 0xff51  /* Move left, left arrow */
+#define XK_Up 0xff52    /* Move up, up arrow */
+#define XK_Right 0xff53 /* Move right, right arrow */
+#define XK_Down 0xff54  /* Move down, down arrow */
+#define XK_Page_Up 0xff55
+#define XK_Page_Down 0xff56
+#define XK_End 0xff57 /* EOL */
+#define XK_a 0x0061
+#define XK_F1 0xffbe
 
-#define XK_Shift_L                       0xffe1  /* Left shift */
-#define XK_Control_L                     0xffe3  /* Left control */
+#define XK_Shift_L 0xffe1   /* Left shift */
+#define XK_Control_L 0xffe3 /* Left control */
 /*FIXME: figure out which of these we need */
-#define XK_Meta_L                        0xffe7  /* Left meta */
-#define XK_Alt_L                         0xffe9  /* Left alt */
-
+#define XK_Meta_L 0xffe7    /* Left meta */
+#define XK_Alt_L 0xffe9     /* Left alt */
 
 #define ControlMask XCB_MOD_MASK_CONTROL
 #define ShiftMask XCB_MOD_MASK_SHIFT
@@ -84,13 +83,14 @@ Display *XOpenDisplay(const char *name);
 void XCloseDisplay(Display *display);
 KeySym XKeycodeToKeysym(Display *display, KeyCode keycode, int index);
 void XGetInputFocus(Display *display, Window *focus, int *revert_to_return);
-int XChangeKeyboardMapping(Display *display, int first_keycode, int keysyms_per_keycode, KeySym *keysyms, int num_codes);
+int XChangeKeyboardMapping(Display *display, int first_keycode, int keysyms_per_keycode,
+                           KeySym *keysyms, int num_codes);
 void XSendEvent(Display *display, Window w, Bool propagate, long event_mask, XEvent *event_send);
 void XSync(Display *display, Bool discard);
 void XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return,
-		int *root_x_return, int *root_y_return, int *win_x_return, int *win_y_return, unsigned int *mask_return);
+                   int *root_x_return, int *root_y_return, int *win_x_return, int *win_y_return,
+                   unsigned int *mask_return);
 #endif
-
 
 #define X_KEY_SYM(_x) _x
 extern Display *display;

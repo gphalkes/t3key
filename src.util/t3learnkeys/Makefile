@@ -31,3 +31,8 @@ CFLAGS += -DHAS_SELECT_H
 
 CFLAGS += `pkg-config --cflags xcb`
 LDLIBS += `pkg-config --libs xcb`
+
+clang-format:
+	clang-format -i *.c *.h
+
+.PHONY: clang-format

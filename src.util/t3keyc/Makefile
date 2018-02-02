@@ -34,3 +34,8 @@ LDLIBS += -lt3config
 
 ../../src/.objects/map.bytes: ../../src/map.schema
 	$(MAKE) -C ../../src .objects/map.bytes
+
+clang-format:
+	clang-format -i *.[ch]
+
+.PHONY: clang-format

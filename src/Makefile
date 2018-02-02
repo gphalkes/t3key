@@ -43,4 +43,7 @@ utils: | libt3key.la
 updatedblinks: utils
 	@for i in database/* ; do ../src.util/t3keyc/t3keyc -l $$i ; done
 
-.PHONY: updatedblinks utils links
+clang-format:
+	clang-format -i *.c *.h
+
+.PHONY: updatedblinks utils links clang-format

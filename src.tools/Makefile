@@ -30,4 +30,7 @@ CFLAGS += -I. -I../include
 library:
 	@$(MAKE) -C ../src $(_VERBOSE_PRINT) libt3key.la
 
-.PHONY: library
+clang-format:
+	clang-format -i *.[ch]
+
+.PHONY: library clang-format
