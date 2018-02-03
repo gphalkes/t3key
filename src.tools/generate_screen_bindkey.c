@@ -67,30 +67,41 @@ int main(int argc, char *argv[]) {
   }
 
   screen_map = t3_key_load_map("screen", NULL, &error);
-  if (screen_map == NULL) fatal("Could not load map for screen\n");
+  if (screen_map == NULL) {
+    fatal("Could not load map for screen\n");
+  }
 
   for (i = 1; i < argc; i++) {
     const t3_key_node_t *map = t3_key_load_map(argv[i], NULL, &error);
     map_t *new_map;
 
-    if (map == NULL) fatal("Could not load map for terminal %s\n", argv[i]);
+    if (map == NULL) {
+      fatal("Could not load map for terminal %s\n", argv[i]);
+    }
 
     for (node = map; node != NULL; node = node->next) {
       const t3_key_node_t *other_node;
 
-      if (node->string == NULL) continue;
+      if (node->string == NULL) {
+        continue;
+      }
 
       for (screen_node = screen_map; screen_node != NULL; screen_node = screen_node->next) {
-        if (strcmp(node->key, screen_node->key) == 0) break;
+        if (strcmp(node->key, screen_node->key) == 0) {
+          break;
+        }
       }
-      if (screen_node == NULL) continue;
+      if (screen_node == NULL) {
+        continue;
+      }
 
       for (other_map = all_maps; other_map != NULL; other_map = other_map->next) {
         for (other_node = other_map->map; other_node != NULL; other_node = other_node->next) {
           if (other_node->string == NULL || other_node->string_length != node->string_length ||
               strncmp(other_node->string, node->string, node->string_length) != 0 ||
-              strcmp(other_node->key, node->key) == 0)
+              strcmp(other_node->key, node->key) == 0) {
             continue;
+          }
           fprintf(stderr, "Colliding key found for %s:%s with %s:%s: ", argv[i], node->key,
                   other_map->name, other_node->key);
           write_escaped_string(stderr, node->string, node->string_length);
@@ -99,28 +110,39 @@ int main(int argc, char *argv[]) {
         }
       }
     }
-    if ((new_map = malloc(sizeof(map_t))) == NULL) fatal("Out of memory\n");
+    if ((new_map = malloc(sizeof(map_t))) == NULL) {
+      fatal("Out of memory\n");
+    }
     new_map->name = argv[i];
     new_map->map = map;
     new_map->next = all_maps;
     all_maps = new_map;
   }
 
-  if (fail) exit(EXIT_FAILURE);
+  if (fail) {
+    exit(EXIT_FAILURE);
+  }
 
   /* FIXME: skip the default key bindings for screen, like up/down/left/right. */
   for (other_map = all_maps; other_map != NULL; other_map = other_map->next) {
     for (node = other_map->map; node != NULL; node = node->next) {
-      if (node->string == NULL) continue;
+      if (node->string == NULL) {
+        continue;
+      }
 
       for (screen_node = screen_map; screen_node != NULL; screen_node = screen_node->next) {
-        if (strcmp(node->key, screen_node->key) == 0) break;
+        if (strcmp(node->key, screen_node->key) == 0) {
+          break;
+        }
       }
-      if (screen_node == NULL) continue;
+      if (screen_node == NULL) {
+        continue;
+      }
 
       if (screen_node->string_length == node->string_length &&
-          strncmp(screen_node->string, node->string, node->string_length) == 0)
+          strncmp(screen_node->string, node->string, node->string_length) == 0) {
         continue;
+      }
 
       printf("bindkey ");
       write_escaped_string(stdout, node->string, node->string_length);

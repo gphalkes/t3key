@@ -65,7 +65,9 @@ static char *_t3_key_strdup(const char *str) {
   char *result;
   size_t len = strlen(str) + 1;
 
-  if ((result = malloc(len)) == NULL) return NULL;
+  if ((result = malloc(len)) == NULL) {
+    return NULL;
+  }
   memcpy(result, str, len);
   return result;
 }
@@ -96,7 +98,9 @@ static size_t parse_escapes(char *string) {
     if (string[read_position] == '\\') {
       read_position++;
 
-      if (read_position == max_read_position) return 0;
+      if (read_position == max_read_position) {
+        return 0;
+      }
 
       switch (string[read_position++]) {
         case 'E':
@@ -144,15 +148,20 @@ static size_t parse_escapes(char *string) {
                       is_asciixdigit(string[read_position + i]);
                i++) {
             value <<= 4;
-            if (is_asciidigit(string[read_position + i]))
+            if (is_asciidigit(string[read_position + i])) {
               value += (int)(string[read_position + i] - '0');
-            else
+            } else {
               value += (int)(to_asciilower(string[read_position + i]) - 'a') + 10;
-            if (value > UCHAR_MAX) return 0;
+            }
+            if (value > UCHAR_MAX) {
+              return 0;
+            }
           }
           read_position += i;
 
-          if (i == 0) return 0;
+          if (i == 0) {
+            return 0;
+          }
 
           string[write_position++] = (char)value;
           break;
@@ -170,8 +179,9 @@ static size_t parse_escapes(char *string) {
           size_t max_idx = string[read_position - 1] < '4' ? 2 : 1;
           for (i = 0; i < max_idx && read_position + i < max_read_position &&
                       string[read_position + i] >= '0' && string[read_position + i] <= '7';
-               i++)
+               i++) {
             value = value * 8 + (int)(string[read_position + i] - '0');
+          }
 
           read_position += i;
 
@@ -210,21 +220,28 @@ static t3_config_t *load_map_config(const char *term, int *error) {
      Furthermore, there are all kinds of variants for colors and options, like
      screen-256color and screen-bce. So we simply fall back to loading the
      screen definition. */
-  if (strncmp(term, "screen", 6) == 0 && (term[6] == '.' || term[6] == '-')) search_term = "screen";
+  if (strncmp(term, "screen", 6) == 0 && (term[6] == '.' || term[6] == '-')) {
+    search_term = "screen";
+  }
 
   if ((input = t3_config_open_from_path(path[0] == NULL ? path + 1 : path,
                                         search_term == NULL ? term : search_term,
-                                        T3_CONFIG_CLEAN_NAME)) == NULL)
+                                        T3_CONFIG_CLEAN_NAME)) == NULL) {
     RETURN_ERROR(T3_ERR_ERRNO);
+  }
 
-  if ((map_config = t3_config_read_file(input, &config_error, NULL)) == NULL)
+  if ((map_config = t3_config_read_file(input, &config_error, NULL)) == NULL) {
     RETURN_ERROR(config_error.error);
+  }
 
   if ((schema = t3_config_read_schema_buffer(map_schema, sizeof(map_schema), &config_error,
-                                             NULL)) == NULL)
+                                             NULL)) == NULL) {
     RETURN_ERROR(config_error.error);
+  }
 
-  if (!t3_config_validate(map_config, schema, &config_error, 0)) RETURN_ERROR(config_error.error);
+  if (!t3_config_validate(map_config, schema, &config_error, 0)) {
+    RETURN_ERROR(config_error.error);
+  }
 
   free(xdg_path);
   fclose(input);
@@ -232,7 +249,9 @@ static t3_config_t *load_map_config(const char *term, int *error) {
 
   return map_config;
 return_error:
-  if (input != NULL) fclose(input);
+  if (input != NULL) {
+    fclose(input);
+  }
   free(xdg_path);
   t3_config_delete(map_config);
   t3_config_delete_schema(schema);
@@ -253,27 +272,39 @@ static int convert_map(t3_config_t *map_config, t3_config_t *ptr, t3_key_node_t 
         t3_config_t *use_map =
             t3_config_unlink(t3_config_get(map_config, "maps"), t3_config_get_string(use));
 
-        if (use_map == NULL) continue;
+        if (use_map == NULL) {
+          continue;
+        }
         result = convert_map(map_config, use_map, next, t3_false);
         t3_config_delete(use_map);
-        if (result != T3_ERR_SUCCESS) return result;
+        if (result != T3_ERR_SUCCESS) {
+          return result;
+        }
         /* Update next pointer, because loading the sub-map will have extended
            the list. */
-        while (*next != NULL) next = &(*next)->next;
+        while (*next != NULL) {
+          next = &(*next)->next;
+        }
       }
     } else if (name[0] != '_' || strcmp(name, "_enter") == 0 || strcmp(name, "_leave") == 0) {
-      if ((*next = malloc(sizeof(t3_key_node_t))) == NULL) return t3_false;
+      if ((*next = malloc(sizeof(t3_key_node_t))) == NULL) {
+        return t3_false;
+      }
       (*next)->string = NULL;
       (*next)->next = NULL;
 
-      if (((*next)->key = _t3_key_strdup(name)) == NULL) return T3_ERR_OUT_OF_MEMORY;
+      if (((*next)->key = _t3_key_strdup(name)) == NULL) {
+        return T3_ERR_OUT_OF_MEMORY;
+      }
 
       /* Only for _enter and _leave, the name starts with _. */
       if (name[0] == '_' && t3_config_get_string(ptr)[0] != '\\') {
         /* Get terminfo string indicated by string. */
         const char *ti_string;
 
-        if (!outer) return T3_ERR_INVALID_FORMAT;
+        if (!outer) {
+          return T3_ERR_INVALID_FORMAT;
+        }
 
         ti_string = tigetstr(t3_config_get_string(ptr));
         if (ti_string == (char *)0 || ti_string == (char *)-1) {
@@ -282,12 +313,16 @@ static int convert_map(t3_config_t *map_config, t3_config_t *ptr, t3_key_node_t 
           *next = NULL;
           continue;
         }
-        if (((*next)->string = _t3_key_strdup(ti_string)) == NULL) return T3_ERR_OUT_OF_MEMORY;
+        if (((*next)->string = _t3_key_strdup(ti_string)) == NULL) {
+          return T3_ERR_OUT_OF_MEMORY;
+        }
         (*next)->string_length = strlen((*next)->string);
       } else {
         (*next)->string = t3_config_take_string(ptr);
         (*next)->string_length = parse_escapes((*next)->string);
-        if ((*next)->string_length == 0) return T3_ERR_INVALID_FORMAT;
+        if ((*next)->string_length == 0) {
+          return T3_ERR_INVALID_FORMAT;
+        }
       }
       next = &(*next)->next;
     }
@@ -302,32 +337,47 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
 
   if (term == NULL) {
     term = getenv("TERM");
-    if (term == NULL) RETURN_ERROR(T3_ERR_NO_TERM);
+    if (term == NULL) {
+      RETURN_ERROR(T3_ERR_NO_TERM);
+    }
   }
 
   if ((map_config = load_map_config(term, &result)) == NULL) {
-    if (result == T3_ERR_ERRNO && errno == ENOENT) return load_ti_keys(term, error);
+    if (result == T3_ERR_ERRNO && errno == ENOENT) {
+      return load_ti_keys(term, error);
+    }
     RETURN_ERROR(result);
   }
 
-  if (map_name != NULL)
+  if (map_name != NULL) {
     ptr = t3_config_unlink(t3_config_get(map_config, "maps"), map_name);
-  else
+  } else {
     ptr = t3_config_unlink(t3_config_get(map_config, "maps"),
                            t3_config_get_string(t3_config_get(map_config, "best")));
+  }
 
-  if (ptr == NULL) RETURN_ERROR(T3_ERR_NOMAP);
+  if (ptr == NULL) {
+    RETURN_ERROR(T3_ERR_NOMAP);
+  }
 
   result = convert_map(map_config, ptr, &list, t3_true);
   t3_config_delete(ptr);
-  if (result != T3_ERR_SUCCESS) RETURN_ERROR(result);
+  if (result != T3_ERR_SUCCESS) {
+    RETURN_ERROR(result);
+  }
 
   if ((ptr = t3_config_get(map_config, "shiftfn")) != NULL) {
-    if ((node = malloc(sizeof(t3_key_node_t))) == NULL) RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    if ((node = malloc(sizeof(t3_key_node_t))) == NULL) {
+      RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    }
     node->string = NULL;
     node->next = NULL;
-    if ((node->key = _t3_key_strdup("_shiftfn")) == NULL) RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
-    if ((node->string = malloc(3)) == NULL) RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    if ((node->key = _t3_key_strdup("_shiftfn")) == NULL) {
+      RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    }
+    if ((node->string = malloc(3)) == NULL) {
+      RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    }
     node->string_length = 3;
     ptr = t3_config_get(ptr, NULL);
     node->string[0] = t3_config_get_int(ptr);
@@ -341,11 +391,15 @@ t3_key_node_t *t3_key_load_map(const char *term, const char *map_name, int *erro
   }
 
   if (t3_config_get_bool(t3_config_get(map_config, "xterm_mouse"))) {
-    if ((node = malloc(sizeof(t3_key_node_t))) == NULL) RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    if ((node = malloc(sizeof(t3_key_node_t))) == NULL) {
+      RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    }
     node->string = NULL;
     node->string_length = 0;
     node->next = NULL;
-    if ((node->key = _t3_key_strdup("_xterm_mouse")) == NULL) RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    if ((node->key = _t3_key_strdup("_xterm_mouse")) == NULL) {
+      RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    }
     node->next = list;
     list = node;
     node = NULL;
@@ -372,7 +426,9 @@ void t3_key_free_map(t3_key_node_t *list) {
 }
 
 static int new_node(void **result, size_t size) {
-  if ((*result = malloc(size)) == NULL) return T3_ERR_OUT_OF_MEMORY;
+  if ((*result = malloc(size)) == NULL) {
+    return T3_ERR_OUT_OF_MEMORY;
+  }
   /* FIXME: this causes trouble if the data in *result contains pointers */
   memset(*result, 0, size);
   return T3_ERR_SUCCESS;
@@ -383,9 +439,13 @@ static int make_node_from_ti(t3_key_node_t **next_node, const char *tikey, const
   int error;
 
   tiresult = tigetstr(tikey);
-  if (tiresult == (char *)0 || tiresult == (char *)-1) return T3_ERR_SUCCESS;
+  if (tiresult == (char *)0 || tiresult == (char *)-1) {
+    return T3_ERR_SUCCESS;
+  }
 
-  if ((error = NEW_NODE(next_node)) != T3_ERR_SUCCESS) return error;
+  if ((error = NEW_NODE(next_node)) != T3_ERR_SUCCESS) {
+    return error;
+  }
 
   if (((*next_node)->key = _t3_key_strdup(key)) == NULL) {
     free(*next_node);
@@ -509,29 +569,38 @@ static t3_key_node_t *load_ti_keys(const char *term, int *error) {
   int errret, j;
 
   if (setupterm(term, 1, &errret) == ERR) {
-    if (errret == 1)
+    if (errret == 1) {
       RETURN_ERROR(T3_ERR_HARDCOPY_TERMINAL);
-    else if (errret == -1)
+    } else if (errret == -1) {
       RETURN_ERROR(T3_ERR_TERMINFODB_NOT_FOUND);
-    else if (errret == 0)
+    } else if (errret == 0) {
       RETURN_ERROR(T3_ERR_TERMINAL_TOO_LIMITED);
+    }
     RETURN_ERROR(T3_ERR_UNKNOWN);
   }
 
   ENSURE(make_node_from_ti(next_node, "smkx", "_enter"));
-  if (*next_node != NULL) next_node = &(*next_node)->next;
+  if (*next_node != NULL) {
+    next_node = &(*next_node)->next;
+  }
   ENSURE(make_node_from_ti(next_node, "rmkx", "_leave"));
-  if (*next_node != NULL) next_node = &(*next_node)->next;
+  if (*next_node != NULL) {
+    next_node = &(*next_node)->next;
+  }
 
   for (i = 0; i < ARRAY_LENGTH(keymapping); i++) {
     ENSURE(make_node_from_ti(next_node, keymapping[i].tikey, keymapping[i].key));
-    if (*next_node != NULL) next_node = &(*next_node)->next;
+    if (*next_node != NULL) {
+      next_node = &(*next_node)->next;
+    }
   }
 
   for (j = 1; j < 64; j++) {
     sprintf(function_key, "kf%d", j);
     ENSURE(make_node_from_ti(next_node, function_key, function_key + 1));
-    if (*next_node == NULL) break;
+    if (*next_node == NULL) {
+      break;
+    }
     next_node = &(*next_node)->next;
   }
   return list;
@@ -545,12 +614,18 @@ t3_key_string_list_t *t3_key_get_map_names(const char *term, int *error) {
   t3_config_t *map_config = NULL, *ptr;
   t3_key_string_list_t *list = NULL, *item;
 
-  if ((map_config = load_map_config(term, error)) == NULL) return NULL;
+  if ((map_config = load_map_config(term, error)) == NULL) {
+    return NULL;
+  }
 
   for (ptr = t3_config_get(t3_config_get(map_config, "maps"), NULL); ptr != NULL;
        ptr = t3_config_get_next(ptr)) {
-    if (t3_config_get_name(ptr)[0] == '_') continue;
-    if ((item = malloc(sizeof(t3_key_string_list_t))) == NULL) RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    if (t3_config_get_name(ptr)[0] == '_') {
+      continue;
+    }
+    if ((item = malloc(sizeof(t3_key_string_list_t))) == NULL) {
+      RETURN_ERROR(T3_ERR_OUT_OF_MEMORY);
+    }
 
     if ((item->string = _t3_key_strdup(t3_config_get_name(ptr))) == NULL) {
       free(item);
@@ -579,10 +654,14 @@ void t3_key_free_names(t3_key_string_list_t *list) {
 char *t3_key_get_best_map_name(const char *term, int *error) {
   t3_config_t *map_config = NULL;
   char *best = NULL;
-  if ((map_config = load_map_config(term, error)) == NULL) return NULL;
+  if ((map_config = load_map_config(term, error)) == NULL) {
+    return NULL;
+  }
 
   if ((best = _t3_key_strdup(t3_config_get_string(t3_config_get(map_config, "best")))) == NULL) {
-    if (error != NULL) *error = T3_ERR_OUT_OF_MEMORY;
+    if (error != NULL) {
+      *error = T3_ERR_OUT_OF_MEMORY;
+    }
   }
 
   t3_config_delete(map_config);
@@ -591,13 +670,17 @@ char *t3_key_get_best_map_name(const char *term, int *error) {
 
 t3_key_node_t *t3_key_get_named_node(T3_KEY_CONST t3_key_node_t *map, const char *name) {
   if (name == NULL) {
-    if (map == NULL) return NULL;
+    if (map == NULL) {
+      return NULL;
+    }
     name = map->key;
     map = map->next;
   }
 
   for (; map != NULL; map = map->next) {
-    if (strcmp(map->key, name) == 0) return map;
+    if (strcmp(map->key, name) == 0) {
+      return map;
+    }
   }
   return NULL;
 }

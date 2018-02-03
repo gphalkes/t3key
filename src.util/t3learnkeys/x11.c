@@ -56,7 +56,9 @@ KeySym XKeycodeToKeysym(Display *display, KeyCode keycode, int index) {
   cookie = xcb_get_keyboard_mapping(display, keycode, 1);
   reply = xcb_get_keyboard_mapping_reply(display, cookie, NULL);
 
-  if (reply == NULL) fatal("Error in X11 communication\n");
+  if (reply == NULL) {
+    fatal("Error in X11 communication\n");
+  }
 
   result = xcb_get_keyboard_mapping_keysyms(reply)[index];
   free(reply);
@@ -70,7 +72,9 @@ void XGetInputFocus(Display *display, Window *focus, int *revert_to_return) {
   cookie = xcb_get_input_focus(display);
   reply = xcb_get_input_focus_reply(display, cookie, NULL);
 
-  if (reply == NULL) fatal("Error in X11 communication\n");
+  if (reply == NULL) {
+    fatal("Error in X11 communication\n");
+  }
 
   *focus = reply->focus;
   *revert_to_return = reply->revert_to;
@@ -82,7 +86,9 @@ int XChangeKeyboardMapping(Display *display, int first_keycode, int keysyms_per_
   xcb_void_cookie_t cookie = xcb_change_keyboard_mapping_checked(display, num_codes, first_keycode,
                                                                  keysyms_per_keycode, keysyms);
   xcb_generic_error_t *error = xcb_request_check(display, cookie);
-  if (error != NULL) fatal("Error in X11 communication\n");
+  if (error != NULL) {
+    fatal("Error in X11 communication\n");
+  }
   return 0;
 }
 
@@ -90,15 +96,21 @@ void XSendEvent(Display *display, Window w, Bool propagate, long event_mask, XEv
   xcb_void_cookie_t cookie =
       xcb_send_event_checked(display, propagate, w, event_mask, (const char *)event_send);
   xcb_generic_error_t *error = xcb_request_check(display, cookie);
-  if (error != NULL) fatal("Error in X11 communication\n");
+  if (error != NULL) {
+    fatal("Error in X11 communication\n");
+  }
 }
 
 void XSync(Display *display, Bool discard) {
   xcb_generic_event_t *event;
 
-  if (!discard) fatal("XSync called for unimplemented functionality\n");
+  if (!discard) {
+    fatal("XSync called for unimplemented functionality\n");
+  }
   xcb_flush(display);
-  while ((event = xcb_poll_for_event(display)) != NULL) free(event);
+  while ((event = xcb_poll_for_event(display)) != NULL) {
+    free(event);
+  }
 }
 
 void XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return,
@@ -107,7 +119,9 @@ void XQueryPointer(Display *display, Window w, Window *root_return, Window *chil
   xcb_query_pointer_cookie_t cookie = xcb_query_pointer(display, w);
   xcb_query_pointer_reply_t *reply = xcb_query_pointer_reply(display, cookie, NULL);
 
-  if (reply == NULL) fatal("Error in X11 communication\n");
+  if (reply == NULL) {
+    fatal("Error in X11 communication\n");
+  }
 
   *root_return = reply->root;
   *child_return = reply->child;
@@ -143,7 +157,9 @@ Bool initX11(void) {
   int count = 0;
   KeySym keysym;
 
-  if ((display = XOpenDisplay(NULL)) == NULL) return False;
+  if ((display = XOpenDisplay(NULL)) == NULL) {
+    return False;
+  }
 
   /* Find a key code to reprogram with all the different possible keys. This is
      required because not all keys that we want to test are available on all keyboards
@@ -152,22 +168,28 @@ Bool initX11(void) {
   for (keycode = 255; keycode >= 0; keycode--) {
     if (XKeycodeToKeysym(display, keycode, 0) == NoSymbol) {
       reprogram_code[count++] = keycode;
-      if (count == 4) break;
+      if (count == 4) {
+        break;
+      }
     }
   }
 
-  if (count != 4)
+  if (count != 4) {
     fatal("Can not use auto-learn because not enough reprogrammable keys were found\n");
+  }
 
   keysym = XK_Shift_L;
-  if (XChangeKeyboardMapping(display, reprogram_code[0], 1, &keysym, 1) != 0)
+  if (XChangeKeyboardMapping(display, reprogram_code[0], 1, &keysym, 1) != 0) {
     fatal("Could not reprogram key\n");
+  }
   keysym = XK_Control_L;
-  if (XChangeKeyboardMapping(display, reprogram_code[1], 1, &keysym, 1) != 0)
+  if (XChangeKeyboardMapping(display, reprogram_code[1], 1, &keysym, 1) != 0) {
     fatal("Could not reprogram key\n");
+  }
   keysym = XK_Meta_L;
-  if (XChangeKeyboardMapping(display, reprogram_code[2], 1, &keysym, 1) != 0)
+  if (XChangeKeyboardMapping(display, reprogram_code[2], 1, &keysym, 1) != 0) {
     fatal("Could not reprogram key\n");
+  }
 
   XGetInputFocus(display, &focus_window, &revert_to_return);
 
@@ -215,8 +237,9 @@ void send_event(KeySym keysym, unsigned int state) {
     current_state |= Mod1Mask;
   }
 
-  if (XChangeKeyboardMapping(display, reprogram_code[3], 1, &keysym, 1) != 0)
+  if (XChangeKeyboardMapping(display, reprogram_code[3], 1, &keysym, 1) != 0) {
     fatal("Could not reprogram key\n");
+  }
 
   send_key(3, state, True);
   XSync(display, True);

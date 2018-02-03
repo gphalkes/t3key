@@ -165,35 +165,46 @@ void fatal(const char *fmt, ...) {
 
 static void *safe_malloc(size_t size) {
   void *result;
-  if ((result = malloc(size)) == NULL) fatal("Out of memory\n");
+  if ((result = malloc(size)) == NULL) {
+    fatal("Out of memory\n");
+  }
   return result;
 }
 
 static void *safe_calloc(size_t nmemb, size_t size) {
   void *result;
-  if ((result = calloc(nmemb, size)) == NULL) fatal("Out of memory\n");
+  if ((result = calloc(nmemb, size)) == NULL) {
+    fatal("Out of memory\n");
+  }
   return result;
 }
 
 static char *safe_strdup(const char *str) {
   char *result;
-  if ((result = malloc(strlen(str) + 1)) == 0) fatal("Out of memory\n");
+  if ((result = malloc(strlen(str) + 1)) == 0) {
+    fatal("Out of memory\n");
+  }
   strcpy(result, str);
   return result;
 }
 
 static void restore_terminal(void) {
   char *rmkx = tigetstr("rmkx");
-  if (rmkx != NULL && rmkx != (void *)-1) printf("%s", rmkx);
+  if (rmkx != NULL && rmkx != (void *)-1) {
+    printf("%s", rmkx);
+  }
   tcsetattr(STDOUT_FILENO, TCSADRAIN, &saved);
 }
 
 static void init_terminal(void) {
   struct termios new_params;
-  if (!isatty(STDOUT_FILENO)) fatal("Stdout is not a terminal\n");
+  if (!isatty(STDOUT_FILENO)) {
+    fatal("Stdout is not a terminal\n");
+  }
 
-  if (tcgetattr(STDOUT_FILENO, &saved) < 0)
+  if (tcgetattr(STDOUT_FILENO, &saved) < 0) {
     fatal("Could not retrieve terminal settings: %s\n", strerror(errno));
+  }
 
   new_params = saved;
   new_params.c_iflag &= ~(IXON | IXOFF);
@@ -201,8 +212,9 @@ static void init_terminal(void) {
   new_params.c_lflag &= ~(ISIG | ICANON | ECHO);
   new_params.c_cc[VMIN] = 1;
 
-  if (tcsetattr(STDOUT_FILENO, TCSADRAIN, &new_params) < 0)
+  if (tcsetattr(STDOUT_FILENO, TCSADRAIN, &new_params) < 0) {
     fatal("Could not change terminal settings: %s\n", strerror(errno));
+  }
 
   atexit(restore_terminal);
   FD_ZERO(&inset);
@@ -214,10 +226,11 @@ static int safe_read_char(void) {
   char c;
   while (1) {
     ssize_t retval = read(STDIN_FILENO, &c, 1);
-    if (retval < 0 && errno == EINTR)
+    if (retval < 0 && errno == EINTR) {
       continue;
-    else if (retval >= 1)
+    } else if (retval >= 1) {
       return c;
+    }
 
     return -1;
   }
@@ -239,7 +252,9 @@ static int get_keychar(int msec) {
     retval = select(STDIN_FILENO + 1, &_inset, NULL, NULL, msec > 0 ? &timeout : NULL);
 
     if (retval < 0) {
-      if (errno == EINTR) continue;
+      if (errno == EINTR) {
+        continue;
+      }
       return -1;
     } else if (retval == 0) {
       return -1;
@@ -274,14 +289,18 @@ static sequence_t *get_sequence(void) {
 
   do {
     c = get_keychar(option_auto_learn ? 150 : -1);
-    if (option_auto_learn && c < 0) return NULL;
+    if (option_auto_learn && c < 0) {
+      return NULL;
+    }
 
     if (c == ESC) {
       int i, dest = 0;
 
       seq[idx++] = ESC;
 
-      while ((c = get_keychar(KEY_TIMEOUT)) != -1 && idx < MAX_SEQUENCE) seq[idx++] = c;
+      while ((c = get_keychar(KEY_TIMEOUT)) != -1 && idx < MAX_SEQUENCE) {
+        seq[idx++] = c;
+      }
 
       if (idx == MAX_SEQUENCE) {
         printf("sequence too long");
@@ -313,10 +332,14 @@ static sequence_t *get_sequence(void) {
       return retval;
     } else if (c == 3) {
       if (option_auto_learn) {
-        if (!option_no_abort_auto) exit(EXIT_FAILURE);
+        if (!option_no_abort_auto) {
+          exit(EXIT_FAILURE);
+        }
       } else {
         printf("^C\n");
-        if (confirm("Are you sure you want to quit [y/n]")) exit(EXIT_FAILURE);
+        if (confirm("Are you sure you want to quit [y/n]")) {
+          exit(EXIT_FAILURE);
+        }
       }
       c = -1;
     } else if (c == 0177 || c == 8) {
@@ -344,17 +367,21 @@ static int check_key(name_mapping_t *key_desc, const char **key_name) {
 
   /* First try if the user used the descriptive names that we print on screen... */
   if (strncmp(*key_name, key_desc[1].name, modifier_len) == 0 &&
-      strcmp((*key_name) + modifier_len, key_desc[0].name) == 0)
+      strcmp((*key_name) + modifier_len, key_desc[0].name) == 0) {
     return 0;
+  }
 
   /* ... and if not, check if it is one of the identifiers as used in the output file. */
   key_modifiers = strpbrk(*key_name, "-");
   key_name_len = key_modifiers == NULL ? strlen(*key_name) : (size_t)(key_modifiers - *key_name);
   if (strlen(key_desc[0].identifier) != key_name_len ||
-      memcmp(key_desc[0].identifier, *key_name, key_name_len) != 0)
+      memcmp(key_desc[0].identifier, *key_name, key_name_len) != 0) {
     return 1;
+  }
 
-  if (key_modifiers == NULL) return strcmp(key_desc[1].name, "");
+  if (key_modifiers == NULL) {
+    return strcmp(key_desc[1].name, "");
+  }
 
   return strcmp(key_modifiers, key_desc[1].identifier);
 }
@@ -381,7 +408,9 @@ static int getkeys(name_mapping_t *keys, int max, int mod) {
 
 #ifndef NO_AUTOLEARN
     /* When auto learning, just send the appropriate events to the terminal. */
-    if (option_auto_learn) send_event(keys[i].keysym, modifiers[mod].keysym);
+    if (option_auto_learn) {
+      send_event(keys[i].keysym, modifiers[mod].keysym);
+    }
 #endif
 
     /* Retrieve key sequence. */
@@ -490,8 +519,12 @@ static char *parse_escapes(const char *seq) {
         case '6':
         case '7':
           buffer[dest] = *seq++ - '0';
-          if (isdigit(*seq)) buffer[dest] = buffer[dest] * 8 + *seq++ - '0';
-          if (isdigit(*seq)) buffer[dest] = buffer[dest] * 8 + *seq++ - '0';
+          if (isdigit(*seq)) {
+            buffer[dest] = buffer[dest] * 8 + *seq++ - '0';
+          }
+          if (isdigit(*seq)) {
+            buffer[dest] = buffer[dest] * 8 + *seq++ - '0';
+          }
           dest++;
           break;
         default:
@@ -518,20 +551,23 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
   } else {
     map_list_t *ptr;
     fprintf(output, "\t");
-    for (ptr = mode->collected_from; ptr != NULL; ptr = ptr->next)
+    for (ptr = mode->collected_from; ptr != NULL; ptr = ptr->next) {
       fprintf(output, "_%s", ptr->map->name);
+    }
     fprintf(output, " {\n");
   }
 
-  if (mode->esc_seq_enter)
+  if (mode->esc_seq_enter) {
     fprintf(
         output, "\t\t_enter = \"%s\"\n",
         mode->esc_seq_enter_name ? mode->esc_seq_enter_name : get_print_seq(mode->esc_seq_enter));
+  }
 
-  if (mode->esc_seq_leave)
+  if (mode->esc_seq_leave) {
     fprintf(
         output, "\t\t_leave = \"%s\"\n",
         mode->esc_seq_leave_name ? mode->esc_seq_leave_name : get_print_seq(mode->esc_seq_leave));
+  }
 
   /* Locate all the maps which contain common pieces collected from this map.
      These have to be %include'd in this map. */
@@ -540,8 +576,9 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
     for (collected = maps->collected_from; collected != NULL; collected = collected->next) {
       if (collected->map == mode) {
         fprintf(output, "\t\t%%_use = \"");
-        for (collected = maps->collected_from; collected != NULL; collected = collected->next)
+        for (collected = maps->collected_from; collected != NULL; collected = collected->next) {
           fprintf(output, "_%s", collected->map->name);
+        }
         fprintf(output, "\"\n");
         break;
       }
@@ -551,8 +588,9 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
   write_keys(mode->sequences);
 
   for (current = mode->sequences, last = NULL; current != NULL;
-       last = current, current = current->next)
+       last = current, current = current->next) {
     free(last);
+  }
 
   fprintf(output, "\t}\n\n");
 }
@@ -560,7 +598,9 @@ static void write_map(FILE *output, map_t *mode, map_t *maps) {
 static sequence_t *reverse_key_list(sequence_t *list) {
   sequence_t *ptr, *current;
 
-  if (list == NULL) return NULL;
+  if (list == NULL) {
+    return NULL;
+  }
 
   current = list->next;
   list->next = NULL;
@@ -579,10 +619,14 @@ static void learn_map(map_t *mode) {
   size_t i;
 
   printf("Starting mode %s (press Control R to restart)\n", mode->name);
-  if (mode->esc_seq_enter != NULL) putp(mode->esc_seq_enter);
+  if (mode->esc_seq_enter != NULL) {
+    putp(mode->esc_seq_enter);
+  }
 
   fflush(stdout);
-  if (option_auto_learn) usleep(100000);
+  if (option_auto_learn) {
+    usleep(100000);
+  }
 
   for (i = 0; i < SIZEOF(modifiers); i++) {
     before_insert = head;
@@ -609,7 +653,9 @@ static void learn_map(map_t *mode) {
   mode->sequences = reverse_key_list(head);
   head = NULL;
 
-  if (mode->esc_seq_leave != NULL) putp(mode->esc_seq_leave);
+  if (mode->esc_seq_leave != NULL) {
+    putp(mode->esc_seq_leave);
+  }
 }
 
 /* Extract all shared parts of a new map, so we only save them once. */
@@ -623,7 +669,9 @@ static void extract_shared_maps(map_t *head, map_t *last_new) {
      to reason about the list of maps. */
 
   for (current_map = head; current_map != NULL; current_map = current_map->next) {
-    if (current_map == last_new) continue;
+    if (current_map == last_new) {
+      continue;
+    }
 
     new_map = NULL;
     /* Note: we only compare the sequences from last_new with the sequences in
@@ -663,7 +711,9 @@ static void extract_shared_maps(map_t *head, map_t *last_new) {
     }
     /* Keys are inserted at the front, because that takes less book-keeping. But
        in the output we still want them in the original order, so reverse them here. */
-    if (new_map != NULL) new_map->sequences = reverse_key_list(new_map->sequences);
+    if (new_map != NULL) {
+      new_map->sequences = reverse_key_list(new_map->sequences);
+    }
   }
 
   /* Remove all keys that have been marked for removal. */
@@ -672,10 +722,11 @@ static void extract_shared_maps(map_t *head, map_t *last_new) {
       if (current_key->remove) {
         key = current_key;
         current_key = current_key->next;
-        if (last_key == NULL)
+        if (last_key == NULL) {
           current_map->sequences = current_key;
-        else
+        } else {
           last_key->next = current_key;
+        }
       } else {
         last_key = current_key;
         current_key = current_key->next;
@@ -749,7 +800,9 @@ static void cleanup_keys(void) {
     /* Clear out the mapping we made. */
     KeySym keysym = NoSymbol;
     int i;
-    for (i = 0; i < 4; i++) XChangeKeyboardMapping(display, reprogram_code[i], 1, &keysym, 1);
+    for (i = 0; i < 4; i++) {
+      XChangeKeyboardMapping(display, reprogram_code[i], 1, &keysym, 1);
+    }
     XCloseDisplay(display);
   }
 }
@@ -764,7 +817,9 @@ int main(int argc, char *argv[]) {
 
   parse_args(argc, argv);
 
-  if (term == NULL) fatal("No terminal type has been set in the TERM environment variable\n");
+  if (term == NULL) {
+    fatal("No terminal type has been set in the TERM environment variable\n");
+  }
   setupterm(NULL, 1, &error);
 
   if (option_free_mode) {
@@ -786,7 +841,9 @@ int main(int argc, char *argv[]) {
         break;
       } else {
         start = tigetstr(buffer);
-        if (!(start == (char *)-1 || start == NULL || strlen(start) == 0)) break;
+        if (!(start == (char *)-1 || start == NULL || strlen(start) == 0)) {
+          break;
+        }
         printf("Error: '%s' is not a valid terminfo string capability\n", buffer);
         start = NULL;
       }
@@ -803,10 +860,11 @@ int main(int argc, char *argv[]) {
 
     while (1) {
       seq = get_sequence();
-      if (seq != NULL)
+      if (seq != NULL) {
         printf("%s\n", seq->seq);
-      else
+      } else {
         printf("\n");
+      }
       free(seq);
     }
     /* We shouldn't get here, but just to be safe. */
@@ -814,8 +872,9 @@ int main(int argc, char *argv[]) {
   }
 
 #ifndef NO_AUTOLEARN
-  if (option_auto_learn && !initX11())
+  if (option_auto_learn && !initX11()) {
     fatal("Failed to initialize X11 connection. Try running without -a/--auto-learn.\n");
+  }
   atexit(cleanup_keys);
 #endif
 
@@ -830,10 +889,11 @@ int main(int argc, char *argv[]) {
     printf(
         "WARNING: Be carefull when pressing combinations as they may be bound to actions\n"
         "you don't want to execute! For best results don't run this in a window manager.\n");
-    if (display_env != NULL && strlen(display_env) > 0)
+    if (display_env != NULL && strlen(display_env) > 0) {
       printf(
           "\nHINT: It appears you are using an X11 terminal emulator. "
           "Perhaps using the --auto-learn option would be helpful.\n\n");
+    }
     do {
       printf("How many function keys does your keyboard have? ");
       scanf("%d", &maxfkeys);
@@ -842,15 +902,19 @@ int main(int argc, char *argv[]) {
 
   printf("Make sure that NumLock is disabled before starting\n");
 
-  if (option_output == NULL) option_output = term;
-  if ((output = fopen(option_output, "w")) == NULL)
+  if (option_output == NULL) {
+    option_output = term;
+  }
+  if ((output = fopen(option_output, "w")) == NULL) {
     fatal("Can't open output file '%s': %s\n", option_output, strerror(errno));
+  }
 
   fprintf(output, "# Generated by t3learnkeys\n");
   if (blocked_keys_fill > 0) {
     fprintf(output, "#   Blocked keys:");
-    for (i = 0; i < blocked_keys_fill; i++)
+    for (i = 0; i < blocked_keys_fill; i++) {
       fprintf(output, "%c%s", i == 0 ? ' ' : ',', blocked_keys[i]);
+    }
     fprintf(output, "\n");
   }
 
@@ -871,7 +935,9 @@ int main(int argc, char *argv[]) {
      non-keypad-transmit modes. If so add the rmkx sequence as %enter sequence
      for the non-keypad-transmit mode. */
   rmkx = tigetstr("rmkx");
-  if (rmkx == (char *)-1 || rmkx == NULL || strlen(rmkx) == 0) rmkx = NULL;
+  if (rmkx == (char *)-1 || rmkx == NULL || strlen(rmkx) == 0) {
+    rmkx = NULL;
+  }
   mode_head = safe_calloc(1, sizeof(map_t));
   mode_head->name = safe_strdup("nokx");
   if (rmkx != NULL) {
@@ -899,7 +965,9 @@ int main(int argc, char *argv[]) {
     printf("Name for extra mode (- to continue): ");
     scanf("%1023s", buffer);
 
-    if (strcmp(buffer, "-") == 0) break;
+    if (strcmp(buffer, "-") == 0) {
+      break;
+    }
     (*mode_next) = safe_calloc(1, sizeof(map_t));
     (*mode_next)->name = safe_strdup(buffer);
     do {
@@ -907,13 +975,17 @@ int main(int argc, char *argv[]) {
       buffer[0] = 0;
       scanf("%1023s", buffer);
     } while (buffer[0] == 0);
-    if (strcmp(buffer, "-") != 0) (*mode_next)->esc_seq_enter = parse_escapes(buffer);
+    if (strcmp(buffer, "-") != 0) {
+      (*mode_next)->esc_seq_enter = parse_escapes(buffer);
+    }
     do {
       printf("Escape sequence to leave mode %s (- for none): ", (*mode_next)->name);
       buffer[0] = 0;
       scanf("%1023s", buffer);
     } while (buffer[0] == 0);
-    if (strcmp(buffer, "-") != 0) (*mode_next)->esc_seq_leave = parse_escapes(buffer);
+    if (strcmp(buffer, "-") != 0) {
+      (*mode_next)->esc_seq_leave = parse_escapes(buffer);
+    }
     mode_next = &(*mode_next)->next;
   }
 
@@ -924,10 +996,11 @@ int main(int argc, char *argv[]) {
   /* Test if sending key events to the terminal results in characters being typed. */
   if (option_auto_learn) {
     send_event(XK_a, 0);
-    if (get_keychar(100) < 0)
+    if (get_keychar(100) < 0) {
       fatal(
           "Sending keys does not work. You may have to configure your terminal to accept "
           "SendEvents. Aborting.\n");
+    }
   }
 #endif
 
@@ -944,10 +1017,11 @@ int main(int argc, char *argv[]) {
     if (mode_ptr->name == NULL && mode_ptr->sequences == NULL) {
       map_t *current = mode_ptr;
       mode_ptr = mode_ptr->next;
-      if (last_mode_ptr == NULL)
+      if (last_mode_ptr == NULL) {
         mode_head = mode_ptr;
-      else
+      } else {
         last_mode_ptr->next = mode_ptr;
+      }
       /*FIXME: shouldn't we also be freeing out the collected_from lists? */
       free(current);
     } else {
@@ -964,8 +1038,9 @@ int main(int argc, char *argv[]) {
 
   fprintf(output, "maps {\n");
   /* Write the output maps. */
-  for (mode_ptr = mode_head; mode_ptr != NULL; mode_ptr = mode_ptr->next)
+  for (mode_ptr = mode_head; mode_ptr != NULL; mode_ptr = mode_ptr->next) {
     write_map(output, mode_ptr, mode_head);
+  }
 
   fprintf(output, "}\n");
   fflush(output);

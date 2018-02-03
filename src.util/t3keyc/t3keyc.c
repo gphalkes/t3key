@@ -75,7 +75,9 @@ void fatal(const char *fmt, ...) {
 static void *safe_malloc(size_t size) {
   void *ptr;
 
-  if ((ptr = malloc(size)) == NULL) fatal("Out of memory\n");
+  if ((ptr = malloc(size)) == NULL) {
+    fatal("Out of memory\n");
+  }
   return ptr;
 }
 
@@ -288,7 +290,9 @@ static void add_sequence(t3_config_t *ptr, t3_config_t *noticheck) {
   minus = strchr(name, '-');
   name_len = minus == NULL ? strlen(name) : (size_t)(minus - name);
   for (i = 0; i < ARRAY_LENGTH(valid_names); i++) {
-    if (strncmp(name, valid_names[i], name_len) == 0 && name_len == strlen(valid_names[i])) break;
+    if (strncmp(name, valid_names[i], name_len) == 0 && name_len == strlen(valid_names[i])) {
+      break;
+    }
   }
 
   if (i == ARRAY_LENGTH(valid_names)) {
@@ -342,8 +346,12 @@ static void add_sequence(t3_config_t *ptr, t3_config_t *noticheck) {
     }
     if (i == ARRAY_LENGTH(keymapping)) {
       char buffer[100];
-      if (!(name[0] == 'f' && is_asciidigit(name[1]))) return;
-      if (minus != NULL) return;
+      if (!(name[0] == 'f' && is_asciidigit(name[1]))) {
+        return;
+      }
+      if (minus != NULL) {
+        return;
+      }
       buffer[0] = 'k';
       strcpy(buffer + 1, name);
       tistr = tigetstr(buffer);
@@ -446,7 +454,9 @@ static void check_map_rec(t3_config_t *map_config, t3_config_t *map, bool outer)
   map_head = tmp->next;
   free(tmp);
 
-  if (outer) option_check_terminfo = saved_option_check_terminfo;
+  if (outer) {
+    option_check_terminfo = saved_option_check_terminfo;
+  }
 }
 
 static void check_maps(t3_config_t *map_config) {
@@ -472,7 +482,9 @@ static void create_symlinks(t3_config_t *map_config, const char *term_name) {
   char *dirname = safe_strdup(input);
   char *linkname;
 
-  if (strrchr(dirname, '/') != NULL) strrchr(dirname, '/')[1] = 0;
+  if (strrchr(dirname, '/') != NULL) {
+    strrchr(dirname, '/')[1] = 0;
+  }
 
   for (aka = t3_config_get(t3_config_get(map_config, "aka"), NULL); aka != NULL;
        aka = t3_config_get_next(aka)) {
@@ -500,8 +512,9 @@ int main(int argc, char *argv[]) {
 
   parse_options(argc, argv);
 
-  if ((file = fopen(input, "r")) == NULL)
+  if ((file = fopen(input, "r")) == NULL) {
     fatal("Could not open file '%s': %s\n", input, strerror(errno));
+  }
 
   opts.flags = T3_CONFIG_VERBOSE_ERROR;
   if ((map_config = t3_config_read_file(file, &error, &opts)) == NULL)
@@ -517,10 +530,11 @@ int main(int argc, char *argv[]) {
           error.extra == NULL ? "" : ": ", error.extra == NULL ? "" : error.extra);
   t3_config_delete_schema(schema);
 
-  if ((term_name = strrchr(input, '/')) == NULL)
+  if ((term_name = strrchr(input, '/')) == NULL) {
     term_name = input;
-  else
+  } else {
     term_name++;
+  }
 
   if (option_link) {
     create_symlinks(map_config, term_name);
