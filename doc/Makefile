@@ -26,4 +26,4 @@ format.txt: format.md
 	sed -r 's/_num_/<num>/g;s/\\([_%])/\1/g;s%</?tt>%%g;s/&lt;/</g;s/&gt;/>/g;1s/\{.*//' $< > $@
 
 clean::
-	rm format.txt format.html
+	rm -f format.txt format.html
