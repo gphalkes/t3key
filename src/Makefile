@@ -22,6 +22,7 @@ include ../../makesys/rules.mk
 #================================================#
 T3NAME := key
 include ../../t3shared/rules.mk
+include ../../t3shared/rules-base.mk
 
 CFLAGS += -fPIC -DDB_DIRECTORY=\"$(CURDIR)/database\"
 CFLAGS += -DHAS_STRDUP
@@ -29,13 +30,13 @@ CFLAGS.key := -I.objects
 
 LDLIBS += -lcurses
 LDLIBS += -lt3config
-LDFLAGS += $(call L,../include/t3config/.libs)
+LDFLAGS += $(T3LDFLAGS.t3config)
 
 key.c: .objects/map.bytes
 
 .objects/%.bytes: %.schema
 	$(GENOBJDIR)
-	$(_VERBOSE_GEN) ../include/t3config/data2bytes -s -- $< > $@
+	$(_VERBOSE_GEN) ../../t3config/src/data2bytes -s -- $< > $@
 
 utils: | libt3key.la
 	@$(MAKE) -C ../src.util $(_VERBOSE_PRINT)

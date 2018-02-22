@@ -23,7 +23,7 @@ include ../../makesys/rules.mk
 LDFLAGS := $(call L, ../src/.libs)
 LDLIBS := -lt3key
 
-CFLAGS += -I. -I../include
+CFLAGS += -I. -I../../t3shared/include
 
 .objects/test.o: | library
 

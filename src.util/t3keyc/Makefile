@@ -19,9 +19,11 @@ TARGETS := t3keyc
 #================================================#
 include ../../../makesys/rules.mk
 #================================================#
-CFLAGS += -I. -I../../src -I../../include -I.objects -I.. -I../../src/.objects
+include ../../../t3shared/rules-base.mk
 
-LDFLAGS += $(call L, ../../include/t3config/.libs)
+CFLAGS += -I. -I../../src -I.objects -I.. -I../../src/.objects
+
+LDFLAGS += $(T3LDFLAGS.t3config)
 LDLIBS += -lcurses
 LDLIBS += -lt3config
 

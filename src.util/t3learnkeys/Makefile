@@ -25,10 +25,6 @@ CFLAGS += -I..
 CFLAGS += -DHAS_SELECT_H
 #~ CFLAGS += -DNO_AUTOLEARN
 
-#~ CFLAGS += -DUSE_XLIB
-#~ CFLAGS += `pkg-config --cflags x11`
-#~ LDLIBS += `pkg-config --libs x11`
-
 CFLAGS += `pkg-config --cflags xcb`
 LDLIBS += `pkg-config --libs xcb`
 

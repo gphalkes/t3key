@@ -24,26 +24,6 @@ Window focus_window;
 extern int reprogram_code[4];
 extern int option_auto_learn;
 
-#ifdef USE_XLIB
-static void fill_key_event(Display *display, Window focus_window, XKeyEvent *event, int type,
-                           KeyCode keycode, unsigned state) {
-  event->type = type;
-  event->serial = 0;
-  event->send_event = 0;
-  event->display = display;
-  event->window = focus_window;
-  event->subwindow = None;
-  event->root = DefaultRootWindow(display);
-  event->time = CurrentTime;
-  event->x = 1;
-  event->y = 1;
-  event->x_root = 1;
-  event->y_root = 1;
-  event->state = state;
-  event->keycode = keycode;
-  event->same_screen = True;
-}
-#else
 Display *XOpenDisplay(const char *name) { return xcb_connect(name, NULL); }
 
 void XCloseDisplay(Display *display) { xcb_disconnect(display); }
@@ -149,7 +129,6 @@ static void fill_key_event(Display *display, Window focus_window, XKeyEvent *eve
   event->detail = keycode;
   event->same_screen = 1;
 }
-#endif
 
 Bool initX11(void) {
   int revert_to_return;
