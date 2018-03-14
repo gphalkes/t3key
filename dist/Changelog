@@ -1,3 +1,6 @@
+Version 0.2.9:
+	- Update the rxvt definition to include keys from mrxvt.
+
 Version 0.2.8:
 	- Updates the linux key database with keys for Application Keypad Mode.
 	- Adds fallbacks from terminfo for many keys with modifiers, using the
