@@ -125,8 +125,6 @@ int main(int argc, char *argv[]) {
 EOF
 		if pkgconfig xcb X11 test_link ; then
 			:
-		elif basic_x11 ; then
-			X11_FLAGS="${X11_FLAGS} -DUSE_XLIB"
 		else
 			check_message_result "!! Could not find X11 library. t3learnkeys will not provide the --auto-learn option."
 			X11_FLAGS="-DNO_AUTOLEARN"
