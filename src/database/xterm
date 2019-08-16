@@ -17,12 +17,8 @@ maps {
 	nokx {
 		_enter = "rmkx"
 		%_use = "_kx_nokx"
-		home = "\e[H"
-		end = "\e[F"
-		up = "\e[A"
-		left = "\e[D"
-		down = "\e[B"
-		right = "\e[C"
+		# The cursor keys have been moved to the shared kx/nokx map, to allow
+		# LXTerminal to work.
 		kp_center = "\e[E"
 		kp_center-c = "\e[1;5E"
 		kp_center-m = "\e[1;3E"
@@ -70,6 +66,17 @@ maps {
 	}
 
 	_kx_nokx {
+		# The cursor keys here are not actually sent by Xterm in kx mode, but
+		# unfortunately are by LXterminal. So we put them here so that programs
+		# work regardless. There are no colisions, so there is no harm in doing
+		# so.
+		home = "\e[H"
+		end = "\e[F"
+		up = "\e[A"
+		left = "\e[D"
+		down = "\e[B"
+		right = "\e[C"
+
 		insert = "\e[2~"
 		page_up = "\e[5~"
 		delete = "\e[3~"
