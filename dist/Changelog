@@ -1,5 +1,6 @@
 Version 0.2.10:
 	- Add definition for rxvt-unicode-256color.
+	- Move some keys around in the xterm keymap.
 
 Version 0.2.9:
 	- Update the rxvt definition to include keys from mrxvt.
