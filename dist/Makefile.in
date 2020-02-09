@@ -73,8 +73,8 @@ install: all
 	$(INSTALL) -d $(_libdir)
 	$(LIBTOOL) --mode=install $(INSTALL) -s -m0644 src/libt3key.la $(_libdir)
 	chmod 0644 $(_libdir)/libt3key.la
-	$(INSTALL) -d $(_includedir)/t3/key/t3key
-	$(INSTALL) -m0644 src/key.h src/key_api.h src/key_errors.h $(_includedir)/t3/key/t3key
+	$(INSTALL) -d $(_includedir)/t3key
+	$(INSTALL) -m0644 src/key.h src/key_api.h src/key_errors.h $(_includedir)/t3key
 	$(INSTALL) -d $(_docdir)
 	$(INSTALL) -m0644 COPYING README Changelog doc/format.txt doc/format.html doc/supplemental.kmap $(_docdir)
 	$(INSTALL) -d $(_pkgconfigdir)
@@ -93,7 +93,7 @@ uninstall:
 	$(LIBTOOL) --mode=uninstall rm $(_libdir)/libt3key.la
 	rm -rf $(_docdir) $(_datadir)
 	rm -f $(_bindir)/t3keyc $(_bindir)/t3learnkeys $(_pkgconfigdir)/libt3key.pc
-	rm -rf $(_includedir)/t3/key
+	rm -rf $(_includedir)/t3key
 	rm -f $(_mandir)/man1/t3keyc.1 $(_mandir)/man1/t3learnkeys.1
 
 # LIBVERSION=<LIBVERSION>

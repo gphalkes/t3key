@@ -29,3 +29,5 @@
 /src/database/rxvt-88color
 /src/database/rxvt-color
 /src.tools/generate_screen_bindkey
+
+/libt3key*.tar.bz2
